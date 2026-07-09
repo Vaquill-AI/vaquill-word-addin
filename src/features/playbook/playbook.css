@@ -1,0 +1,133 @@
+.playbook-view {
+  gap: 12px;
+  padding: 14px;
+}
+
+.playbook-filter {
+  padding: 7px 9px;
+  border: 1px solid var(--control-border);
+  border-radius: var(--radius-sm);
+  font-size: var(--fs-body);
+  font-family: inherit;
+  background: var(--surface);
+  color: var(--text);
+}
+.playbook-filter:focus {
+  outline: none;
+  border-bottom-color: var(--brand);
+  box-shadow: inset 0 -1px 0 0 var(--brand);
+}
+
+/* ---- Template picker ---- */
+.template-picker {
+  overflow: hidden;
+}
+.template-picker__body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 0 12px 12px;
+}
+.template {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+}
+.template__name {
+  font-weight: 600;
+  font-size: 13px;
+}
+
+/* ---- Ladder card (a <details> using the shared .card glass) ---- */
+.ladder {
+  overflow: hidden;
+}
+.ladder__summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  cursor: pointer;
+  list-style: none;
+}
+.ladder__summary::-webkit-details-marker {
+  display: none;
+}
+.ladder__chevron {
+  display: inline-flex;
+  color: var(--text-muted);
+  transform: rotate(-90deg);
+  transition: transform 0.15s ease;
+}
+.ladder[open] .ladder__chevron {
+  transform: rotate(0deg);
+}
+.ladder__title {
+  flex: 1;
+  font-weight: 600;
+}
+.ladder__body {
+  padding: 0 12px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ladder__rungs {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.rung {
+  border-left: 2px solid var(--border);
+  padding-left: 10px;
+}
+.rung__head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.rung__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex: 0 0 auto;
+}
+.rung__dot--green {
+  background: var(--success);
+}
+.rung__dot--amber {
+  background: var(--warning);
+}
+.rung__dot--red {
+  background: var(--danger);
+}
+.rung__label {
+  flex: 1;
+  font-weight: 600;
+  font-size: 12px;
+}
+.rung__text {
+  margin: 3px 0 0;
+  font-size: 12.5px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: var(--text);
+}
+
+.ladder__triggers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+}
+.ladder__trigger {
+  background: var(--warning-tint);
+  color: var(--warning);
+  padding: 1px 7px;
+  border-radius: 999px;
+}

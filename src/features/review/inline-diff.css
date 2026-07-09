@@ -1,0 +1,25 @@
+.inline-diff {
+  margin: 0;
+  padding: 7px 9px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-muted);
+  font-size: 12.5px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  line-height: 1.55;
+  color: var(--text);
+}
+
+.inline-diff__del {
+  color: var(--danger);
+  text-decoration: line-through;
+  text-decoration-color: rgba(164, 38, 44, 0.5);
+}
+
+.inline-diff__ins {
+  color: var(--success);
+  text-decoration: none;
+  background: var(--success-tint);
+  border-radius: 3px;
+  padding: 0 2px;
+}

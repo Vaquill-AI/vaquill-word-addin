@@ -1,0 +1,252 @@
+/* Reusable UI kit styles. Kept separate from feature styles. */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 7px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+  color: var(--text);
+  font-size: var(--fs-body);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.12s ease, border-color 0.12s ease;
+}
+.btn:hover:not(:disabled) {
+  background: var(--surface-muted);
+}
+.btn:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+.btn--primary {
+  background: var(--brand);
+  border-color: var(--brand);
+  color: var(--on-brand);
+}
+.btn--primary:hover:not(:disabled) {
+  background: var(--brand-strong);
+}
+.btn--sm {
+  padding: 4px 9px;
+  font-size: 12px;
+}
+.btn--block {
+  width: 100%;
+}
+.btn--ghost {
+  border-color: transparent;
+  background: transparent;
+  color: var(--brand);
+}
+.btn--ghost:hover:not(:disabled) {
+  background: var(--brand-tint);
+}
+
+.spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--border-strong);
+  border-top-color: var(--brand);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.6;
+}
+.badge--green {
+  background: var(--green-tint);
+  color: var(--green);
+}
+.badge--yellow {
+  background: var(--yellow-tint);
+  color: var(--yellow);
+}
+.badge--red {
+  background: var(--red-tint);
+  color: var(--red);
+}
+.badge--neutral {
+  background: var(--surface-muted);
+  color: var(--text-muted);
+}
+.badge--brand {
+  background: var(--brand-tint);
+  color: var(--brand);
+}
+
+.banner {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px 12px;
+  background: var(--surface-muted);
+}
+.banner--warn {
+  background: var(--yellow-tint);
+  border-color: var(--warning-border);
+  color: var(--warning);
+}
+.banner--danger {
+  background: var(--red-tint);
+  border-color: var(--danger-border);
+  color: var(--danger);
+}
+.banner--info {
+  background: var(--brand-tint);
+  border-color: var(--brand-border);
+}
+
+.card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  /* Frosted Mica card: translucent fill + backdrop blur so the canvas shows
+     through subtly (Windows 11 layered look). Text stays legible. */
+  background: var(--surface-glass);
+  backdrop-filter: var(--card-blur);
+  -webkit-backdrop-filter: var(--card-blur);
+  box-shadow: var(--shadow-4);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.field > label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+.field select,
+.field input,
+.field textarea {
+  padding: 7px 9px;
+  border: 1px solid var(--control-border);
+  border-radius: var(--radius-sm);
+  font-size: var(--fs-body);
+  font-family: inherit;
+  background: var(--surface);
+  color: var(--text);
+  transition: border-color 0.1s ease, box-shadow 0.1s ease;
+}
+.field select:hover,
+.field input:hover,
+.field textarea:hover {
+  border-color: var(--neutral-fg-3);
+}
+/* Fluent focus stroke: an accent bottom border on focus. */
+.field select:focus,
+.field input:focus,
+.field textarea:focus {
+  outline: none;
+  border-color: var(--control-border);
+  border-bottom-color: var(--brand);
+  box-shadow: inset 0 -1px 0 0 var(--brand);
+}
+.field textarea {
+  resize: vertical;
+  min-height: 54px;
+}
+
+/* Keyboard focus ring across interactive controls. */
+.btn:focus-visible,
+.seg__btn:focus-visible,
+.iconbtn:focus-visible,
+.chip:focus-visible,
+.tabnav__tab:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 1px;
+}
+
+.seg {
+  display: flex;
+  gap: 2px;
+  padding: 2px;
+  background: var(--surface-muted);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+.seg__btn {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 5px 6px;
+  border: none;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+.seg__btn:hover:not(.seg__btn--on) {
+  color: var(--text);
+}
+.seg__btn--on {
+  background: var(--surface);
+  color: var(--brand);
+  box-shadow: var(--shadow);
+}
+.seg__count {
+  min-width: 16px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: var(--brand-tint);
+  color: var(--brand);
+  font-size: 10.5px;
+  line-height: 15px;
+}
+.seg__btn--on .seg__count {
+  background: var(--brand);
+  color: var(--on-brand);
+}
+
+.iconbtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease, border-color 0.12s ease;
+}
+.iconbtn:hover {
+  background: var(--surface-muted);
+  color: var(--text);
+}
+.iconbtn--green:hover {
+  color: var(--green);
+  border-color: var(--success-border);
+}
+.iconbtn--red:hover {
+  color: var(--red);
+  border-color: var(--danger-border);
+}
+.iconbtn--active {
+  background: var(--brand-tint);
+  border-color: var(--brand);
+  color: var(--brand);
+}

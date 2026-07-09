@@ -1,0 +1,128 @@
+/**
+ * Design tokens - the single source of truth for the whole add-in.
+ * Values are the canonical Microsoft Fluent 2 (React v9) tokens: the exact
+ * neutral ramp, elevation, radii, and type Word itself uses, plus Windows 11
+ * Acrylic/Mica materials. Every component reads these variables; do not
+ * hardcode colors, radii, or shadows in component CSS.
+ *
+ * White theme only. Acrylic (glass) is used for chrome (header, tabs, sticky
+ * bars) only, never dense content, so legal text stays crisp and legible.
+ */
+:root {
+  /* ---- Fluent 2 neutrals (light) ---- */
+  --neutral-bg-1: #ffffff; /* primary surface / cards */
+  --neutral-bg-1-hover: #f5f5f5;
+  --neutral-bg-1-pressed: #e0e0e0;
+  --neutral-bg-2: #fafafa; /* task-pane canvas */
+  --neutral-bg-3: #f5f5f5; /* sunken well / subtle fill */
+  --neutral-bg-4: #f0f0f0;
+  --neutral-fg-1: #242424; /* primary text */
+  --neutral-fg-2: #424242; /* secondary text / control text */
+  --neutral-fg-3: #616161; /* tertiary / placeholder / accessible stroke */
+  --neutral-fg-4: #707070; /* hint / disabled */
+  --neutral-stroke-1: #d1d1d1; /* control border */
+  --neutral-stroke-2: #e0e0e0; /* card border / divider */
+  --neutral-stroke-3: #f0f0f0; /* subtle divider */
+  --neutral-stroke-accessible: #616161; /* input baseline */
+
+  /* ---- Accent: Fluent 2 communication blue, so the pane reads as native
+     Office. The Vaquill brand lives in the leaf logo, not the UI chrome
+     (this mirrors how real Office add-ins are themed). ---- */
+  --brand-primary: #0f6cbd; /* colorBrandBackground */
+  --brand-hover: #115ea3; /* colorBrandBackgroundHover */
+  --brand-pressed: #0f548c; /* colorBrandBackgroundPressed */
+  --brand-tint: #ebf3fc; /* colorBrandBackground2 - selected fill */
+  --brand-tint-strong: #cfe4fa;
+  --brand-border: #b4d6fa;
+  --brand-fg: #0f6cbd; /* colorBrandForeground1 - links/selected text */
+  --on-brand: #ffffff;
+  --focus-inner: #ffffff;
+  --focus-outer: #000000;
+
+  /* ---- Status (Fluent 2) ---- */
+  --success: #0e700e;
+  --success-tint: #dff6dd;
+  --success-border: #cbe6d1;
+  --warning: #855400;
+  --warning-tint: #fff4ce;
+  --warning-border: #e7d3a6;
+  --danger: #a4262c;
+  --danger-tint: #fde7e9;
+  --danger-border: #e9bdb7;
+
+  /* ---- Semantic aliases (consumed by components) ---- */
+  --canvas: var(--neutral-bg-2);
+  --surface: var(--neutral-bg-1);
+  --surface-muted: var(--neutral-bg-3);
+  --surface-raised: var(--neutral-bg-1);
+  --border: var(--neutral-stroke-2);
+  --border-strong: var(--neutral-stroke-1);
+  --control-border: var(--neutral-stroke-1);
+  --control-baseline: var(--neutral-stroke-accessible);
+  --text: var(--neutral-fg-1);
+  --text-muted: var(--neutral-fg-2);
+  --text-disabled: var(--neutral-fg-4);
+
+  --bg: var(--canvas);
+  --brand: var(--brand-primary);
+  --brand-strong: var(--brand-hover);
+  --accent: var(--brand-primary);
+  --green: var(--success);
+  --green-tint: var(--success-tint);
+  --yellow: var(--warning);
+  --yellow-tint: var(--warning-tint);
+  --red: var(--danger);
+  --red-tint: var(--danger-tint);
+
+  /* ---- Typography (Fluent 2 / Segoe UI Variable) ---- */
+  --font: "Segoe UI Variable Text", "Segoe UI Variable", "Segoe UI",
+    "Segoe UI Web (West European)", -apple-system, BlinkMacSystemFont, Roboto,
+    "Helvetica Neue", sans-serif;
+  --font-mono: "Cascadia Code", "SFMono-Regular", ui-monospace, Menlo, Consolas, monospace;
+  --fs-caption: 12px; /* Fluent Caption1 */
+  --fs-body: 13px; /* dense body (Fluent Body1 is 14; 13 fits the narrow pane) */
+  --fs-body-lg: 14px;
+  --fs-subtitle: 16px; /* Fluent Subtitle2 */
+  --fs-title: 20px; /* Fluent Subtitle1 */
+  --fw-regular: 400;
+  --fw-semibold: 600;
+
+  /* ---- Radii (Fluent 2) ---- */
+  --radius-sm: 4px; /* borderRadiusMedium - controls */
+  --radius-md: 6px; /* borderRadiusLarge */
+  --radius-lg: 8px; /* borderRadiusXLarge - cards */
+  --radius: var(--radius-lg);
+
+  /* ---- Spacing ramp (Fluent 2) ---- */
+  --space-xs: 4px;
+  --space-s: 8px;
+  --space-m: 12px;
+  --space-l: 16px;
+  --space-xl: 20px;
+  --space-xxl: 24px;
+
+  /* ---- Elevation (Fluent 2 depth: ambient 0-blur + directional key) ---- */
+  --shadow-2: 0 0 2px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.14);
+  --shadow-4: 0 0 2px rgba(0, 0, 0, 0.12), 0 2px 4px rgba(0, 0, 0, 0.14);
+  --shadow-8: 0 0 2px rgba(0, 0, 0, 0.12), 0 4px 8px rgba(0, 0, 0, 0.14);
+  --shadow-16: 0 0 2px rgba(0, 0, 0, 0.12), 0 8px 16px rgba(0, 0, 0, 0.14);
+  --shadow-28: 0 0 8px rgba(0, 0, 0, 0.12), 0 14px 28px rgba(0, 0, 0, 0.14);
+  --shadow: var(--shadow-2);
+
+  /* ---- Windows 11 materials ---- */
+  /* Acrylic: translucent chrome (header, tabs, sticky bars). Microsoft's
+     recipe: real-time blur + saturation + light tint. */
+  --acrylic-bg: rgba(250, 251, 253, 0.68);
+  --acrylic-blur: blur(30px) saturate(140%);
+  --acrylic-stroke: rgba(255, 255, 255, 0.6);
+  /* Mica card: frosted translucent content surface. Text stays legible because
+     the fill is near-white; the canvas shows through just enough to read as
+     glass, matching the Windows 11 layered look. */
+  --surface-glass: rgba(255, 255, 255, 0.64);
+  --card-blur: blur(18px) saturate(140%);
+  /* Mica: the quiet, cool wallpaper-tinted canvas the glass floats over
+     (Win11 light Mica base + faint Fluent-blue radial tints). */
+  --mica: radial-gradient(130% 90% at 100% 0%, rgba(15, 108, 189, 0.08) 0%, transparent 58%),
+    radial-gradient(130% 90% at 0% 100%, rgba(15, 108, 189, 0.06) 0%, transparent 55%),
+    linear-gradient(180deg, #eef1f6 0%, #e9edf3 100%);
+}

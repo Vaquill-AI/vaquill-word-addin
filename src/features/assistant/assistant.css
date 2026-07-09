@@ -1,0 +1,173 @@
+.assistant {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.assistant__messages {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.assistant__intro {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* ---- Message bubbles ---- */
+.msg {
+  max-width: 100%;
+}
+.msg--user {
+  align-self: flex-end;
+  max-width: 85%;
+  background: var(--brand);
+  color: var(--on-brand);
+  padding: 8px 12px;
+  border-radius: 12px 12px 4px 12px;
+  box-shadow: var(--shadow-2);
+}
+.msg--user p {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.msg--assistant {
+  align-self: flex-start;
+  max-width: 100%;
+}
+.msg__body {
+  font-size: var(--fs-body);
+  color: var(--text);
+  line-height: 1.55;
+}
+.msg__body p {
+  margin: 0 0 8px;
+}
+.msg__body p:last-child {
+  margin-bottom: 0;
+}
+.msg__body ul,
+.msg__body ol {
+  margin: 0 0 8px;
+  padding-left: 18px;
+}
+.msg__body li {
+  margin: 2px 0;
+}
+.msg__body code {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  background: var(--surface-muted);
+  padding: 1px 4px;
+  border-radius: 4px;
+}
+.msg__caret {
+  display: inline-block;
+  width: 7px;
+  height: 14px;
+  background: var(--brand);
+  animation: blink 1s step-end infinite;
+}
+@keyframes blink {
+  50% {
+    opacity: 0;
+  }
+}
+.msg__sources {
+  margin-top: 6px;
+  font-size: 12px;
+}
+.msg__sources summary {
+  cursor: pointer;
+  color: var(--brand);
+  font-weight: 600;
+}
+.msg__sources ul {
+  margin: 4px 0 0;
+  padding-left: 16px;
+  color: var(--text-muted);
+}
+
+.assistant__thinking {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ---- Suggested prompts ---- */
+.prompts {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: stretch;
+}
+.prompt {
+  text-align: left;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 12.5px;
+  cursor: pointer;
+  transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease;
+}
+.prompt:hover {
+  background: var(--brand-tint);
+  border-color: var(--brand);
+  color: var(--brand);
+}
+
+/* ---- Composer (glass, matches chrome) ---- */
+.composer {
+  border-top: 1px solid var(--border);
+  background: var(--acrylic-bg);
+  backdrop-filter: var(--acrylic-blur);
+  -webkit-backdrop-filter: var(--acrylic-blur);
+  padding: 10px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.composer__scope {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.composer__scope select {
+  padding: 4px 8px;
+  border: 1px solid var(--control-border);
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  font-family: inherit;
+  background: var(--surface);
+  color: var(--text);
+}
+.composer__input {
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+}
+.composer__input textarea {
+  flex: 1;
+  resize: none;
+  padding: 8px 10px;
+  border: 1px solid var(--control-border);
+  border-radius: var(--radius-sm);
+  font-family: inherit;
+  font-size: var(--fs-body);
+  background: var(--surface);
+  color: var(--text);
+}
+.composer__input textarea:focus {
+  outline: none;
+  border-bottom-color: var(--brand);
+  box-shadow: inset 0 -1px 0 0 var(--brand);
+}

@@ -1,0 +1,36 @@
+{
+  "name": "vaquill-word-addin",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Vaquill for Microsoft Word - contract review, playbooks, drafting, and US legal research inside Word.",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "type-check": "tsc --noEmit",
+    "lint": "eslint .",
+    "sideload": "office-addin-debugging start manifest.dev.xml desktop",
+    "sideload:stop": "office-addin-debugging stop manifest.dev.xml",
+    "validate:manifest": "office-addin-manifest validate manifest.xml"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.45.0",
+    "office-word-diff": "github:yuch85/office-word-diff",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/office-js": "^1.0.377",
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "@vitejs/plugin-react": "^4.3.1",
+    "office-addin-debugging": "^6.0.0",
+    "office-addin-manifest": "^1.13.0",
+    "typescript": "^5.5.4",
+    "vite": "^5.4.0"
+  }
+}

@@ -1,0 +1,52 @@
+.tools {
+  gap: 14px;
+  padding: 14px;
+}
+
+.sel {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-muted);
+}
+.sel--empty {
+  gap: 4px;
+  border-style: dashed;
+  border-color: var(--border-strong);
+  text-align: left;
+}
+.sel__text {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--text);
+  white-space: pre-wrap;
+  word-break: break-word;
+  border-left: 3px solid var(--brand);
+  padding-left: 8px;
+}
+
+.chip {
+  padding: 4px 10px;
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease, border-color 0.12s ease;
+}
+.chip:hover {
+  background: var(--brand-tint);
+  color: var(--brand);
+  border-color: var(--brand);
+}
+
+.tool-result {
+  padding: 10px 12px;
+  gap: 8px;
+  animation: cardIn 0.24s cubic-bezier(0.4, 0, 0.2, 1) both;
+}

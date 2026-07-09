@@ -1,0 +1,67 @@
+.governance-view {
+  gap: 14px;
+  padding: 14px;
+}
+
+.gov-banner {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px 12px;
+}
+.gov-banner--pending {
+  background: var(--danger-tint);
+  border-color: var(--danger-border);
+  color: var(--danger);
+}
+.gov-banner--signed {
+  background: var(--success-tint);
+  border-color: var(--success-border);
+  color: var(--success);
+}
+.gov-banner--cleared {
+  background: var(--surface-muted);
+}
+
+.gov-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.gov-reasons {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.gov-action {
+  padding: 12px;
+}
+
+.gov-history {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.gov-history li {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+}
+.gov-history__dot {
+  margin-top: 5px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--brand);
+  flex: 0 0 auto;
+}
+.gov-history__note {
+  margin-top: 2px;
+  padding: 4px 8px;
+  background: var(--surface-muted);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+}
