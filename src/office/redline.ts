@@ -59,9 +59,20 @@ export async function applyVerifiedRedline(r: RedlineSuggestion): Promise<ApplyR
     results.load("items");
     await context.sync();
 
-    const range = results.items[0];
-    if (!range) throw new AnchorNotFoundError(r.clauseName);
+    // Backend grounding only guarantees the clause is a literal substring, not
+    // that it is unique. If it appears zero or multiple times we cannot safely
+    // choose the occurrence to redline, so refuse rather than silently editing
+    // the first match. This guard runs before we touch changeTrackingMode, so
+    // there is no mode to restore on this path.
+    if (results.items.length === 0) throw new AnchorNotFoundError(r.clauseName);
+    if (results.items.length > 1) {
+      throw new OfficeError(
+        "The clause text appears multiple times; apply this change manually to the correct spot.",
+        "anchor_ambiguous",
+      );
+    }
 
+    const range = results.items[0];
     range.load("text");
     await context.sync();
 
@@ -99,11 +110,15 @@ export async function insertMissingClause(r: RedlineSuggestion): Promise<void> {
     const priorMode = doc.changeTrackingMode;
     doc.changeTrackingMode = Word.ChangeTrackingMode.trackAll;
 
-    const heading = r.clauseName ? `${r.clauseName}\n` : "";
-    doc.body.insertParagraph(`${heading}${r.proposedLanguage}`, Word.InsertLocation.end);
-    await context.sync();
-
-    doc.changeTrackingMode = priorMode;
-    await context.sync();
+    // try/finally so a failed insert or sync always restores the prior mode.
+    // Without this, a throw here would leave the document stuck in track-all.
+    try {
+      const heading = r.clauseName ? `${r.clauseName}\n` : "";
+      doc.body.insertParagraph(`${heading}${r.proposedLanguage}`, Word.InsertLocation.end);
+      await context.sync();
+    } finally {
+      doc.changeTrackingMode = priorMode;
+      await context.sync();
+    }
   });
 }

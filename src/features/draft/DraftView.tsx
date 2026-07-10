@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Button, Banner, Field, Spinner } from "@/ui/primitives";
+import { InfoTip } from "@/ui/InfoTip";
 import { CheckIcon, CopyIcon } from "@/ui/icons";
 import { generateDraft, DRAFT_CATEGORIES, type DraftResult } from "@/api/drafting";
 import { insertDraftAtCursor } from "@/office/draft";
@@ -19,7 +20,9 @@ export function DraftView() {
   const [result, setResult] = useState<DraftResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [inserted, setInserted] = useState(false);
+  const [inserting, setInserting] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [copyNote, setCopyNote] = useState<string | null>(null);
 
   async function generate() {
     setStatus("generating");
@@ -27,6 +30,7 @@ export function DraftView() {
     setResult(null);
     setInserted(false);
     setCopied(false);
+    setCopyNote(null);
     try {
       const r = await generateDraft({
         category,
@@ -43,23 +47,28 @@ export function DraftView() {
   }
 
   async function insert() {
-    if (!result) return;
+    if (!result || inserting) return;
+    setInserting(true);
+    setError(null);
     try {
       await insertDraftAtCursor(result.fullText);
       setInserted(true);
     } catch (e) {
       setError((e as Error).message);
+    } finally {
+      setInserting(false);
     }
   }
 
   async function copy() {
     if (!result) return;
+    setCopyNote(null);
     try {
       await navigator.clipboard.writeText(result.fullText);
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     } catch {
-      /* clipboard unavailable */
+      setCopyNote("Could not copy to the clipboard.");
     }
   }
 
@@ -68,13 +77,14 @@ export function DraftView() {
     setResult(null);
     setError(null);
     setInserted(false);
+    setCopyNote(null);
   }
 
   if (status === "done" && result) {
     return (
       <div className="stack draft-view">
         <div className="row" style={{ justifyContent: "space-between" }}>
-          <h1 style={{ fontSize: 15 }}>Draft</h1>
+          <h1 className="view-title">Draft</h1>
           <Button variant="ghost" size="sm" onClick={reset}>
             New draft
           </Button>
@@ -96,7 +106,7 @@ export function DraftView() {
         <div className="draft-preview">{result.fullText}</div>
 
         <div className="draft-actions">
-          <Button variant="primary" block onClick={insert} disabled={inserted}>
+          <Button variant="primary" block onClick={insert} disabled={inserted} loading={inserting}>
             {inserted ? (
               <>
                 <CheckIcon size={14} /> Inserted into document
@@ -117,6 +127,9 @@ export function DraftView() {
             )}
           </Button>
         </div>
+
+        {error && <Banner tone="danger">{error}</Banner>}
+        {copyNote && <span className="small muted">{copyNote}</span>}
       </div>
     );
   }
@@ -124,7 +137,10 @@ export function DraftView() {
   return (
     <div className="stack draft-view">
       <div className="stack" style={{ gap: 4 }}>
-        <h1 style={{ fontSize: 15 }}>Draft</h1>
+        <div className="row" style={{ justifyContent: "space-between", alignItems: "flex-start" }}>
+          <h1 className="view-title">Draft</h1>
+          <InfoTip text="Generates a first-draft agreement from your inputs and inserts it into the document. Treat it as a starting point, not a final draft: review the language, run it through Review, and get the required sign-off before you send it." />
+        </div>
         <p className="small muted" style={{ margin: 0 }}>
           Generate a first-draft agreement and insert it into this document.
         </p>

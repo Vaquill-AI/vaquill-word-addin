@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Button, Banner } from "@/ui/primitives";
+import { Button, Banner, LiveRegion } from "@/ui/primitives";
 import { exportCorrectedDocx } from "@/api/contract-review";
 import { downloadDocx } from "@/office/export";
 import { readDocumentText } from "@/office/document";
@@ -28,6 +28,7 @@ export function ReviewActionBar({
   const [applying, setApplying] = useState<{ done: number; total: number } | null>(null);
   const [downloading, setDownloading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [note, setNote] = useState<string | null>(null);
 
   const openApplicable = redlines
     .map((r, i) => ({ r, i }))
@@ -35,20 +36,32 @@ export function ReviewActionBar({
 
   async function applyAll() {
     setError(null);
-    setApplying({ done: 0, total: openApplicable.length });
+    setNote(null);
+    const total = openApplicable.length;
+    setApplying({ done: 0, total });
     let done = 0;
+    let failed = 0;
     for (const { r, i } of openApplicable) {
       try {
         if (r.grounding === "insertion") await insertMissingClause(r);
         else await applyVerifiedRedline(r);
         setDecision(i, "accepted");
       } catch {
-        // Leave this one open; the reviewer can handle it individually.
+        // Leave this one open; the reviewer handles it individually. This is the
+        // ambiguous-anchor / not-found path, so it must be surfaced, not silent.
+        failed += 1;
       }
       done += 1;
-      setApplying({ done, total: openApplicable.length });
+      setApplying({ done, total });
     }
     setApplying(null);
+    if (failed > 0) {
+      setError(
+        `Applied ${total - failed} of ${total}. ${failed} could not be placed automatically (the clause text was not found or appears more than once); apply those individually.`,
+      );
+    } else {
+      setNote(`Applied ${total} redline${total === 1 ? "" : "s"} as tracked changes.`);
+    }
   }
 
   async function download() {
@@ -81,6 +94,11 @@ export function ReviewActionBar({
   return (
     <div className="action-bar">
       {error && <Banner tone="danger">{error}</Banner>}
+      {note && (
+        <LiveRegion>
+          <Banner tone="info">{note}</Banner>
+        </LiveRegion>
+      )}
       <div className="action-bar__row">
         <Button
           variant="primary"

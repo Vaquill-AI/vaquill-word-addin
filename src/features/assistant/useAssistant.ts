@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { streamAssistant, type ChatMessage, type ChatSource } from "@/api/chat";
 import { readDocumentText, readSelectionText } from "@/office/document";
 import { uuid } from "@/api/ids";
@@ -32,6 +32,20 @@ export function useAssistant() {
     abortRef.current?.abort();
     abortRef.current = null;
     setState(INITIAL);
+  }, []);
+
+  // Stop an in-flight answer without wiping the conversation (Stop button).
+  const stop = useCallback(() => {
+    abortRef.current?.abort();
+    abortRef.current = null;
+    setState((s) => ({
+      ...s,
+      streaming: false,
+      thinking: null,
+      messages: s.messages
+        .filter((m) => !(m.role === "assistant" && m.pending && !m.content.trim()))
+        .map((m) => (m.pending ? { ...m, pending: false } : m)),
+    }));
   }, []);
 
   const send = useCallback(
@@ -70,6 +84,10 @@ export function useAssistant() {
           messages: s.messages.map((m) => (m.id === assistantId ? fn(m) : m)),
         }));
 
+      // Once the answer has been finalized, a later stream error (e.g. a dropped
+      // trailing frame) should not slap an error banner over a complete answer.
+      let finalized = false;
+
       try {
         const context = scope === "selection" ? await readSelectionText() : await readDocumentText();
         if (scope === "selection" && !context.trim()) {
@@ -90,13 +108,21 @@ export function useAssistant() {
                 m.id === assistantId ? { ...m, content: m.content + delta } : m,
               ),
             })),
-          onFinal: (corrected) =>
-            patchAssistant((m) => ({ ...m, content: corrected ?? m.content, pending: false })),
+          onFinal: (corrected) => {
+            finalized = true;
+            patchAssistant((m) => ({ ...m, content: corrected ?? m.content, pending: false }));
+          },
         });
         patchAssistant((m) => ({ ...m, pending: false }));
         setState((s) => ({ ...s, streaming: false, thinking: null }));
       } catch (e) {
         if ((e as Error).name === "AbortError") return;
+        // Answer already complete: keep it, just stop the streaming state.
+        if (finalized) {
+          patchAssistant((m) => ({ ...m, pending: false }));
+          setState((s) => ({ ...s, streaming: false, thinking: null }));
+          return;
+        }
         const error = e instanceof ApiError ? friendlyMessage(e) : (e as Error).message;
         setState((s) => ({
           ...s,
@@ -113,5 +139,8 @@ export function useAssistant() {
     [state.messages],
   );
 
-  return { state, send, reset };
+  // Abort any in-flight stream when the view unmounts (tab switch).
+  useEffect(() => () => abortRef.current?.abort(), []);
+
+  return { state, send, reset, stop };
 }

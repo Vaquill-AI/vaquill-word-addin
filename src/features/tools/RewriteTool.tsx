@@ -21,15 +21,17 @@ export function RewriteTool({ clauseText }: { clauseText: string }) {
   const [result, setResult] = useState<RewriteResult | null>(null);
   const [applied, setApplied] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [copyNote, setCopyNote] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   async function copy() {
+    setCopyNote(null);
     try {
       await navigator.clipboard.writeText(result?.rewritten ?? "");
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     } catch {
-      /* clipboard unavailable; no-op */
+      setCopyNote("Could not copy to the clipboard.");
     }
   }
 
@@ -108,6 +110,7 @@ export function RewriteTool({ clauseText }: { clauseText: string }) {
               )}
             </Button>
           </div>
+          {copyNote && <span className="small muted">{copyNote}</span>}
         </div>
       )}
     </div>

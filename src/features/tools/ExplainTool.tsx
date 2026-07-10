@@ -25,6 +25,7 @@ export function ExplainTool({ clauseText }: { clauseText: string }) {
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<ExplainResult | null>(null);
   const [commented, setCommented] = useState(false);
+  const [commenting, setCommenting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function run() {
@@ -42,12 +43,16 @@ export function ExplainTool({ clauseText }: { clauseText: string }) {
   }
 
   async function addComment() {
-    if (!result) return;
+    if (!result || commenting) return;
+    setCommenting(true);
+    setError(null);
     try {
       await insertCommentOnSelection(result.explanation);
       setCommented(true);
     } catch (e) {
-      setError((e as Error).message);
+      setError(e instanceof ApiError ? friendlyMessage(e) : (e as Error).message);
+    } finally {
+      setCommenting(false);
     }
   }
 
@@ -65,7 +70,13 @@ export function ExplainTool({ clauseText }: { clauseText: string }) {
           <List title="Key obligations" items={result.keyObligations} />
           <List title="Risks" items={result.risks} />
           <List title="Applicable law" items={result.applicableActs} />
-          <Button variant="ghost" size="sm" onClick={addComment} disabled={commented}>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={addComment}
+            disabled={commented}
+            loading={commenting}
+          >
             {commented ? "Added as comment" : "Add as Word comment"}
           </Button>
         </div>

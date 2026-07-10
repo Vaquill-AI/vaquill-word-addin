@@ -74,25 +74,43 @@ export async function postStream(path: string, body: unknown, opts: StreamHandle
     opts.onEvent({ event, data: dataLines.join("\n") });
   };
 
-  // eslint-disable-next-line no-constant-condition
-  while (true) {
-    const { value, done } = await reader.read();
-    if (done) break;
-    buffer += decoder.decode(value, { stream: true });
-    let sep: number;
-    // Events are separated by a blank line; tolerate \n\n and \r\n\r\n.
-    while ((sep = indexOfBlankLine(buffer)) !== -1) {
-      const block = buffer.slice(0, sep);
-      buffer = buffer.slice(sepEnd(buffer, sep));
-      flushBlock(block);
+  // The read loop can exit via a truncation throw (or an event-driven throw in
+  // a consuming callback). Any of those paths must still release the stream
+  // reader, otherwise res.body stays locked and the connection cannot be reused
+  // or cleanly cancelled. The try/finally below guarantees release without
+  // changing the truncation-throw behavior or any event/callback timing.
+  try {
+    // eslint-disable-next-line no-constant-condition
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      let sep: number;
+      // Events are separated by a blank line; tolerate \n\n and \r\n\r\n.
+      while ((sep = indexOfBlankLine(buffer)) !== -1) {
+        const block = buffer.slice(0, sep);
+        buffer = buffer.slice(sepEnd(buffer, sep));
+        flushBlock(block);
+      }
     }
-  }
-  buffer += decoder.decode();
-  if (buffer.trim()) flushBlock(buffer);
+    buffer += decoder.decode();
+    if (buffer.trim()) flushBlock(buffer);
 
-  // A stream that ends without `done` is a truncation (proxy buffering, drop).
-  if (!sawDone && !opts.signal?.aborted) {
-    throw new ApiError("network", 0, "The response ended before it completed. Please retry.");
+    // A stream that ends without `done` is a truncation (proxy buffering, drop).
+    if (!sawDone && !opts.signal?.aborted) {
+      throw new ApiError("network", 0, "The response ended before it completed. Please retry.");
+    }
+  } finally {
+    try {
+      await reader.cancel();
+    } catch {
+      // Reader may already be closed/errored; cancellation is best-effort.
+    }
+    try {
+      reader.releaseLock();
+    } catch {
+      // Lock may already be released; ignore.
+    }
   }
 }
 

@@ -1,5 +1,8 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Banner, Button, Badge } from "@/ui/primitives";
+import { InfoTip } from "@/ui/InfoTip";
+import { readReviewSnapshot, writeReviewSnapshot } from "@/office/reviewState";
+import type { ReviewSnapshot } from "@/lib/reviewState";
 import { ReviewForm } from "./ReviewForm";
 import { ReviewSummary } from "./ReviewSummary";
 import { SignoffGate } from "./SignoffGate";
@@ -23,7 +26,7 @@ const SIGNOFF_LABEL: Record<string, string> = {
 function StreamingState({ label }: { label: string }) {
   return (
     <div className="streaming">
-      <div className="row" style={{ gap: 8 }}>
+      <div className="row" role="status" aria-live="polite" style={{ gap: 8 }}>
         <span className="streaming__pulse" aria-hidden />
         <span className="small" style={{ fontWeight: 600 }}>
           {label}
@@ -38,12 +41,42 @@ function StreamingState({ label }: { label: string }) {
   );
 }
 
+function fmtDate(iso: string): string {
+  try {
+    return new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+  } catch {
+    return iso;
+  }
+}
+
 export function ReviewView() {
-  const { state, run, reset } = useReview();
+  const { state, run, reset, hydrate } = useReview();
   const [params, setParams] = useState<RunParams | null>(null);
   const [filter, setFilter] = useState<RedlineFilter>("all");
+  const [snapshot, setSnapshot] = useState<ReviewSnapshot | null>(null);
+  const [dismissedResume, setDismissedResume] = useState(false);
 
   const result = state.status === "done" ? state.result : null;
+
+  // Load any review stored in the document (survives close/reopen/email).
+  useEffect(() => {
+    let alive = true;
+    readReviewSnapshot()
+      .then((s) => alive && setSnapshot(s))
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  // Persist a freshly completed review into the .docx (skip when resuming).
+  useEffect(() => {
+    if (!result) return;
+    if (snapshot && result.id === snapshot.result.id) return;
+    const snap: ReviewSnapshot = { savedAt: new Date().toISOString(), result };
+    void writeReviewSnapshot(snap).catch(() => {});
+    setSnapshot(snap);
+  }, [result, snapshot]);
   const { decisionOf, setDecision, addressed } = useDecisions(result?.id);
   const busy = state.status === "reading" || state.status === "streaming";
 
@@ -149,11 +182,31 @@ export function ReviewView() {
   return (
     <div className="stack review">
       <div className="stack" style={{ gap: 4 }}>
-        <h1 style={{ fontSize: 15 }}>Review this contract</h1>
+        <div className="row" style={{ justifyContent: "space-between", alignItems: "flex-start" }}>
+          <h1 className="view-title">Review this contract</h1>
+          <InfoTip text="Vaquill AI suggests grounded edits from your side and applies them as native tracked changes. A green Verified badge means we found the exact clause in your document, so it is safe to auto-apply; amber means verify it yourself. The sign-off gate flags when a deal needs manager, partner, or GC approval before you send." />
+        </div>
         <p className="small muted" style={{ margin: 0 }}>
           Grounded redlines from your side, applied as native tracked changes.
         </p>
       </div>
+
+      {state.status === "idle" && snapshot && !dismissedResume && (
+        <Banner tone="info">
+          <p className="small" style={{ margin: 0 }}>
+            This document was reviewed {fmtDate(snapshot.savedAt)} - {snapshot.result.redlines.length}{" "}
+            redline{snapshot.result.redlines.length === 1 ? "" : "s"}. The review is stored in the file.
+          </p>
+          <div className="row" style={{ gap: 8, marginTop: 8 }}>
+            <Button variant="primary" size="sm" onClick={() => hydrate(snapshot.result)}>
+              Resume review
+            </Button>
+            <Button variant="ghost" size="sm" onClick={() => setDismissedResume(true)}>
+              Start fresh
+            </Button>
+          </div>
+        </Banner>
+      )}
 
       <ReviewForm onRun={onRun} busy={busy} />
 

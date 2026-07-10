@@ -46,6 +46,9 @@
   font-size: var(--fs-body);
   color: var(--text);
   line-height: 1.55;
+  /* Long URLs, statute cites, and inline code in answers must wrap, not
+     overflow the pane horizontally. */
+  overflow-wrap: anywhere;
 }
 .msg__body p {
   margin: 0 0 8px;
@@ -67,6 +70,7 @@
   background: var(--surface-muted);
   padding: 1px 4px;
   border-radius: 4px;
+  word-break: break-word;
 }
 .msg__caret {
   display: inline-block;
@@ -93,6 +97,9 @@
   margin: 4px 0 0;
   padding-left: 16px;
   color: var(--text-muted);
+}
+.msg__sources li {
+  overflow-wrap: anywhere;
 }
 
 .assistant__thinking {

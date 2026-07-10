@@ -91,9 +91,16 @@ export async function computeIntegrity(ledger: GovernanceLedger): Promise<string
   return sha256Hex(stableStringify(rest));
 }
 
-export async function verifyIntegrity(ledger: GovernanceLedger): Promise<boolean> {
-  if (!ledger.integrity) return false;
-  return (await computeIntegrity(ledger)) === ledger.integrity;
+export type IntegrityState = "verified" | "modified" | "unknown";
+
+/**
+ * Tri-state integrity check. A ledger with no stored signature (older build, or
+ * a part that never carried a hash) is "unknown", NOT "modified": absence of a
+ * signature is not evidence of tampering, and flagging it as tampered cries wolf.
+ */
+export async function checkIntegrity(ledger: GovernanceLedger): Promise<IntegrityState> {
+  if (!ledger.integrity) return "unknown";
+  return (await computeIntegrity(ledger)) === ledger.integrity ? "verified" : "modified";
 }
 
 // ---- Build / mutate ----
@@ -164,8 +171,10 @@ export function ledgerToXml(ledger: GovernanceLedger): string {
 
 export function ledgerFromXml(xml: string): GovernanceLedger | null {
   try {
-    // Our part is always <g ...>BASE64</g>; extract the base64 payload directly.
-    const m = />([A-Za-z0-9+/=\s]*)<\/g>/.exec(xml);
+    // Our part is <g ...>BASE64</g>, but Word may re-serialize with a namespace
+    // prefix on reopen (<ns0:g ...>BASE64</ns0:g>), so tolerate an optional
+    // prefix on the closing tag rather than hard-coding the bare </g>.
+    const m = />([A-Za-z0-9+/=\s]*)<\/(?:[A-Za-z0-9_.-]+:)?g>/.exec(xml);
     const payload = m?.[1]?.trim();
     if (!payload) return null;
     return JSON.parse(fromBase64(payload)) as GovernanceLedger;

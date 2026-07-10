@@ -49,6 +49,9 @@
 .tabnav__tab {
   position: relative;
   flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   white-space: nowrap;
   padding: 9px 10px;
   border: none;
@@ -57,6 +60,9 @@
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
+}
+.tabnav__tab svg {
+  opacity: 0.9;
 }
 .tabnav__tab:hover {
   color: var(--text);
@@ -73,6 +79,15 @@
   height: 2px;
   border-radius: 2px 2px 0 0;
   background: var(--brand);
+}
+
+/* Second-level nav (e.g. the Review hub: Redlines / Citations / Sign-off). */
+.subnav {
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--border);
+  background: var(--acrylic-bg);
+  backdrop-filter: var(--acrylic-blur);
+  -webkit-backdrop-filter: var(--acrylic-blur);
 }
 
 .app-body {

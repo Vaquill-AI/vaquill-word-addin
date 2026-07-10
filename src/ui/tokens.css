@@ -82,6 +82,7 @@
   --fs-caption: 12px; /* Fluent Caption1 */
   --fs-body: 13px; /* dense body (Fluent Body1 is 14; 13 fits the narrow pane) */
   --fs-body-lg: 14px;
+  --fs-view-title: 15px; /* per-view section heading (h1 inside the pane) */
   --fs-subtitle: 16px; /* Fluent Subtitle2 */
   --fs-title: 20px; /* Fluent Subtitle1 */
   --fw-regular: 400;

@@ -1,0 +1,33 @@
+# Keep the build context small and never leak local secrets or state into the
+# image build.
+node_modules
+dist
+build
+.vite
+*.tsbuildinfo
+
+# Secrets / local env (only .env.example is committed; never send real env)
+.env
+.env.local
+.env.*.local
+.env.*
+
+# Office add-in local dev certs
+.office-addin-dev-certs
+
+# VCS / CI / editor / OS
+.git
+.gitignore
+.github
+.vscode
+.idea
+.DS_Store
+
+# Logs
+*.log
+npm-debug.log*
+
+# Docs and local-only manifests not needed in the image
+DEPLOY.md
+README.md
+manifest.dev.xml

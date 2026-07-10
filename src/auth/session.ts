@@ -17,6 +17,13 @@ const REFRESH_SKEW_SECONDS = 60;
 let session: Session | null = null;
 const listeners = new Set<Listener>();
 
+// Single-flight guard for refresh(). Supabase rotates the refresh token on each
+// use, so two concurrent refreshes would send the same (now consumed) token and
+// the second would fail, clearing the session mid-operation. While a refresh is
+// in flight every caller awaits the same promise; the memo is cleared when it
+// settles.
+let inFlightRefresh: Promise<string | null> | null = null;
+
 function notify(): void {
   const user = session?.user ?? null;
   for (const l of listeners) l(user);
@@ -74,8 +81,11 @@ export async function getAccessToken(): Promise<string | null> {
   return session.access_token;
 }
 
-/** Force a refresh (used on a 401 as a one-shot retry). Returns the new token. */
-export async function refresh(): Promise<string | null> {
+/**
+ * Perform the actual token refresh against Supabase. Only clears the session on
+ * a genuine terminal auth error, exactly as before.
+ */
+async function doRefresh(): Promise<string | null> {
   if (!session?.refresh_token) return null;
   const { data, error } = await getSupabase().auth.refreshSession({
     refresh_token: session.refresh_token,
@@ -87,4 +97,21 @@ export async function refresh(): Promise<string | null> {
   session = data.session;
   notify();
   return session.access_token;
+}
+
+/**
+ * Force a refresh (used on a 401 as a one-shot retry). Returns the new token.
+ * Single-flight: concurrent callers share one in-flight refresh so a rotated
+ * refresh token is never spent twice.
+ */
+export async function refresh(): Promise<string | null> {
+  if (inFlightRefresh) return inFlightRefresh;
+  inFlightRefresh = (async () => {
+    try {
+      return await doRefresh();
+    } finally {
+      inFlightRefresh = null;
+    }
+  })();
+  return inFlightRefresh;
 }

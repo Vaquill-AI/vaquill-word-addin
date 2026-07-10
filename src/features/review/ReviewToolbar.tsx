@@ -31,11 +31,19 @@ export function ReviewToolbar({
           </span>
           <span className="small muted">{pct}%</span>
         </div>
-        <div className="progressbar" aria-hidden>
+        <div
+          className="progressbar"
+          role="progressbar"
+          aria-label="Review progress"
+          aria-valuenow={pct}
+          aria-valuemin={0}
+          aria-valuemax={100}
+        >
           <div className="progressbar__fill" style={{ width: `${pct}%` }} />
         </div>
       </div>
       <SegmentedControl<RedlineFilter>
+        label="Filter redlines"
         value={filter}
         onChange={onFilter}
         options={[

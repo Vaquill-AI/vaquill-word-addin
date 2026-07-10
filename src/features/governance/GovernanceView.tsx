@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Badge, Banner, Button, Spinner } from "@/ui/primitives";
+import { InfoTip } from "@/ui/InfoTip";
 import { CheckIcon } from "@/ui/icons";
 import { useGovernance } from "./useGovernance";
 import type { GovernanceLedger } from "@/lib/governance";
@@ -110,7 +111,10 @@ export function GovernanceView() {
     return (
       <div className="stack governance-view">
         <div className="stack" style={{ gap: 4 }}>
-          <h1 style={{ fontSize: 15 }}>Sign-off</h1>
+          <div className="row" style={{ justifyContent: "space-between", alignItems: "flex-start" }}>
+            <h1 className="view-title">Sign-off</h1>
+            <InfoTip text="The approval record is stored inside this .docx, so it travels with the file even when it is emailed on. Integrity verified means the record was not hand-edited after it was stamped. Record your sign-off to prove the required manager, partner, or GC approval actually happened." />
+          </div>
           <p className="small muted" style={{ margin: 0 }}>
             This document has no sign-off record yet.
           </p>
@@ -129,11 +133,16 @@ export function GovernanceView() {
   return (
     <div className="stack governance-view">
       <div className="row" style={{ justifyContent: "space-between" }}>
-        <h1 style={{ fontSize: 15 }}>Sign-off</h1>
+        <div className="row" style={{ gap: 6, alignItems: "center" }}>
+          <h1 className="view-title">Sign-off</h1>
+          <InfoTip side="left" text="This approval record lives inside the .docx and travels with the file when emailed. Integrity verified means it was not hand-edited after being stamped; Record modified means the stored record no longer matches its signature, so treat it with caution." />
+        </div>
         {integrity === "verified" ? (
           <Badge tone="green">Integrity verified</Badge>
-        ) : (
+        ) : integrity === "modified" ? (
           <Badge tone="yellow">Record modified</Badge>
+        ) : (
+          <Badge tone="neutral">Integrity not recorded</Badge>
         )}
       </div>
 

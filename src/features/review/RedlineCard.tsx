@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Badge, Button, IconButton } from "@/ui/primitives";
 import { LocateIcon, CheckIcon, XIcon, UndoIcon, CopyIcon } from "@/ui/icons";
 import { GroundingBadge } from "./GroundingBadge";
@@ -32,14 +32,35 @@ export function RedlineCard({
   const [note, setNote] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
+  // Keep keyboard focus in the card after it resolves/restores instead of
+  // dropping to <body> (WCAG 2.4.3). `actedRef` ensures we only move focus for
+  // a decision the user made here, not for a bulk "Apply all" from the action bar.
+  const focusRef = useRef<HTMLDivElement>(null);
+  const actedRef = useRef(false);
+  useEffect(() => {
+    if (!actedRef.current) return;
+    actedRef.current = false;
+    focusRef.current?.focus();
+  }, [decision]);
+
   const isInsertion = redline.grounding === "insertion";
   const applicable = isInsertion || canApplyInPane(redline);
   const style = { animationDelay: `${Math.min(index, 10) * 28}ms` };
 
+  function decide(next: Decision) {
+    actedRef.current = true;
+    onDecision(index, next);
+  }
+
   async function locate() {
     if (isInsertion) return;
-    const found = await selectClauseInDocument(redline.currentLanguage);
-    if (!found) setNote("Could not locate this clause in the document.");
+    setNote(null);
+    try {
+      const found = await selectClauseInDocument(redline.currentLanguage);
+      if (!found) setNote("Could not locate this clause in the document.");
+    } catch (e) {
+      setNote((e as Error).message);
+    }
   }
 
   async function accept() {
@@ -48,7 +69,7 @@ export function RedlineCard({
     try {
       if (isInsertion) await insertMissingClause(redline);
       else await applyVerifiedRedline(redline);
-      onDecision(index, "accepted");
+      decide("accepted");
     } catch (e) {
       setNote(
         e instanceof AnchorNotFoundError
@@ -73,7 +94,7 @@ export function RedlineCard({
   // Collapsed states keep resolved items calm and out of the way.
   if (decision === "accepted") {
     return (
-      <div className="card redline redline--accepted">
+      <div className="card redline redline--accepted" ref={focusRef} tabIndex={-1}>
         <span className="redline__resolved-icon redline__resolved-icon--ok">
           <CheckIcon />
         </span>
@@ -90,10 +111,10 @@ export function RedlineCard({
 
   if (decision === "rejected") {
     return (
-      <div className="card redline redline--rejected">
+      <div className="card redline redline--rejected" ref={focusRef} tabIndex={-1}>
         <span className="redline__resolved-name muted">{redline.clauseName}</span>
         <span className="small muted">Dismissed</span>
-        <Button variant="ghost" size="sm" onClick={() => onDecision(index, "pending")}>
+        <Button variant="ghost" size="sm" onClick={() => decide("pending")}>
           <UndoIcon size={13} /> Restore
         </Button>
       </div>
@@ -101,7 +122,7 @@ export function RedlineCard({
   }
 
   return (
-    <div className="card redline redline--enter" style={style}>
+    <div className="card redline redline--enter" style={style} ref={focusRef} tabIndex={-1}>
       <div className="redline__head">
         <div className="row" style={{ gap: 6, flexWrap: "wrap" }}>
           <span className="redline__num">{index + 1}</span>
@@ -151,7 +172,7 @@ export function RedlineCard({
             )}
           </Button>
         )}
-        <IconButton label="Dismiss" tone="red" onClick={() => onDecision(index, "rejected")}>
+        <IconButton label="Dismiss" tone="red" onClick={() => decide("rejected")}>
           <XIcon size={14} />
         </IconButton>
         {!applicable && <span className="small muted">Verify manually</span>}

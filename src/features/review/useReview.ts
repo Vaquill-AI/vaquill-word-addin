@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { streamContractReview, type ReviewProgress } from "@/api/contract-review";
 import type { ContractReviewResponse } from "@/api/types";
 import { readDocumentText, readSelectionText } from "@/office/document";
@@ -36,12 +36,23 @@ export function useReview() {
     setState(INITIAL);
   }, []);
 
+  /** Load a persisted review result directly into the done state (resume). */
+  const hydrate = useCallback((result: ContractReviewResponse) => {
+    abortRef.current?.abort();
+    abortRef.current = null;
+    setState({ status: "done", progress: null, result, error: null });
+  }, []);
+
   const run = useCallback(async (params: RunParams) => {
     abortRef.current?.abort();
     const controller = new AbortController();
     abortRef.current = controller;
 
     setState({ status: "reading", progress: null, result: null, error: null });
+    // Track the terminal payload so a dropped trailing "done" frame (proxies can
+    // buffer and drop it) does not overwrite a finished, billed review with a
+    // truncation error. Declared outside try so the catch can see it.
+    let delivered: ContractReviewResponse | null = null;
     try {
       const documentText =
         params.scope === "selection" ? await readSelectionText() : await readDocumentText();
@@ -72,16 +83,27 @@ export function useReview() {
         {
           signal: controller.signal,
           onProgress: (progress) => setState((s) => ({ ...s, progress })),
-          onResult: (result) =>
-            setState((s) => ({ ...s, status: "done", result, progress: null })),
+          onResult: (result) => {
+            delivered = result;
+            setState((s) => ({ ...s, status: "done", result, progress: null }));
+          },
         },
       );
     } catch (e) {
       if ((e as Error).name === "AbortError") return;
+      // If the review result already arrived, a later stream error is not fatal.
+      if (delivered) {
+        setState({ status: "done", progress: null, result: delivered, error: null });
+        return;
+      }
       const error = e instanceof ApiError ? friendlyMessage(e) : (e as Error).message;
       setState({ status: "error", progress: null, result: null, error });
     }
   }, []);
 
-  return { state, run, reset };
+  // Abort any in-flight review when the view unmounts (tab switch), so a paid
+  // server-side review is not left running with no consumer.
+  useEffect(() => () => abortRef.current?.abort(), []);
+
+  return { state, run, reset, hydrate };
 }

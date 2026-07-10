@@ -23,6 +23,22 @@ export function downloadDocx(base64: string, filename: string): void {
   const a = document.createElement("a");
   a.href = url;
   a.download = filename;
+  // The anchor must be in the DOM for the click to register in some hosts, and
+  // in Office's Edge WebView2 host a synchronous revokeObjectURL after click
+  // can abort the download stream. Defer cleanup to the next tick so the host
+  // has picked up the blob first.
+  document.body.appendChild(a);
   a.click();
-  URL.revokeObjectURL(url);
+  setTimeout(() => {
+    try {
+      URL.revokeObjectURL(url);
+    } catch {
+      // Nothing to recover: revoking is best-effort cleanup.
+    }
+    try {
+      a.remove();
+    } catch {
+      // Anchor may already be detached; ignore.
+    }
+  }, 0);
 }

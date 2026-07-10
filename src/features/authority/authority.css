@@ -26,7 +26,7 @@
 }
 .authority__top {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 8px;
 }
@@ -35,6 +35,13 @@
   font-size: 12.5px;
   font-weight: 600;
   color: var(--text);
+  /* Let a long citation wrap and shrink instead of pushing the badge off the
+     pane / forcing a horizontal scrollbar at 320px. */
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.authority__top > .row {
+  flex: 0 0 auto;
 }
 .authority__name {
   font-weight: 600;

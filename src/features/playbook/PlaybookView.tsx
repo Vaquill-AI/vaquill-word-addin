@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Banner, Spinner, Button, Field } from "@/ui/primitives";
+import { InfoTip } from "@/ui/InfoTip";
 import { usePlaybookDetails } from "./usePlaybookDetails";
 import { LadderCard } from "./LadderCard";
 import { TemplatePicker } from "./TemplatePicker";
@@ -60,7 +61,10 @@ export function PlaybookView() {
     <div className="stack playbook-view">
       <div className="row" style={{ justifyContent: "space-between", alignItems: "flex-start" }}>
         <div className="stack" style={{ gap: 4 }}>
-          <h1 style={{ fontSize: 15 }}>Playbook</h1>
+          <div className="row" style={{ gap: 6, alignItems: "center" }}>
+            <h1 className="view-title">Playbook</h1>
+            <InfoTip side="left" text="Your negotiation positions per clause: the preferred position, a fallback ladder to step down to, and the walk-away floor you should not go below. Insert any rung into the document as a tracked change. Positions are guidance, not legal advice; confirm the deal-specific terms." />
+          </div>
           <p className="small muted" style={{ margin: 0 }}>
             Insert your preferred position, or step down the fallback ladder, as a tracked change.
           </p>
@@ -97,6 +101,8 @@ export function PlaybookView() {
 
           <input
             className="playbook-filter"
+            type="search"
+            aria-label="Filter clauses"
             placeholder="Filter clauses..."
             value={filter}
             onChange={(e) => setFilter(e.target.value)}

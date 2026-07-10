@@ -134,6 +134,15 @@
   flex-direction: column;
   gap: 8px;
 }
+/* The card receives focus after a decision (see RedlineCard). Show the ring
+   only for keyboard focus, never a stray outline on mouse/programmatic focus. */
+.redline:focus {
+  outline: none;
+}
+.redline:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 1px;
+}
 .redline--enter {
   animation: cardIn 0.28s cubic-bezier(0.4, 0, 0.2, 1) both;
 }
@@ -243,6 +252,42 @@
 .signoff__reasons {
   margin: 4px 0 0;
   padding-left: 18px;
+}
+
+/* ---- Counterparty changes triage ---- */
+.changes-view {
+  gap: 12px;
+  padding: 14px;
+}
+/* Container is a programmatic focus fallback when the last change is resolved;
+   never show a stray outline for that. */
+.changes-view:focus {
+  outline: none;
+}
+.triage-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.change-item {
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.change-item__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+.change-item__text {
+  margin: 0;
+  font-size: 12.5px;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
 /* ---- Sticky bottom action bar ---- */

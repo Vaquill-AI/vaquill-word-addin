@@ -30,21 +30,34 @@ function commentText(r: AuthorityResult): string {
 export function AuthorityItem({ result }: { result: AuthorityResult }) {
   const [note, setNote] = useState<string | null>(null);
   const [commented, setCommented] = useState(false);
+  const [busy, setBusy] = useState(false);
 
   async function locate() {
     setNote(null);
-    const found = await selectClauseInDocument(result.raw);
-    if (!found) setNote("Could not locate this citation in the document.");
+    try {
+      const found = await selectClauseInDocument(result.raw);
+      if (!found) setNote("Could not locate this citation in the document.");
+    } catch (e) {
+      setNote((e as Error).message);
+    }
   }
 
   async function comment() {
+    if (busy) return;
     setNote(null);
-    const ok = await commentOnCitation(result.raw, commentText(result));
-    if (ok) {
-      setCommented(true);
-      setTimeout(() => setCommented(false), 1500);
-    } else {
-      setNote("Could not locate this citation to comment on.");
+    setBusy(true);
+    try {
+      const ok = await commentOnCitation(result.raw, commentText(result));
+      if (ok) {
+        setCommented(true);
+        setTimeout(() => setCommented(false), 1500);
+      } else {
+        setNote("Could not locate this citation to comment on.");
+      }
+    } catch (e) {
+      setNote((e as Error).message);
+    } finally {
+      setBusy(false);
     }
   }
 
@@ -74,7 +87,7 @@ export function AuthorityItem({ result }: { result: AuthorityResult }) {
         <IconButton label="Find in document" onClick={locate}>
           <LocateIcon size={14} />
         </IconButton>
-        <button className="authority__link" onClick={comment}>
+        <button className="authority__link" onClick={comment} disabled={busy}>
           {commented ? "Commented" : "Comment in document"}
         </button>
         {note && <span className="small muted">{note}</span>}

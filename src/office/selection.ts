@@ -1,5 +1,5 @@
 import { applyWordDiff } from "office-word-diff";
-import { runWord } from "./run";
+import { runWord, OfficeError } from "./run";
 
 /**
  * Selection-scoped Word operations for the clause tools.
@@ -16,6 +16,13 @@ export async function replaceSelectionTracked(newText: string): Promise<void> {
     await context.sync();
 
     const original = sel.text;
+    // A collapsed cursor (nothing selected) reads as empty text. Replacing it
+    // would produce a spurious tracked insertion at the cursor, so require a
+    // real selection first.
+    if (!original || !original.trim()) {
+      throw new OfficeError("Select some text in the document first.", "no_selection");
+    }
+
     const priorMode = doc.changeTrackingMode;
     doc.changeTrackingMode = Word.ChangeTrackingMode.trackAll;
     await context.sync();
@@ -32,7 +39,17 @@ export async function replaceSelectionTracked(newText: string): Promise<void> {
 /** Attach a comment to the current selection (WordApi 1.4+). */
 export async function insertCommentOnSelection(text: string): Promise<void> {
   return runWord(async (context) => {
-    context.document.getSelection().insertComment(text);
+    const sel = context.document.getSelection();
+    sel.load("text");
+    await context.sync();
+
+    // A collapsed cursor would produce a zero-length comment anchor; require a
+    // real selection first.
+    if (!sel.text || !sel.text.trim()) {
+      throw new OfficeError("Select some text in the document first.", "no_selection");
+    }
+
+    sel.insertComment(text);
     await context.sync();
   });
 }

@@ -1,0 +1,50 @@
+.infotip {
+  position: relative;
+  display: inline-flex;
+  flex: 0 0 auto;
+}
+.infotip__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: none;
+  /* Tertiary neutral (not disabled grey) so the affordance is visible over the
+     translucent glass surfaces without shouting. */
+  color: var(--neutral-fg-3);
+  cursor: pointer;
+  transition: color 0.12s ease, background 0.12s ease;
+}
+.infotip__btn:hover,
+.infotip__btn--on {
+  color: var(--brand);
+  background: var(--brand-tint);
+}
+.infotip__pop {
+  position: absolute;
+  top: calc(100% + 6px);
+  z-index: 20;
+  width: 240px;
+  max-width: 76vw;
+  padding: 10px 12px;
+  border-radius: var(--radius);
+  background: var(--acrylic-bg);
+  backdrop-filter: var(--acrylic-blur);
+  -webkit-backdrop-filter: var(--acrylic-blur);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-16);
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.5;
+  color: var(--text);
+}
+.infotip__pop--right {
+  right: 0;
+}
+.infotip__pop--left {
+  left: 0;
+}

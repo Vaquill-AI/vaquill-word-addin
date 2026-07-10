@@ -41,10 +41,15 @@ function cleanCourt(court?: string): string | undefined {
   return court;
 }
 
-export async function verifyCitation(raw: string, count: number): Promise<AuthorityResult> {
+export async function verifyCitation(
+  raw: string,
+  count: number,
+  signal?: AbortSignal,
+): Promise<AuthorityResult> {
   try {
     const res = await request<LookupEntry[]>(
       `/api/v1/us/citation-lookup?citation=${encodeURIComponent(raw)}`,
+      { signal },
     );
     const entry = Array.isArray(res) ? res[0] : undefined;
     if (!entry) return { raw, count, verdict: "unrecognized" };

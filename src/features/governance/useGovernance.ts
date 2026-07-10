@@ -1,9 +1,14 @@
 import { useCallback, useEffect, useState } from "react";
 import { readLedger, writeLedger } from "@/office/governance";
-import { applySignoff, verifyIntegrity, type GovernanceLedger } from "@/lib/governance";
+import {
+  applySignoff,
+  checkIntegrity,
+  type GovernanceLedger,
+  type IntegrityState,
+} from "@/lib/governance";
 import { getUser } from "@/auth/session";
 
-export type IntegrityState = "verified" | "modified" | "unknown";
+export type { IntegrityState };
 export type LoadStatus = "loading" | "none" | "loaded" | "error";
 
 export interface GovernanceState {
@@ -38,11 +43,11 @@ export function useGovernance() {
         setState({ ...INITIAL, status: "none" });
         return;
       }
-      const ok = await verifyIntegrity(ledger);
+      const integrity = await checkIntegrity(ledger);
       setState({
         status: "loaded",
         ledger,
-        integrity: ok ? "verified" : "modified",
+        integrity,
         error: null,
         busy: false,
       });

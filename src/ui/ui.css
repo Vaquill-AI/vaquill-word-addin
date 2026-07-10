@@ -164,14 +164,21 @@
   min-height: 54px;
 }
 
-/* Keyboard focus ring across interactive controls. */
+/* Keyboard focus ring across every interactive control (not just the kit
+   primitives - links, disclosures, prompt chips, and the info button too). */
 .btn:focus-visible,
 .seg__btn:focus-visible,
 .iconbtn:focus-visible,
 .chip:focus-visible,
-.tabnav__tab:focus-visible {
+.tabnav__tab:focus-visible,
+.prompt:focus-visible,
+.infotip__btn:focus-visible,
+.action-bar__link:focus-visible,
+.authority__link:focus-visible,
+summary:focus-visible {
   outline: 2px solid var(--brand);
   outline-offset: 1px;
+  border-radius: var(--radius-sm);
 }
 
 .seg {
@@ -184,17 +191,19 @@
 }
 .seg__btn {
   flex: 1;
+  min-width: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 5px;
   padding: 5px 6px;
   border: none;
-  border-radius: 5px;
+  border-radius: var(--radius-sm);
   background: transparent;
   color: var(--text-muted);
   font-size: 12px;
   font-weight: 600;
+  white-space: nowrap;
   cursor: pointer;
   transition: background 0.12s ease, color 0.12s ease;
 }

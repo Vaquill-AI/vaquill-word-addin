@@ -58,11 +58,12 @@ export async function streamAssistant(
   messages: ChatMessage[],
   documentContext: string,
   handlers: AssistantHandlers,
+  opts?: { useRag?: boolean },
 ): Promise<void> {
   const body = {
     messages,
     context: documentContext ? documentContext.slice(0, CONTEXT_CAP) : undefined,
-    useRag: true,
+    useRag: opts?.useRag ?? true,
     countryCode: "US",
     clientMessageId: uuid(),
   };

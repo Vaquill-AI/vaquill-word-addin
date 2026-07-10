@@ -8,6 +8,8 @@ import { SignoffGate } from "./features/review/SignoffGate";
 import { ReviewSummary } from "./features/review/ReviewSummary";
 import { RedlineCard } from "./features/review/RedlineCard";
 import { useDecisions } from "./features/review/decisions";
+import { ReviewIcon, DraftIcon, AssistantIcon, PlaybookIcon } from "./ui/icons";
+import { InfoTip } from "./ui/InfoTip";
 import { severityOf } from "./lib/severity";
 import { SelectionPreview } from "./features/tools/SelectionPreview";
 import { RewriteTool } from "./features/tools/RewriteTool";
@@ -111,6 +113,27 @@ function Preview() {
   return (
     <div className="app">
       <Header right={<Button variant="ghost" size="sm">Sign out</Button>} />
+      <nav className="tabnav">
+        {[
+          { l: "Review", I: ReviewIcon, on: true },
+          { l: "Draft", I: DraftIcon, on: false },
+          { l: "Assistant", I: AssistantIcon, on: false },
+          { l: "Playbook", I: PlaybookIcon, on: false },
+        ].map((t) => (
+          <button key={t.l} className={`tabnav__tab ${t.on ? "tabnav__tab--on" : ""}`}>
+            <t.I size={15} />
+            {t.l}
+          </button>
+        ))}
+      </nav>
+      <div className="subnav">
+        <div className="seg" role="tablist">
+          <button className="seg__btn seg__btn--on">Redlines</button>
+          <button className="seg__btn">Changes</button>
+          <button className="seg__btn">Citations</button>
+          <button className="seg__btn">Sign-off</button>
+        </div>
+      </div>
       <div className="app-body">
         <div className="review review--results">
           <div className="review__header">
@@ -221,7 +244,10 @@ function AuthorityPreview() {
       <div className="app-body">
         <div className="stack authority-view">
           <div className="row" style={{ justifyContent: "space-between" }}>
-            <h1 style={{ fontSize: 15 }}>Authority check</h1>
+            <div className="row" style={{ gap: 6, alignItems: "center" }}>
+              <h1 style={{ fontSize: 15 }}>Authority check</h1>
+              <InfoTip side="left" text="Checks every case citation in the document against Vaquill AI's US case-law corpus. Verified means a real matching case was found. No match can mean a hallucinated, mis-typed, or unreported citation, so confirm it yourself before you rely on it or file." />
+            </div>
             <Button variant="ghost" size="sm">New check</Button>
           </div>
           <div className="authority-summary">
@@ -471,7 +497,85 @@ function DraftPreview() {
   );
 }
 
+import { IconButton } from "./ui/primitives";
+import { LocateIcon, CheckIcon, XIcon } from "./ui/icons";
+
+const CHANGES = [
+  { type: "added", author: "Counsel B", text: "Each party shall indemnify the other against third-party IP claims.", verdict: "accept", reason: "Mutual, aligns with our playbook." },
+  { type: "deleted", author: "Counsel B", text: "Liability is capped at 12 months' fees.", verdict: "reject", reason: "Removes our liability cap; deal-breaker." },
+  { type: "added", author: "Counsel B", text: "Either party may terminate for convenience on 30 days' notice.", verdict: "review", reason: "New termination right; needs a human." },
+];
+
+function verdictBadgeP(v: string) {
+  if (v === "accept") return <Badge tone="green">Accept</Badge>;
+  if (v === "reject") return <Badge tone="red">Reject</Badge>;
+  return <Badge tone="yellow">Review</Badge>;
+}
+function typeBadgeP(t: string) {
+  if (t === "added") return <Badge tone="green">Added</Badge>;
+  if (t === "deleted") return <Badge tone="red">Deleted</Badge>;
+  return <Badge tone="neutral">Change</Badge>;
+}
+
+function ChangesPreview() {
+  return (
+    <div className="app">
+      <Header right={<Button variant="ghost" size="sm">Sign out</Button>} />
+      <nav className="tabnav">
+        {[{ l: "Review", I: ReviewIcon, on: true }, { l: "Draft", I: DraftIcon, on: false }, { l: "Assistant", I: AssistantIcon, on: false }, { l: "Playbook", I: PlaybookIcon, on: false }].map((t) => (
+          <button key={t.l} className={`tabnav__tab ${t.on ? "tabnav__tab--on" : ""}`}><t.I size={15} />{t.l}</button>
+        ))}
+      </nav>
+      <div className="subnav">
+        <div className="seg" role="tablist">
+          <button className="seg__btn">Redlines</button>
+          <button className="seg__btn seg__btn--on">Changes</button>
+          <button className="seg__btn">Citations</button>
+          <button className="seg__btn">Sign-off</button>
+        </div>
+      </div>
+      <div className="app-body">
+        <div className="stack changes-view">
+          <div className="stack" style={{ gap: 4 }}>
+            <h1 style={{ fontSize: 15 }}>Counterparty changes</h1>
+            <p className="small muted" style={{ margin: 0 }}>Triage the other side's tracked changes: accept the acceptable ones, reject the rest.</p>
+          </div>
+          <div className="field">
+            <label>Triage against</label>
+            <select><option>Standard SaaS playbook</option></select>
+          </div>
+          <Button variant="primary" block>Re-run AI triage</Button>
+          <div className="triage-summary">
+            <span className="small muted">AI: 1 accept - 1 review - 1 reject</span>
+            <Button variant="default" size="sm"><CheckIcon size={13} /> Accept the 1 approved</Button>
+          </div>
+          <div className="stack">
+            {CHANGES.map((c, i) => (
+              <div key={i} className="card change-item">
+                <div className="change-item__head">
+                  <div className="row" style={{ gap: 4, flexWrap: "wrap" }}>{typeBadgeP(c.type)}{verdictBadgeP(c.verdict)}</div>
+                  <IconButton label="Find" onClick={() => {}}><LocateIcon size={13} /></IconButton>
+                </div>
+                <p className="change-item__text"><strong>{c.author}: </strong>{c.text}</p>
+                <p className="small muted" style={{ margin: 0 }}>{c.reason}</p>
+                <div className="row" style={{ gap: 8 }}>
+                  <Button variant="primary" size="sm"><CheckIcon size={13} /> Accept</Button>
+                  <Button variant="default" size="sm"><XIcon size={13} /> Reject</Button>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="row" style={{ gap: 8 }}>
+            <Button variant="default" block>Accept all</Button>
+            <Button variant="default" block>Reject all</Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 const hash = window.location.hash;
 const view =
-  hash === "#tools" ? <ToolsPreview /> : hash === "#authority" ? <AuthorityPreview /> : hash === "#assistant" ? <AssistantPreview /> : hash === "#signoff" ? <GovernancePreview /> : hash === "#playbook" ? <PlaybookPreview /> : hash === "#draft" ? <DraftPreview /> : <Preview />;
+  hash === "#tools" ? <ToolsPreview /> : hash === "#authority" ? <AuthorityPreview /> : hash === "#assistant" ? <AssistantPreview /> : hash === "#signoff" ? <GovernancePreview /> : hash === "#playbook" ? <PlaybookPreview /> : hash === "#draft" ? <DraftPreview /> : hash === "#changes" ? <ChangesPreview /> : <Preview />;
 createRoot(document.getElementById("root")!).render(view);
