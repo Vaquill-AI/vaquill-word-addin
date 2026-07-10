@@ -1,25 +1,20 @@
 # Vaquill AI for Word
 
-A Microsoft Word add-in (task pane) that brings Vaquill AI contract review, grounded redlining, and drafting into Word.
-It is a thin client: it reads the open document through the Office JavaScript API, calls the existing Vaquill backend, and applies the results back into the document as native Word tracked changes.
+A Microsoft Word add-in (task pane) that brings Vaquill AI contract review, grounded redlining, drafting, and US legal research into Word.
 
-## Status
+It is a **thin client**: it reads the open document through the Office JavaScript API, calls the Vaquill AI backend, and applies the results back into the document as native Word tracked changes, comments, and content controls. It does not perform contract analysis, retrieval, or generation on its own; the legal intelligence lives in the backend. It will not run standalone with only an LLM API key.
 
-Phase 0 foundation and the flagship Contract Review flow are built, type-checked, and building.
-The add-in has not yet been deployed to `word.vaquill.ai` or sideload-tested inside a live Word client.
-Depth over breadth: one flow works end to end rather than many half-built ones. Playbooks, drafting, clause tools, NDA triage, risk, compliance, and grounded Ask are planned follow-ons that reuse the same foundation.
+## What it does
 
-## What works today
-
-- Sign in with Supabase through the Office dialog (no Entra registration needed).
-- Read the whole document or the current selection.
-- Stream a contract review from the backend (contract type, side, governing law, focus).
-- Server-computed sign-off gate banner (manager / partner / GC), never recomputed client-side.
-- Grounded redline cards with verified / verify-manually / new-clause badges.
-- Apply a verified redline as a native tracked change (word-level diff, not a whole-clause swap).
-- Insert a missing clause as a tracked insertion.
-- Accept all as an authoritative tracked-changes .docx generated server-side (authored "Vaquill AI Contract Review"), inserted in place or downloaded.
-- Typed error states for quota (402), document too large (413), no access (404), and stream truncation.
+- **Review** a contract into grounded redlines applied as native tracked changes, with severity, inline diff, a server-computed sign-off gate (manager / partner / GC), and a corrected `.docx` export.
+- **Triage** the counterparty's tracked changes and comments, with per-author bulk accept/reject.
+- **Authority** check: verify every case citation against the US case-law corpus.
+- **Sign-off** governance stored inside the `.docx` (custom XML), so it travels with the file.
+- **Playbooks**: insert your negotiation positions and fallback ladders as tracked changes.
+- **Draft** a first-draft agreement and insert it as formatted content.
+- **Assistant**: grounded chat over the open contract, plus select-to-rewrite/explain.
+- **In the document**: highlight issues, push rationales as native comments, bookmark clauses, tag key fields as content controls, jump via a clause outline.
+- **Cross-links** back into the platform: save the review or draft to a matter, save as a template, add to the vendor registry, push a clause to a playbook, save an answer as a note.
 
 ## Architecture
 
@@ -29,38 +24,16 @@ Word (desktop / Mac / web)
         |
         |  Supabase JWT (Bearer) + SSE
         v
-  Vaquill backend (api.vaquill.ai)  [existing, reused]
+  Vaquill AI backend (api.vaquill.ai)   [required, not included]
 ```
-
-Full detail is in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ## Tech stack
 
 - Vite + React 18 + TypeScript task pane, served as static HTTPS assets.
 - Office.js from the Microsoft CDN, requirement floor WordApi 1.6.
-- Add-in-only XML manifest (cross-platform: Windows, Mac, web).
-- Supabase auth via the Office Dialog API + PKCE.
-- Redline engine reused from `office-word-diff` (Apache-2.0). See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
-
-## Repository layout
-
-```text
-manifest.xml         production manifest (word.vaquill.ai)
-manifest.dev.xml     dev manifest (localhost:3000), sideload this one
-index.html           task pane entry
-auth.html            Supabase PKCE redirect page (opened in the auth dialog)
-src/
-  config.ts          env-driven config
-  auth/              supabase client, in-memory session, dialog login, PKCE redirect
-  api/               errors, http, sse, ids, types, contract-review
-  office/            Word.run helpers, document read, redline engine, docx export
-  ui/                shared UI kit (Button, Badge, Banner, Header)
-  features/
-    auth/            LoginView
-    review/          the Contract Review flow (form, hook, cards, sign-off gate, accept-all)
-docs/                research and design (competitive, tech, architecture, feature spec, PRD, OSS)
-public/assets/       leaf logo + Office ribbon icons (16/32/80)
-```
+- Add-in-only XML manifest (Windows, Mac, web).
+- Supabase auth via the Office Dialog API + PKCE (session in memory only).
+- Word-level tracked-change diff via `office-word-diff` (Apache-2.0); see [NOTICE](NOTICE).
 
 ## Getting started
 
@@ -68,30 +41,23 @@ Requires Node 20+, a Microsoft 365 account, and Word (desktop or web).
 
 ```bash
 npm install
-cp .env.example .env          # fill in VITE_API_BASE, Supabase URL + anon key, addin origin
-npx office-addin-dev-certs install   # trusted https for localhost
+cp .env.example .env          # set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY
+npx office-addin-dev-certs install   # trusted HTTPS for localhost
 npm run dev                   # serves the task pane on https://localhost:3000
 npm run sideload              # loads manifest.dev.xml into Word and opens it
 ```
 
-Type-check and build:
-
 ```bash
 npm run type-check
-npm run build                 # outputs dist/ (deploy to word.vaquill.ai)
+npm run build                 # outputs dist/ (deploy behind HTTPS)
 ```
+
+Deployment (Docker + hardened nginx, security headers, CSP) is documented in [DEPLOY.md](DEPLOY.md).
 
 ## Backend requirement
 
-The only backend change needed to ship is adding the add-in origin to CORS.
-Add `https://word.vaquill.ai` (and `https://localhost:3000` for dev) to `CORS_ORIGINS` in the backend `app/core/config.py`.
-Everything else reuses existing endpoints: contract-review stream, export-corrected, and Supabase JWT auth.
+This client requires the Vaquill AI backend. The only backend change to run it is CORS: add the add-in origin (`https://word.vaquill.ai`, and `https://localhost:3000` for dev) to the backend's allowed origins. Everything else reuses existing endpoints.
 
-## Docs
+## License
 
-- [docs/PRD.md](docs/PRD.md) - product requirements and roadmap
-- [docs/FEATURE_SPEC.md](docs/FEATURE_SPEC.md) - feature specification
-- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) - system architecture
-- [docs/OFFICE_ADDIN_TECH.md](docs/OFFICE_ADDIN_TECH.md) - Office add-in technical reference
-- [docs/COMPETITIVE_LANDSCAPE.md](docs/COMPETITIVE_LANDSCAPE.md) - competitor teardown
-- [docs/OSS_LANDSCAPE.md](docs/OSS_LANDSCAPE.md) - open-source landscape and reuse decisions
+Apache License 2.0. See [LICENSE](LICENSE) and [NOTICE](NOTICE).

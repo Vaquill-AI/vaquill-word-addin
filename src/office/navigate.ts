@@ -1,4 +1,5 @@
 import { runWord } from "./run";
+import { findRanges } from "./search";
 
 /**
  * Scroll the document to a clause and select it. This is the bidirectional link
@@ -13,11 +14,8 @@ export async function selectClauseInDocument(text: string): Promise<boolean> {
   const query = q.length > 255 ? q.slice(0, 255) : q;
 
   return runWord(async (context) => {
-    const results = context.document.body.search(query, { matchCase: true, ignorePunct: false });
-    results.load("items");
-    await context.sync();
-
-    const range = results.items[0];
+    const items = await findRanges(context, query);
+    const range = items[0];
     if (!range) return false;
 
     // Selecting a range scrolls it into view and highlights it in Word.

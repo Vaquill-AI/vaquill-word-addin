@@ -1,0 +1,13 @@
+Vaquill AI for Word
+Copyright 2026 Vaquill AI
+
+This product includes software developed as a Microsoft Word task-pane add-in.
+
+Third-party components:
+
+- office-word-diff (https://github.com/yuch85/office-word-diff)
+  Licensed under the Apache License, Version 2.0.
+  Provides the Office.js word-level tracked-change diff engine.
+
+This add-in is a thin client. It requires the Vaquill AI backend to function;
+it does not perform contract analysis, retrieval, or generation on its own.

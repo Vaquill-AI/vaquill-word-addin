@@ -146,6 +146,9 @@
 .redline--enter {
   animation: cardIn 0.28s cubic-bezier(0.4, 0, 0.2, 1) both;
 }
+.redline__foot {
+  margin-top: 2px;
+}
 @keyframes cardIn {
   from {
     opacity: 0;
@@ -263,6 +266,54 @@
    never show a stray outline for that. */
 .changes-view:focus {
   outline: none;
+}
+
+/* ---- Document tools (mark up the actual Word doc) ---- */
+.doc-tools {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 12px;
+}
+
+/* ---- Clause outline navigator ---- */
+.outline {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  padding: 8px 12px;
+}
+.outline__summary {
+  cursor: pointer;
+  font-weight: 600;
+  font-size: var(--fs-caption);
+  color: var(--brand);
+}
+.outline__list {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  max-height: 220px;
+  overflow-y: auto;
+}
+.outline__item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: none;
+  background: none;
+  padding: 4px 6px;
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-size: 12.5px;
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.outline__item:hover {
+  background: var(--brand-tint);
+  color: var(--brand);
 }
 .triage-summary {
   display: flex;

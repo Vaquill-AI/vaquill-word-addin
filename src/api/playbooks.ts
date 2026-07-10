@@ -88,3 +88,77 @@ export async function createPlaybookFromTemplate(
     body: { templateSlug, jurisdiction },
   });
 }
+
+/**
+ * The snake_case shape the PUT /playbooks/{id} endpoint expects for a position.
+ * The read side is camelCase (serialization_alias); the write side accepts field
+ * names, which are snake_case, so we convert on the way back.
+ */
+interface SnakePosition {
+  standard_position: string;
+  acceptable_range: string;
+  fallback_ladder: string[];
+  escalation_triggers?: string[];
+  deal_breaker?: string | null;
+  priority?: string | null;
+}
+
+function toSnake(p: PlaybookPosition): SnakePosition {
+  return {
+    standard_position: (p.standardPosition ?? "").slice(0, 8000),
+    acceptable_range: (p.acceptableRange ?? "Negotiable; see fallback ladder.").slice(0, 4000),
+    fallback_ladder: p.fallbackLadder ?? [],
+    escalation_triggers: p.escalationTriggers,
+    deal_breaker: p.dealBreaker ?? null,
+    priority: p.priority ?? null,
+  };
+}
+
+/** A safe clause key derived from a clause name. */
+export function clauseKey(clauseName: string): string {
+  return (
+    clauseName
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "_")
+      .replace(/^_+|_+$/g, "")
+      .slice(0, 60) || "clause"
+  );
+}
+
+/**
+ * Add a proposed clause into a playbook, NON-DESTRUCTIVELY: if the clause key
+ * already exists, the language is appended to that clause's fallback ladder; if
+ * not, a new position is created. Reuses the existing GET (already loaded) + PUT
+ * /playbooks/{id}; no new backend endpoint. Returns the key used.
+ */
+export async function addToPlaybook(
+  playbook: PlaybookDetail,
+  input: {
+    clauseName: string;
+    proposedLanguage: string;
+    fallback?: string | null;
+    isDealBreaker?: boolean;
+  },
+): Promise<string> {
+  const key = clauseKey(input.clauseName);
+  const positions: Record<string, SnakePosition> = {};
+  for (const [k, v] of Object.entries(playbook.positions)) positions[k] = toSnake(v);
+
+  const clause = (input.proposedLanguage ?? "").trim();
+  const extra = input.fallback?.trim();
+  if (positions[key]) {
+    const ladder = [...positions[key].fallback_ladder, clause, ...(extra ? [extra] : [])];
+    positions[key] = { ...positions[key], fallback_ladder: ladder.filter(Boolean) };
+  } else {
+    positions[key] = {
+      standard_position: clause.slice(0, 8000) || input.clauseName,
+      acceptable_range: "Negotiable; see fallback ladder.",
+      fallback_ladder: extra ? [extra] : [],
+      deal_breaker: input.isDealBreaker ? "Flagged as a deal-breaker during review." : null,
+      priority: null,
+    };
+  }
+
+  await request(`${PLAYBOOKS}/${playbook.id}`, { method: "PUT", body: { positions } });
+  return key;
+}

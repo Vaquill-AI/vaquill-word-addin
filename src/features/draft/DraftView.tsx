@@ -3,8 +3,9 @@ import { Button, Banner, Field, Spinner } from "@/ui/primitives";
 import { InfoTip } from "@/ui/InfoTip";
 import { CheckIcon, CopyIcon } from "@/ui/icons";
 import { generateDraft, DRAFT_CATEGORIES, type DraftResult } from "@/api/drafting";
-import { insertDraftAtCursor } from "@/office/draft";
+import { insertDraftFormatted } from "@/office/richInsert";
 import { JURISDICTIONS, labelOf } from "@/features/review/constants";
+import { SaveToVaquill } from "@/features/integration/SaveToVaquill";
 import { ApiError, friendlyMessage } from "@/api/errors";
 import "./draft.css";
 
@@ -51,7 +52,11 @@ export function DraftView() {
     setInserting(true);
     setError(null);
     try {
-      await insertDraftAtCursor(result.fullText);
+      await insertDraftFormatted({
+        title: result.title,
+        sections: result.sections,
+        fullText: result.fullText,
+      });
       setInserted(true);
     } catch (e) {
       setError((e as Error).message);
@@ -130,6 +135,8 @@ export function DraftView() {
 
         {error && <Banner tone="danger">{error}</Banner>}
         {copyNote && <span className="small muted">{copyNote}</span>}
+
+        <SaveToVaquill mode="draft" draft={result} />
       </div>
     );
   }

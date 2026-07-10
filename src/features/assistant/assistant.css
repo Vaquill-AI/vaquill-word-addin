@@ -108,6 +108,40 @@
   gap: 8px;
 }
 
+/* Save-answer-to-notes action under an assistant reply. */
+.msg__actions {
+  margin-top: 6px;
+}
+.msg__save-note {
+  border: none;
+  background: none;
+  padding: 0;
+  color: var(--brand);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.msg__save-note:hover {
+  text-decoration: underline;
+}
+.msg__note-row {
+  margin-top: 4px;
+}
+.msg__note-select {
+  padding: 4px 8px;
+  border: 1px solid var(--control-border);
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  font-family: inherit;
+  background: var(--surface);
+  color: var(--text);
+  max-width: 55%;
+}
+.msg__note-status {
+  display: inline-block;
+  margin-top: 6px;
+}
+
 /* ---- Suggested prompts ---- */
 .prompts {
   display: flex;

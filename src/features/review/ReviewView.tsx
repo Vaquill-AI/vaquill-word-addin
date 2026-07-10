@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Banner, Button, Badge } from "@/ui/primitives";
 import { InfoTip } from "@/ui/InfoTip";
 import { readReviewSnapshot, writeReviewSnapshot } from "@/office/reviewState";
+import { readDocumentFingerprint } from "@/office/document";
 import type { ReviewSnapshot } from "@/lib/reviewState";
 import { ReviewForm } from "./ReviewForm";
 import { ReviewSummary } from "./ReviewSummary";
@@ -10,8 +11,12 @@ import { RedlineCard } from "./RedlineCard";
 import { ReviewToolbar, type RedlineFilter } from "./ReviewToolbar";
 import { ReviewActionBar } from "./ReviewActionBar";
 import { SetupSummary } from "./SetupSummary";
+import { DocumentTools } from "./DocumentTools";
+import { OutlinePanel } from "./OutlinePanel";
+import { SaveToVaquill } from "@/features/integration/SaveToVaquill";
 import { RecordGovernance } from "@/features/governance/RecordGovernance";
 import { useReview, type RunParams } from "./useReview";
+import { useReviewFreshness } from "./useReviewFreshness";
 import { useDecisions } from "./decisions";
 import { CONTRACT_TYPES, USER_SIDES, labelOf } from "./constants";
 import { severityOf } from "@/lib/severity";
@@ -55,8 +60,12 @@ export function ReviewView() {
   const [filter, setFilter] = useState<RedlineFilter>("all");
   const [snapshot, setSnapshot] = useState<ReviewSnapshot | null>(null);
   const [dismissedResume, setDismissedResume] = useState(false);
+  const [resumeChanged, setResumeChanged] = useState(false);
 
   const result = state.status === "done" ? state.result : null;
+
+  // Best-effort watch: has the document changed since this review ran?
+  const { stale: docChanged } = useReviewFreshness(state.docHash);
 
   // Load any review stored in the document (survives close/reopen/email).
   useEffect(() => {
@@ -73,10 +82,30 @@ export function ReviewView() {
   useEffect(() => {
     if (!result) return;
     if (snapshot && result.id === snapshot.result.id) return;
-    const snap: ReviewSnapshot = { savedAt: new Date().toISOString(), result };
+    const snap: ReviewSnapshot = {
+      savedAt: new Date().toISOString(),
+      result,
+      docHash: state.docHash ?? undefined,
+    };
     void writeReviewSnapshot(snap).catch(() => {});
     setSnapshot(snap);
-  }, [result, snapshot]);
+  }, [result, snapshot, state.docHash]);
+
+  // When a stored review loads, check whether the document has since changed so
+  // the resume prompt can warn that the saved review may be out of date.
+  useEffect(() => {
+    if (!snapshot?.docHash) {
+      setResumeChanged(false);
+      return;
+    }
+    let alive = true;
+    readDocumentFingerprint()
+      .then((h) => alive && setResumeChanged(h !== snapshot.docHash))
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, [snapshot]);
   const { decisionOf, setDecision, addressed } = useDecisions(result?.id);
   const busy = state.status === "reading" || state.status === "streaming";
 
@@ -137,6 +166,33 @@ export function ReviewView() {
         </div>
 
         <div className="review__body">
+          {state.partial && params && (
+            <Banner tone="warn">
+              <p className="small" style={{ margin: 0 }}>
+                Reviewed {state.partial.done} of {state.partial.total} sections. The rest could not be
+                completed (usually a quota or network limit). The findings below cover the completed
+                sections only.
+              </p>
+              <div className="row" style={{ gap: 8, marginTop: 8 }}>
+                <Button variant="primary" size="sm" onClick={() => onRun(params)}>
+                  Try the full review again
+                </Button>
+              </div>
+            </Banner>
+          )}
+          {docChanged && params && (
+            <Banner tone="warn">
+              <p className="small" style={{ margin: 0 }}>
+                This document changed after the review ran, so it may be out of date. Applying still
+                re-checks each clause against the live document.
+              </p>
+              <div className="row" style={{ gap: 8, marginTop: 8 }}>
+                <Button variant="primary" size="sm" onClick={() => onRun(params)}>
+                  Re-run review
+                </Button>
+              </div>
+            </Banner>
+          )}
           {gate && <SignoffGate gate={gate} />}
           {gate && (
             <RecordGovernance
@@ -145,6 +201,15 @@ export function ReviewView() {
             />
           )}
           <ReviewSummary result={result} />
+          <OutlinePanel />
+          {redlines.length > 0 && <DocumentTools redlines={redlines} />}
+          <SaveToVaquill
+            mode="review"
+            redlines={redlines}
+            defaultMatterId={params?.matterId}
+            contractType={result.contractType ?? params?.contractType}
+            title={params ? `${labelOf(CONTRACT_TYPES, params.contractType)} (reviewed)` : "Reviewed contract"}
+          />
 
           {redlines.length === 0 ? (
             <Banner tone="info">No redlines suggested. This contract looks clean from your side.</Banner>
@@ -192,13 +257,20 @@ export function ReviewView() {
       </div>
 
       {state.status === "idle" && snapshot && !dismissedResume && (
-        <Banner tone="info">
+        <Banner tone={resumeChanged ? "warn" : "info"}>
           <p className="small" style={{ margin: 0 }}>
             This document was reviewed {fmtDate(snapshot.savedAt)} - {snapshot.result.redlines.length}{" "}
-            redline{snapshot.result.redlines.length === 1 ? "" : "s"}. The review is stored in the file.
+            redline{snapshot.result.redlines.length === 1 ? "" : "s"}.{" "}
+            {resumeChanged
+              ? "The document has changed since then, so the saved review may be out of date."
+              : "The review is stored in the file."}
           </p>
           <div className="row" style={{ gap: 8, marginTop: 8 }}>
-            <Button variant="primary" size="sm" onClick={() => hydrate(snapshot.result)}>
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={() => hydrate(snapshot.result, snapshot.docHash)}
+            >
               Resume review
             </Button>
             <Button variant="ghost" size="sm" onClick={() => setDismissedResume(true)}>
@@ -211,13 +283,18 @@ export function ReviewView() {
       <ReviewForm onRun={onRun} busy={busy} />
 
       {busy && (
-        <StreamingState
-          label={
-            state.status === "reading"
-              ? "Reading the document..."
-              : state.progress?.label ?? "Reviewing clauses..."
-          }
-        />
+        <div className="stack" style={{ gap: 8 }}>
+          <StreamingState
+            label={
+              state.status === "reading"
+                ? "Reading the document..."
+                : state.progress?.label ?? "Reviewing clauses..."
+            }
+          />
+          <Button variant="ghost" size="sm" onClick={reset}>
+            Cancel
+          </Button>
+        </div>
       )}
 
       {state.status === "error" && state.error && (

@@ -7,6 +7,9 @@ import { ReviewToolbar, type RedlineFilter } from "./features/review/ReviewToolb
 import { SignoffGate } from "./features/review/SignoffGate";
 import { ReviewSummary } from "./features/review/ReviewSummary";
 import { RedlineCard } from "./features/review/RedlineCard";
+import { DocumentTools } from "./features/review/DocumentTools";
+import { OutlinePanel } from "./features/review/OutlinePanel";
+import { SaveToVaquill } from "./features/integration/SaveToVaquill";
 import { useDecisions } from "./features/review/decisions";
 import { ReviewIcon, DraftIcon, AssistantIcon, PlaybookIcon } from "./ui/icons";
 import { InfoTip } from "./ui/InfoTip";
@@ -152,6 +155,9 @@ function Preview() {
           <div className="review__body">
             <SignoffGate gate={RESULT.approvalGate!} />
             <ReviewSummary result={RESULT} />
+            <OutlinePanel />
+            <DocumentTools redlines={RESULT.redlines} />
+            <SaveToVaquill mode="review" redlines={RESULT.redlines} title="NDA (reviewed)" />
             {visible.length === 0 ? (
               <Banner tone="info">Everything here is addressed.</Banner>
             ) : (

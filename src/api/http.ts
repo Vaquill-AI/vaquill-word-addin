@@ -54,6 +54,42 @@ export async function request<T>(path: string, opts: RequestOptions = {}): Promi
   return (await res.json()) as T;
 }
 
+/**
+ * Authenticated multipart POST (e.g. uploading a .docx to become a template).
+ * The browser sets the multipart Content-Type + boundary, so we must NOT set it.
+ * Same single 401 refresh-and-retry as request().
+ */
+export async function requestForm<T>(path: string, form: FormData): Promise<T> {
+  const token = await getAccessToken();
+  if (!token) throw new ApiError("unauthorized", 401, "Not signed in.");
+
+  const doFetch = async (bearer: string): Promise<Response> => {
+    try {
+      return await fetch(`${config.apiBase}${path}`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${bearer}`,
+          "X-Timezone": Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
+        },
+        body: form,
+      });
+    } catch (e) {
+      if ((e as Error).name === "AbortError") throw e;
+      throw new ApiError("network", 0, "Network request failed.");
+    }
+  };
+
+  let res = await doFetch(token);
+  if (res.status === 401) {
+    const fresh = await refresh();
+    if (!fresh) throw new ApiError("unauthorized", 401, "Session expired.");
+    res = await doFetch(fresh);
+  }
+  if (!res.ok) throw await errorFromResponse(res);
+  if (res.status === 204) return undefined as T;
+  return (await res.json()) as T;
+}
+
 function arrayBufferToBase64(buf: ArrayBuffer): string {
   const bytes = new Uint8Array(buf);
   const chunk = 0x8000;

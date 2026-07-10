@@ -12,6 +12,9 @@ export const REVIEW_NS = "https://vaquill.ai/review/1";
 export interface ReviewSnapshot {
   savedAt: string;
   result: ContractReviewResponse;
+  /** SHA-256 of the document body at review time, so a later open can tell
+   * whether the draft changed since. Absent on snapshots from older builds. */
+  docHash?: string;
 }
 
 function toBase64(s: string): string {

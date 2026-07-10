@@ -5,13 +5,11 @@ import { GroundingBadge } from "./GroundingBadge";
 import { InlineDiff } from "./InlineDiff";
 import { SeverityBadge } from "./SeverityBadge";
 import { severityOf } from "@/lib/severity";
-import {
-  applyVerifiedRedline,
-  insertMissingClause,
-  canApplyInPane,
-  AnchorNotFoundError,
-} from "@/office/redline";
+import { applyVerifiedRedline, canApplyInPane, AnchorNotFoundError } from "@/office/redline";
+import { insertClauseFormatted } from "@/office/richInsert";
 import { selectClauseInDocument } from "@/office/navigate";
+import { goToBookmark } from "@/office/bookmarks";
+import { AddToPlaybook } from "@/features/integration/AddToPlaybook";
 import type { RedlineSuggestion } from "@/api/types";
 import type { Decision } from "./decisions";
 
@@ -56,6 +54,9 @@ export function RedlineCard({
     if (isInsertion) return;
     setNote(null);
     try {
+      // Prefer the bookmark anchor if one was placed for this clause: it survives
+      // edits that would defeat a text search. Falls back to searching the text.
+      if (await goToBookmark(`Vaquill_clause_${index + 1}`)) return;
       const found = await selectClauseInDocument(redline.currentLanguage);
       if (!found) setNote("Could not locate this clause in the document.");
     } catch (e) {
@@ -67,7 +68,7 @@ export function RedlineCard({
     setBusy(true);
     setNote(null);
     try {
-      if (isInsertion) await insertMissingClause(redline);
+      if (isInsertion) await insertClauseFormatted(redline.clauseName, redline.proposedLanguage);
       else await applyVerifiedRedline(redline);
       decide("accepted");
     } catch (e) {
@@ -181,6 +182,9 @@ export function RedlineCard({
             {note}
           </span>
         )}
+      </div>
+      <div className="redline__foot">
+        <AddToPlaybook redline={redline} />
       </div>
     </div>
   );

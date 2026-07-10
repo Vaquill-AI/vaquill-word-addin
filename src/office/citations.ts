@@ -1,4 +1,5 @@
 import { runWord } from "./run";
+import { findRanges } from "./search";
 
 /**
  * Document operations for the authority verifier: comment on a citation and
@@ -9,11 +10,8 @@ import { runWord } from "./run";
 /** Attach a comment to the first occurrence of a citation. Returns false if not found. */
 export async function commentOnCitation(raw: string, comment: string): Promise<boolean> {
   return runWord(async (context) => {
-    const results = context.document.body.search(raw, { matchCase: false });
-    results.load("items");
-    await context.sync();
-
-    const range = results.items[0];
+    const items = await findRanges(context, raw);
+    const range = items[0];
     if (!range) return false;
     range.insertComment(comment);
     await context.sync();

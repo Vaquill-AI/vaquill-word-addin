@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Badge, Banner, Button, Spinner } from "@/ui/primitives";
 import { InfoTip } from "@/ui/InfoTip";
 import { CheckIcon } from "@/ui/icons";
+import { lockVaquillControls } from "@/office/contentControls";
 import { useGovernance } from "./useGovernance";
 import type { GovernanceLedger } from "@/lib/governance";
 import "./governance.css";
@@ -85,6 +86,44 @@ function SignoffAction({ onSignoff, busy }: { onSignoff: (note?: string) => void
   );
 }
 
+function LockControl() {
+  const [locked, setLocked] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [note, setNote] = useState<string | null>(null);
+
+  async function toggle() {
+    setBusy(true);
+    setNote(null);
+    try {
+      const n = await lockVaquillControls(!locked);
+      if (n === 0 && !locked) {
+        setNote("No tagged fields found. Use 'Tag key fields' on the Review tab first.");
+      } else {
+        setLocked(!locked);
+        setNote(`${!locked ? "Locked" : "Unlocked"} ${n} tagged field${n === 1 ? "" : "s"}.`);
+      }
+    } catch (e) {
+      setNote((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="card gov-action stack">
+      <span className="small" style={{ fontWeight: 600 }}>Lock the approved terms</span>
+      <p className="small muted" style={{ margin: 0 }}>
+        Make the fields Vaquill AI tagged (amounts, dates, defined terms) read-only, so nobody edits the
+        approved numbers after sign-off.
+      </p>
+      <Button variant={locked ? "default" : "primary"} block loading={busy} onClick={toggle}>
+        {locked ? "Unlock tagged fields" : "Lock tagged fields"}
+      </Button>
+      {note && <p className="small muted" style={{ margin: 0 }}>{note}</p>}
+    </div>
+  );
+}
+
 export function GovernanceView() {
   const { state, signOff } = useGovernance();
 
@@ -147,6 +186,8 @@ export function GovernanceView() {
       </div>
 
       <StatusBanner ledger={ledger} />
+
+      {ledger.status === "signed_off" && <LockControl />}
 
       {integrity === "modified" && (
         <p className="small muted" style={{ margin: 0 }}>

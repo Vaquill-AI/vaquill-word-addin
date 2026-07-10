@@ -56,16 +56,6 @@ export async function resolveTrackedChangeAt(
   });
 }
 
-/** Accept or reject every tracked change in the document. WordApi 1.6. */
-export async function resolveAllTrackedChanges(action: "accept" | "reject"): Promise<void> {
-  return runWord(async (context) => {
-    const changes = context.document.body.getTrackedChanges();
-    if (action === "accept") changes.acceptAll();
-    else changes.rejectAll();
-    await context.sync();
-  });
-}
-
 /**
  * Accept every tracked change whose text is in the given set, in a single pass
  * (for AI-approved bulk accept). Accepting ALL matches of a text is correct
@@ -81,6 +71,30 @@ export async function acceptTrackedChanges(texts: string[]): Promise<number> {
     await context.sync();
     const targets = changes.items.filter((c) => wanted.has(c.text));
     for (const t of targets) t.accept();
+    await context.sync();
+    return targets.length;
+  });
+}
+
+/**
+ * Accept or reject every tracked change made by a specific author (e.g. bulk
+ * accept or reject all of the counterparty's edits in one action). All matching
+ * changes are queued and flushed with a single final sync. Returns the number
+ * of changes acted on. WordApi 1.6.
+ */
+export async function resolveTrackedChangesByAuthor(
+  author: string,
+  action: "accept" | "reject",
+): Promise<number> {
+  return runWord(async (context) => {
+    const changes = context.document.body.getTrackedChanges();
+    changes.load("author");
+    await context.sync();
+    const targets = changes.items.filter((c) => c.author === author);
+    for (const t of targets) {
+      if (action === "accept") t.accept();
+      else t.reject();
+    }
     await context.sync();
     return targets.length;
   });

@@ -27,3 +27,6 @@ pnpm-debug.log*
 .idea/
 .vscode/*
 !.vscode/extensions.json
+
+# Internal design/research docs (not for the public repo)
+docs/

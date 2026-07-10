@@ -3,7 +3,8 @@ import { Button, Banner, LiveRegion } from "@/ui/primitives";
 import { exportCorrectedDocx } from "@/api/contract-review";
 import { downloadDocx } from "@/office/export";
 import { readDocumentText } from "@/office/document";
-import { applyVerifiedRedline, insertMissingClause, canApplyInPane } from "@/office/redline";
+import { applyVerifiedRedline, canApplyInPane } from "@/office/redline";
+import { insertClauseFormatted } from "@/office/richInsert";
 import { ApiError, friendlyMessage } from "@/api/errors";
 import type { RedlineSuggestion, AcceptedRedline } from "@/api/types";
 import type { Decision } from "./decisions";
@@ -43,7 +44,7 @@ export function ReviewActionBar({
     let failed = 0;
     for (const { r, i } of openApplicable) {
       try {
-        if (r.grounding === "insertion") await insertMissingClause(r);
+        if (r.grounding === "insertion") await insertClauseFormatted(r.clauseName, r.proposedLanguage);
         else await applyVerifiedRedline(r);
         setDecision(i, "accepted");
       } catch {

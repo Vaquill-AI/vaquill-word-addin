@@ -78,6 +78,27 @@
               </Group>
             </OfficeTab>
           </ExtensionPoint>
+          <!-- Right-click a text selection to open Vaquill where the cursor is. -->
+          <ExtensionPoint xsi:type="ContextMenu">
+            <OfficeMenu id="ContextMenuText">
+              <Control xsi:type="Button" id="Vaquill.ContextReview">
+                <Label resid="Vaquill.Context.Label" />
+                <Supertip>
+                  <Title resid="Vaquill.Context.Label" />
+                  <Description resid="Vaquill.OpenPane.Tip" />
+                </Supertip>
+                <Icon>
+                  <bt:Image size="16" resid="Icon.16" />
+                  <bt:Image size="32" resid="Icon.32" />
+                  <bt:Image size="80" resid="Icon.80" />
+                </Icon>
+                <Action xsi:type="ShowTaskpane">
+                  <TaskpaneId>Vaquill.Taskpane</TaskpaneId>
+                  <SourceLocation resid="Taskpane.Url" />
+                </Action>
+              </Control>
+            </OfficeMenu>
+          </ExtensionPoint>
         </DesktopFormFactor>
       </Host>
     </Hosts>
@@ -95,6 +116,7 @@
         <bt:String id="GetStarted.Title" DefaultValue="Vaquill AI for Word is ready" />
         <bt:String id="Vaquill.Group.Label" DefaultValue="Vaquill AI" />
         <bt:String id="Vaquill.OpenPane.Label" DefaultValue="Open Vaquill AI" />
+        <bt:String id="Vaquill.Context.Label" DefaultValue="Review with Vaquill AI" />
       </bt:ShortStrings>
       <bt:LongStrings>
         <bt:String id="GetStarted.Description" DefaultValue="Open the Vaquill pane to review this contract, apply grounded redlines, and draft clauses." />

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Button, Field } from "@/ui/primitives";
 import { PlaybookPicker } from "./PlaybookPicker";
+import { MatterPicker } from "@/features/integration/MatterPicker";
 import { CONTRACT_TYPES, USER_SIDES, JURISDICTIONS, type ReviewScope } from "./constants";
 import type { RunParams } from "./useReview";
 
@@ -11,6 +12,8 @@ export function ReviewForm({ onRun, busy }: { onRun: (p: RunParams) => void; bus
   const [scope, setScope] = useState<ReviewScope>("document");
   const [playbookId, setPlaybookId] = useState("");
   const [instructions, setInstructions] = useState("");
+  const [includeExtras, setIncludeExtras] = useState(false);
+  const [matterId, setMatterId] = useState("");
 
   return (
     <form
@@ -24,6 +27,8 @@ export function ReviewForm({ onRun, busy }: { onRun: (p: RunParams) => void; bus
           scope,
           playbookId: playbookId || undefined,
           reviewInstructions: instructions,
+          includeExtras: scope === "document" ? includeExtras : false,
+          matterId: matterId || undefined,
         });
       }}
     >
@@ -59,12 +64,25 @@ export function ReviewForm({ onRun, busy }: { onRun: (p: RunParams) => void; bus
 
       <PlaybookPicker contractType={contractType} value={playbookId} onChange={setPlaybookId} />
 
+      <MatterPicker value={matterId} onChange={setMatterId} label="Matter (optional)" />
+
       <Field label="Scope">
         <select value={scope} onChange={(e) => setScope(e.target.value as ReviewScope)}>
           <option value="document">Whole document</option>
           <option value="selection">Selected text only</option>
         </select>
       </Field>
+
+      {scope === "document" && (
+        <label className="row" style={{ gap: 8, cursor: "pointer" }}>
+          <input
+            type="checkbox"
+            checked={includeExtras}
+            onChange={(e) => setIncludeExtras(e.target.checked)}
+          />
+          <span className="small">Include footnotes and headers/footers</span>
+        </label>
+      )}
 
       <Field label="Focus (optional)">
         <textarea

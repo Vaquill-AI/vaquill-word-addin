@@ -1,4 +1,5 @@
 import { Markdown } from "./markdown";
+import { SaveAnswerToNotes } from "@/features/integration/SaveAnswerToNotes";
 import type { AssistantMessage } from "./useAssistant";
 import type { ChatSource } from "@/api/chat";
 
@@ -37,6 +38,11 @@ export function MessageBubble({ message }: { message: AssistantMessage }) {
       )}
       {message.pending && !message.content && <span className="msg__caret" aria-hidden />}
       {message.sources && message.sources.length > 0 && <Sources sources={message.sources} />}
+      {message.content && !message.pending && (
+        <div className="msg__actions">
+          <SaveAnswerToNotes content={message.content} />
+        </div>
+      )}
     </div>
   );
 }

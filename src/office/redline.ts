@@ -1,5 +1,6 @@
 import { applyWordDiff, type DiffResult } from "office-word-diff";
 import { runWord, OfficeError } from "./run";
+import { findRanges } from "./search";
 import type { RedlineSuggestion } from "@/api/types";
 
 /**
@@ -27,11 +28,15 @@ export class AnchorNotFoundError extends OfficeError {
 
 /**
  * True when a redline can be applied directly in the pane: it is grounded
- * verified (backend confirmed the anchor is a literal substring) and short
- * enough to search. Everything else routes to the server export path.
+ * verified (backend confirmed the anchor is a literal substring), short enough
+ * to search, and does not span paragraph marks. Word search cannot match across
+ * a paragraph mark, so a multi-paragraph clause can never be located in-pane and
+ * must route to the export/copy path. Everything else routes to the server
+ * export path too.
  */
 export function canApplyInPane(r: RedlineSuggestion): boolean {
   const q = r.currentLanguage.trim();
+  if (/[\r\n]/.test(q)) return false;
   return r.grounding === "verified" && q.length > 0 && q.length <= WORD_SEARCH_LIMIT;
 }
 
@@ -49,30 +54,28 @@ export interface ApplyResult {
 export async function applyVerifiedRedline(r: RedlineSuggestion): Promise<ApplyResult> {
   const query = r.currentLanguage.trim();
   if (!query || query.length > WORD_SEARCH_LIMIT) {
-    throw new OfficeError("This redline is too long to apply in place. Use Accept via Vaquill instead.");
+    throw new OfficeError("This redline is too long to apply in place. Use Accept via Vaquill AI instead.");
   }
 
   return runWord(async (context) => {
     const doc = context.document;
     doc.load("changeTrackingMode");
-    const results = doc.body.search(query, { matchCase: true, ignorePunct: false });
-    results.load("items");
-    await context.sync();
+    const items = await findRanges(context, query);
 
     // Backend grounding only guarantees the clause is a literal substring, not
     // that it is unique. If it appears zero or multiple times we cannot safely
     // choose the occurrence to redline, so refuse rather than silently editing
     // the first match. This guard runs before we touch changeTrackingMode, so
     // there is no mode to restore on this path.
-    if (results.items.length === 0) throw new AnchorNotFoundError(r.clauseName);
-    if (results.items.length > 1) {
+    if (items.length === 0) throw new AnchorNotFoundError(r.clauseName);
+    if (items.length > 1) {
       throw new OfficeError(
         "The clause text appears multiple times; apply this change manually to the correct spot.",
         "anchor_ambiguous",
       );
     }
 
-    const range = results.items[0];
+    const range = items[0];
     range.load("text");
     await context.sync();
 
@@ -90,32 +93,6 @@ export async function applyVerifiedRedline(r: RedlineSuggestion): Promise<ApplyR
         insertions: diff.insertions,
         deletions: diff.deletions,
       };
-    } finally {
-      doc.changeTrackingMode = priorMode;
-      await context.sync();
-    }
-  });
-}
-
-/**
- * Insert a missing clause (grounding === "insertion") at the end of the
- * document as a tracked insertion. There is no anchor to replace.
- */
-export async function insertMissingClause(r: RedlineSuggestion): Promise<void> {
-  return runWord(async (context) => {
-    const doc = context.document;
-    doc.load("changeTrackingMode");
-    await context.sync();
-
-    const priorMode = doc.changeTrackingMode;
-    doc.changeTrackingMode = Word.ChangeTrackingMode.trackAll;
-
-    // try/finally so a failed insert or sync always restores the prior mode.
-    // Without this, a throw here would leave the document stuck in track-all.
-    try {
-      const heading = r.clauseName ? `${r.clauseName}\n` : "";
-      doc.body.insertParagraph(`${heading}${r.proposedLanguage}`, Word.InsertLocation.end);
-      await context.sync();
     } finally {
       doc.changeTrackingMode = priorMode;
       await context.sync();

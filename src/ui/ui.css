@@ -229,6 +229,31 @@ summary:focus-visible {
   color: var(--on-brand);
 }
 
+/* Subtle inline text-link action (e.g. "Add to playbook") that expands to a
+   small control set. */
+.linkaction {
+  border: none;
+  background: none;
+  padding: 0;
+  color: var(--brand);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.linkaction:hover {
+  text-decoration: underline;
+}
+.linkaction__select {
+  padding: 4px 8px;
+  border: 1px solid var(--control-border);
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  font-family: inherit;
+  background: var(--surface);
+  color: var(--text);
+  max-width: 60%;
+}
+
 .iconbtn {
   display: inline-flex;
   align-items: center;

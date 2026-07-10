@@ -1,0 +1,88 @@
+import { useState } from "react";
+import { Button } from "@/ui/primitives";
+import { getPlaybooksWithPositions, addToPlaybook, type PlaybookDetail } from "@/api/playbooks";
+import type { RedlineSuggestion } from "@/api/types";
+
+/**
+ * Push a redline's proposed language into a playbook as a position (appended to
+ * an existing clause's fallback ladder, or a new clause). Lazy: loads playbooks
+ * only when expanded; hides gracefully when the user has none.
+ */
+export function AddToPlaybook({ redline }: { redline: RedlineSuggestion }) {
+  const [open, setOpen] = useState(false);
+  const [books, setBooks] = useState<PlaybookDetail[] | null>(null);
+  const [pbId, setPbId] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [done, setDone] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function expand() {
+    setOpen(true);
+    setError(null);
+    if (books === null) {
+      try {
+        const b = await getPlaybooksWithPositions();
+        setBooks(b);
+        if (b[0]) setPbId(b[0].id);
+      } catch {
+        setBooks([]);
+      }
+    }
+  }
+
+  async function add() {
+    const pb = books?.find((b) => b.id === pbId);
+    if (!pb) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await addToPlaybook(pb, {
+        clauseName: redline.clauseName,
+        proposedLanguage: redline.proposedLanguage,
+        fallback: redline.fallbackPosition,
+        isDealBreaker: redline.isDealBreaker,
+      });
+      setDone(true);
+      setOpen(false);
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (done) return <span className="small muted">Added to playbook.</span>;
+  if (!open) {
+    return (
+      <button type="button" className="linkaction" onClick={expand}>
+        Add to playbook
+      </button>
+    );
+  }
+  if (books && books.length === 0) {
+    return <span className="small muted">No playbooks yet. Create one first.</span>;
+  }
+  return (
+    <div className="row" style={{ gap: 6, flexWrap: "wrap" }}>
+      <select
+        className="linkaction__select"
+        aria-label="Playbook"
+        value={pbId}
+        onChange={(e) => setPbId(e.target.value)}
+      >
+        {(books ?? []).map((b) => (
+          <option key={b.id} value={b.id}>
+            {b.name}
+          </option>
+        ))}
+      </select>
+      <Button variant="default" size="sm" onClick={add} loading={busy} disabled={!pbId}>
+        Add
+      </Button>
+      <Button variant="ghost" size="sm" onClick={() => setOpen(false)}>
+        Cancel
+      </Button>
+      {error && <span className="small" style={{ color: "var(--danger)" }}>{error}</span>}
+    </div>
+  );
+}

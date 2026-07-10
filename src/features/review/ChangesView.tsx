@@ -5,7 +5,7 @@ import { LocateIcon, CheckIcon, XIcon } from "@/ui/icons";
 import {
   readDocumentChanges,
   resolveTrackedChangeAt,
-  resolveAllTrackedChanges,
+  resolveTrackedChangesByAuthor,
   acceptTrackedChanges,
   type DocChanges,
 } from "@/office/changes";
@@ -43,7 +43,9 @@ export function ChangesView() {
   const [triageError, setTriageError] = useState<string | null>(null);
 
   const [busy, setBusy] = useState<{ index: number; action: "accept" | "reject" } | null>(null);
-  const [bulk, setBulk] = useState<"accept-all" | "reject-all" | "accept-suggested" | null>(null);
+  // A free-form key identifying the in-flight bulk action ("accept-suggested" or
+  // `${action}:${author}`), so the right button shows its spinner.
+  const [bulk, setBulk] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [actionNote, setActionNote] = useState<string | null>(null);
 
@@ -88,6 +90,7 @@ export function ChangesView() {
 
   const tcs = changes?.trackedChanges ?? [];
   const comments = changes?.comments ?? [];
+  const authors = [...new Set(tcs.map((c) => c.author))];
   const anyBusy = !!busy || !!bulk || triage === "running";
 
   async function runTriage() {
@@ -135,17 +138,16 @@ export function ChangesView() {
     }
   }
 
-  async function resolveAll(action: "accept" | "reject") {
-    const count = tcs.length;
-    setBulk(action === "accept" ? "accept-all" : "reject-all");
+  async function resolveAuthor(author: string, action: "accept" | "reject") {
+    setBulk(`${action}:${author}`);
     setActionError(null);
     setActionNote(null);
     try {
-      await resolveAllTrackedChanges(action);
-      setVerdicts({});
+      const n = await resolveTrackedChangesByAuthor(author, action);
       await reload();
+      const who = author || "unknown author";
       setActionNote(
-        `${action === "accept" ? "Accepted" : "Rejected"} ${count} tracked change${count === 1 ? "" : "s"}.`,
+        `${action === "accept" ? "Accepted" : "Rejected"} ${n} change${n === 1 ? "" : "s"} from ${who}.`,
       );
     } catch (e) {
       setActionError((e as Error).message);
@@ -314,13 +316,43 @@ export function ChangesView() {
             })}
           </div>
 
-          <div className="row" style={{ gap: 8 }}>
-            <Button variant="default" block onClick={() => resolveAll("accept")} loading={bulk === "accept-all"} disabled={anyBusy}>
-              Accept all
-            </Button>
-            <Button variant="default" block onClick={() => resolveAll("reject")} loading={bulk === "reject-all"} disabled={anyBusy}>
-              Reject all
-            </Button>
+          <div className="stack" style={{ gap: 6 }}>
+            <h2 className="small muted" style={{ margin: 0 }}>Accept or reject in bulk by author</h2>
+            {authors.map((a) => {
+              const n = tcs.filter((c) => c.author === a).length;
+              return (
+                <div key={a || "unknown"} className="card change-item" style={{ gap: 6 }}>
+                  <span className="small" style={{ fontWeight: 600 }}>
+                    {a || "Unknown author"} <span className="muted">({n})</span>
+                  </span>
+                  <div className="row" style={{ gap: 8 }}>
+                    <Button
+                      variant="default"
+                      size="sm"
+                      block
+                      onClick={() => resolveAuthor(a, "accept")}
+                      loading={bulk === `accept:${a}`}
+                      disabled={anyBusy}
+                    >
+                      <CheckIcon size={13} /> Accept all
+                    </Button>
+                    <Button
+                      variant="default"
+                      size="sm"
+                      block
+                      onClick={() => resolveAuthor(a, "reject")}
+                      loading={bulk === `reject:${a}`}
+                      disabled={anyBusy}
+                    >
+                      <XIcon size={13} /> Reject all
+                    </Button>
+                  </div>
+                </div>
+              );
+            })}
+            <p className="small muted" style={{ margin: 0 }}>
+              Grouped by author so a bulk action never touches your own applied redlines by mistake.
+            </p>
           </div>
         </>
       )}
