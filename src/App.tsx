@@ -18,8 +18,7 @@ import "./styles/app.css";
 /**
  * Four primary modes. Reviewing a document (redlines, citations, sign-off) is
  * one hub with a sub-nav; clause tools are folded into the Assistant as a
- * selection action. This mirrors where the market landed (Harvey unified its
- * modes; LegalOn and GC AI ship 3 top-level tabs), instead of one tab per feature.
+ * selection action, rather than one tab per feature.
  */
 type Tab = "review" | "draft" | "assistant" | "playbook";
 type ReviewSub = "redlines" | "changes" | "citations" | "signoff";

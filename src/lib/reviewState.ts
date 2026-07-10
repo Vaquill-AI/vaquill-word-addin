@@ -4,8 +4,9 @@ import type { ContractReviewResponse } from "@/api/types";
  * Persist the last contract review INSIDE the .docx (custom XML part), so
  * reopening a reviewed contract - even after it was emailed out and back -
  * rehydrates the review without re-running the paid AI pass or a server lookup.
- * In-document analysis state is the biggest under-exploited moat: competitors
- * key it server-side by a fragile doc identity that breaks on Save As / email.
+ * Storing the analysis state in the document, rather than server-side keyed by a
+ * document identity that breaks on Save As or email, means it survives the file
+ * leaving and coming back.
  */
 export const REVIEW_NS = "https://vaquill.ai/review/1";
 

@@ -3,7 +3,7 @@ import { request } from "./http";
 /**
  * Negotiation playbooks. Selecting one drives the review to the firm's
  * positions, fallback ladder, and deal-breakers instead of Vaquill AI's
- * default positions. This is the LegalOn-style, playbook-driven review.
+ * default positions. This is the playbook-driven review.
  * Source: GET /api/v1/legal-tools/playbooks.
  */
 export interface Playbook {
@@ -27,8 +27,8 @@ export async function listPlaybooks(): Promise<Playbook[]> {
 }
 
 /**
- * A negotiation position for one clause type: the ordered fallback ladder that
- * is the F3 moat (best-first standard -> fallbacks -> walk-away floor).
+ * A negotiation position for one clause type: the ordered fallback ladder
+ * (best-first standard, then fallbacks, then the walk-away floor).
  */
 export interface PlaybookPosition {
   standardPosition: string;

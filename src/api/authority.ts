@@ -5,8 +5,8 @@ import { ApiError } from "./errors";
  * Authority verification against Vaquill AI's US case-law corpus.
  * Endpoint: GET /api/v1/us/citation-lookup?citation=... (JWT, 30-day cached).
  * Returns an array (one entry per detected citation); status 200 + a matched
- * cluster means a real case. This is the moat: no contract add-in checks
- * citations against a real corpus.
+ * cluster means a real case, while an unmatched one is a possible hallucination
+ * to verify before relying on it.
  */
 
 export type Verdict = "verified" | "no_match" | "unrecognized" | "error";

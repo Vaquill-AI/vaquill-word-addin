@@ -2,8 +2,8 @@
  * Governance ledger: the sign-off record stored INSIDE the .docx (custom XML
  * part). It travels with the file, so anyone who opens the document, even after
  * it was emailed out and back, sees whether it still needs manager/partner/GC
- * sign-off. This is the F2 moat: governance that lives in the file, not a server
- * record you lose when the file leaves the platform.
+ * sign-off. Governance lives in the file, not in a server record that is lost
+ * when the file leaves the platform.
  *
  * Integrity is tamper-EVIDENT, not tamper-proof: a SHA-256 over the canonical
  * payload flags hand-edits to the embedded XML. A determined user can strip the
