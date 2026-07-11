@@ -1,0 +1,28 @@
+.dist-bar {
+  display: flex;
+  gap: 2px;
+  width: 100%;
+  height: 8px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--surface-muted);
+}
+
+.dist-bar__seg {
+  min-width: 5px;
+  transition: flex-grow 0.2s ease;
+}
+
+.dist-bar__seg:first-child {
+  border-top-left-radius: 999px;
+  border-bottom-left-radius: 999px;
+}
+
+.dist-bar__seg:last-child {
+  border-top-right-radius: 999px;
+  border-bottom-right-radius: 999px;
+}
+
+.dist-bar__empty {
+  flex: 1;
+}
