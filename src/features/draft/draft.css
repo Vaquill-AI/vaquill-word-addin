@@ -34,6 +34,35 @@
   color: var(--text);
 }
 
+.draft-issues {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.draft-issue {
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-muted);
+}
+
+.draft-sources {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.draft-source {
+  padding: 4px 0;
+  word-break: break-word;
+}
+.draft-source a {
+  color: var(--brand);
+  text-decoration: none;
+}
+.draft-source a:hover {
+  text-decoration: underline;
+}
+
 .draft-actions {
   display: flex;
   gap: 8px;
