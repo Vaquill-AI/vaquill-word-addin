@@ -5,7 +5,7 @@ import { LocateIcon } from "@/ui/icons";
 import { selectClauseInDocument } from "@/office/navigate";
 import { commentOnCitation } from "@/office/citations";
 import { config } from "@/config";
-import type { AuthorityResult, Verdict } from "@/api/authority";
+import type { AuthorityResult, GoodLaw, Verdict } from "@/api/authority";
 
 function verdictBadge(verdict: Verdict) {
   switch (verdict) {
@@ -20,6 +20,34 @@ function verdictBadge(verdict: Verdict) {
       return <Badge tone="yellow">Unresolved</Badge>;
     default:
       return <Badge tone="neutral">Not checked</Badge>;
+  }
+}
+
+/**
+ * Good-law (treatment) badge for a verified case. "good" is the only reassuring
+ * (green) state; "caution" warns the case may be non-binding; "unknown" is a
+ * neutral "we could not determine treatment" rather than a benign pass.
+ */
+function goodLawBadge(status: GoodLaw) {
+  switch (status) {
+    case "good":
+      return <Badge tone="green">Good law</Badge>;
+    case "caution":
+      return <Badge tone="yellow">Caution</Badge>;
+    default:
+      return <Badge tone="neutral">Treatment unknown</Badge>;
+  }
+}
+
+/** Plain-English word for a treatment tier, for the inserted document comment. */
+function goodLawWord(status: GoodLaw): string {
+  switch (status) {
+    case "good":
+      return "Good law";
+    case "caution":
+      return "Caution";
+    default:
+      return "Treatment unknown";
   }
 }
 
@@ -61,7 +89,9 @@ function commentText(r: AuthorityResult): string {
   if (r.verdict === "verified") {
     const name = r.caseName ?? "This citation";
     const yr = r.year ? ` (${r.year})` : "";
-    return `${name}${yr}: found in Vaquill AI's US case-law corpus. Confirm current treatment (not overruled or superseded) before relying on it.${source}`;
+    const g = r.goodLaw;
+    const treatment = g ? ` Treatment: ${goodLawWord(g.status)}${g.label ? ` - ${g.label}` : ""}.` : "";
+    return `${name}${yr}: found in Vaquill AI's US case-law corpus. Confirm current treatment (not overruled or superseded) before relying on it.${treatment}${source}`;
   }
   return `No matching case found in the corpus for ${r.raw}. Verify this citation manually before relying on it.`;
 }
@@ -113,6 +143,10 @@ export function AuthorityItem({ result }: { result: AuthorityResult }) {
           {isStatute && <span className="authority__count small muted">statute</span>}
           {result.count > 1 && <span className="authority__count small muted">x{result.count}</span>}
           {verdictBadge(result.verdict)}
+          {!isStatute &&
+            result.verdict === "verified" &&
+            result.goodLaw &&
+            goodLawBadge(result.goodLaw.status)}
         </div>
       </div>
 
@@ -145,6 +179,12 @@ export function AuthorityItem({ result }: { result: AuthorityResult }) {
             {typeof result.citedByCount === "number" &&
               ` Cited by ${result.citedByCount} case${result.citedByCount === 1 ? "" : "s"}.`}
           </span>
+          {result.goodLaw && (
+            <span className="small muted">
+              Treatment: {result.goodLaw.label || goodLawWord(result.goodLaw.status)}
+              {result.goodLaw.detail ? `. ${result.goodLaw.detail}` : ""}
+            </span>
+          )}
           {result.caseUrl && (
             <a
               className="authority__link"

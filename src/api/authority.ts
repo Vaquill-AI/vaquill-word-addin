@@ -14,6 +14,21 @@ import { isStatuteCitation, type CitationKind } from "@/features/authority/extra
 
 export type Verdict = "verified" | "no_match" | "unrecognized" | "error";
 
+/** Good-law (treatment) tier for a verified case citation. */
+export type GoodLaw = "good" | "caution" | "unknown";
+
+/**
+ * Treatment signal for a single case citation: whether the cited case is still
+ * safe to rely on. Best-effort and additive to the base authority check.
+ */
+export interface CaseStatus {
+  citation: string;
+  status: GoodLaw;
+  label: string;
+  detail: string;
+  citationCount: number;
+}
+
 export interface AuthorityResult {
   raw: string;
   count: number;
@@ -35,6 +50,11 @@ export interface AuthorityResult {
   corpusType?: string;
   /** Statute-only: clickable in-app URL to the resolved section. */
   sectionUrl?: string;
+  /**
+   * Case-only: good-law (treatment) signal, fetched in a best-effort second
+   * pass after the base verdict. Absent until it arrives (or if it fails).
+   */
+  goodLaw?: CaseStatus;
 }
 
 interface Cluster {
@@ -197,4 +217,26 @@ export async function verifyCitation(
     if (e instanceof ApiError && e.kind === "rate_limited") throw e; // bubble to stop the scan
     return { raw, count, verdict: "error" };
   }
+}
+
+/** Response envelope for the good-law batch endpoint. */
+interface CaseStatusBatchResponse {
+  results?: CaseStatus[];
+}
+
+/**
+ * Best-effort good-law (treatment) lookup for a batch of verified case
+ * citations. Returns whatever the backend resolved; an empty array on any
+ * failure so the base authority check is never disrupted by treatment data.
+ */
+export async function getCaseStatusBatch(
+  citations: string[],
+  signal?: AbortSignal,
+): Promise<CaseStatus[]> {
+  const res = await request<CaseStatusBatchResponse>("/api/v1/citation-status/batch", {
+    method: "POST",
+    body: { citations },
+    signal,
+  });
+  return res.results ?? [];
 }
