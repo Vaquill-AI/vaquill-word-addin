@@ -39,7 +39,7 @@ export function ReviewOverview({ redlines }: { redlines: RedlineSuggestion[] }) 
   const SHOWN = 8;
 
   return (
-    <div className="card stack" style={{ gap: 8 }}>
+    <div className="card card--pad stack" style={{ gap: 8 }}>
       <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
         <span className="small" style={{ fontWeight: 600 }}>
           {redlines.length} proposed redline{redlines.length === 1 ? "" : "s"}

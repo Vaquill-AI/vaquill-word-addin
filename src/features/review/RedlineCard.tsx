@@ -11,17 +11,168 @@ import { insertClauseFormatted } from "@/office/richInsert";
 import { selectClauseInDocument } from "@/office/navigate";
 import { goToBookmark } from "@/office/bookmarks";
 import { rewriteClause } from "@/api/clause-tools";
+import { recordRedlineFeedback } from "@/api/feedback";
 import { ApiError, friendlyMessage } from "@/api/errors";
 import { AddToPlaybook } from "@/features/integration/AddToPlaybook";
+import { CommentAction } from "./CommentAction";
 import type { RedlineSuggestion } from "@/api/types";
 import type { Decision } from "./decisions";
 import "./redline-card.css";
+
+type Feedback = "up" | "down";
+
+// Local thumb glyphs for the lightweight quality feedback control. Kept in-file
+// so the shared icon set stays lean.
+function ThumbUpIcon({ size = 14 }: { size?: number }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M7 10v11" />
+      <path d="M7 10 11 3a2 2 0 0 1 2 2v4h5a2 2 0 0 1 2 2.3l-1.2 7A2 2 0 0 1 18 21H7" />
+    </svg>
+  );
+}
+
+function ThumbDownIcon({ size = 14 }: { size?: number }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M17 14V3" />
+      <path d="M17 14 13 21a2 2 0 0 1-2-2v-4H6a2 2 0 0 1-2-2.3l1.2-7A2 2 0 0 1 7 3h10" />
+    </svg>
+  );
+}
 
 const APPROVAL_LABEL: Record<string, string> = { manager: "Manager", partner: "Partner", gc: "GC" };
 
 // Rationale longer than this collapses behind a "Why this change" toggle so the
 // card stays scannable; shorter ones stay inline.
 const RATIONALE_INLINE_MAX = 140;
+
+// ---- Change-intent subtitle ---------------------------------------------
+// A short "what this edit does" line distilled client-side from the rationale.
+// There is no backend-provided title, so this is a best-effort summary and is
+// deliberately conservative: when the distillation is empty, too short, or just
+// echoes the clause name, we omit the line rather than show something misleading.
+const INTENT_MAX = 60;
+
+// Leading filler that frames the redline ("This change...", "We recommend...")
+// rather than describing the edit. Stripped (case-insensitively) so the phrase
+// leads with the action. Longest-first is not required since we loop until
+// stable, but each entry ends in a space so we only strip whole words.
+const INTENT_FILLER = [
+  "this change ",
+  "this redline ",
+  "this edit ",
+  "this revision ",
+  "this amendment ",
+  "this addition ",
+  "this provision ",
+  "this section ",
+  "this clause ",
+  "the clause ",
+  "the current clause ",
+  "the current language ",
+  "the current ",
+  "the existing ",
+  "the provision ",
+  "the proposed change ",
+  "the proposed language ",
+  "the proposed ",
+  "the revised language ",
+  "the revised ",
+  "we recommend ",
+  "we suggest ",
+  "we propose ",
+  "recommend ",
+  "suggest ",
+  "propose ",
+];
+
+// Normalize for a loose equality check against the clause name.
+function normalizeIntent(text: string): string {
+  return text.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+}
+
+// First sentence of the rationale: first non-empty line, up to the first
+// sentence terminator. Avoids regex lookbehind for older WebView engines.
+function firstSentenceOf(rationale: string): string {
+  const line = rationale.split(/\r?\n/).find((l) => l.trim().length > 0)?.trim() ?? "";
+  const match = line.match(/^(.*?[.!?])(?:\s|$)/);
+  return (match?.[1] ?? line).trim();
+}
+
+// Distill a concise change-intent phrase, or null when nothing honest and
+// useful can be produced.
+function distillIntent(rationale: string, clauseName: string): string | null {
+  const trimmed = rationale.trim();
+  if (!trimmed) return null;
+
+  let phrase = firstSentenceOf(trimmed);
+
+  // Strip leading filler repeatedly (e.g. "This change: we recommend ...").
+  let stripping = true;
+  while (stripping) {
+    stripping = false;
+    const lower = phrase.toLowerCase();
+    for (const filler of INTENT_FILLER) {
+      if (lower.startsWith(filler)) {
+        phrase = phrase.slice(filler.length);
+        stripping = true;
+        break;
+      }
+    }
+    // Drop any leading punctuation left behind by a stripped filler word.
+    phrase = phrase.replace(/^[\s,;:.\-]+/, "");
+  }
+
+  // Drop a single trailing sentence period (keep ? / ! which carry meaning).
+  phrase = phrase.replace(/\.$/, "").trim();
+  if (phrase.length < 12) return null;
+
+  // Do not echo the clause name: omit when the phrase equals it or is just the
+  // clause name plus a trivial suffix ("Non-compete" vs "Non-compete clause").
+  const normPhrase = normalizeIntent(phrase);
+  const normClause = normalizeIntent(clauseName);
+  if (normClause) {
+    if (normPhrase === normClause) return null;
+    if (normPhrase.startsWith(normClause) && normPhrase.length - normClause.length < 8) return null;
+  }
+
+  // Trim to a word boundary at ~60 chars with an ellipsis.
+  if (phrase.length > INTENT_MAX) {
+    const clipped = phrase.slice(0, INTENT_MAX);
+    const lastSpace = clipped.lastIndexOf(" ");
+    const base = lastSpace > 20 ? clipped.slice(0, lastSpace) : clipped;
+    phrase = `${base.replace(/[\s,;:.\-]+$/, "")}...`;
+  }
+
+  // Read as a title: capitalize the first letter if it is lowercase.
+  const first = phrase.charAt(0);
+  if (first && first === first.toLowerCase() && first !== first.toUpperCase()) {
+    phrase = first.toUpperCase() + phrase.slice(1);
+  }
+
+  return phrase;
+}
 
 type ProposedView = "redline" | "final";
 
@@ -48,6 +199,10 @@ export function RedlineCard({
   const [draft, setDraft] = useState("");
   const [refining, setRefining] = useState(false);
   const [showWhy, setShowWhy] = useState(false);
+
+  // Per-card regenerate + quality feedback.
+  const [regenerating, setRegenerating] = useState(false);
+  const [feedback, setFeedback] = useState<Feedback | null>(null);
 
   // Keep keyboard focus in the card after it resolves/restores instead of
   // dropping to <body> (WCAG 2.4.3). `actedRef` ensures we only move focus for
@@ -159,6 +314,51 @@ export function RedlineCard({
     }
   }
 
+  // ---- Regenerate + quality feedback -------------------------------------
+  // Produce an alternative proposed language. We store it as an edit so it flows
+  // through the existing edited/proposed state: the "Edited" badge shows and the
+  // user can keep it or Revert back to the original suggestion.
+  async function regenerate() {
+    if (regenerating) return;
+    setRegenerating(true);
+    setNote(null);
+    try {
+      const r = await rewriteClause(proposed, {
+        mode: "rewrite",
+        tone: "balanced",
+        instruction:
+          "Provide an alternative phrasing of this contract language that achieves the same " +
+          "protective intent with different wording. Return only the revised clause.",
+      });
+      const next = r.rewritten?.trim();
+      if (next) setEdited(next);
+      else setNote("Could not generate an alternative. Try again.");
+    } catch (e) {
+      setNote(e instanceof ApiError ? friendlyMessage(e) : (e as Error).message);
+    } finally {
+      setRegenerating(false);
+    }
+  }
+
+  // Optimistic local toggle, plus a fire-and-forget POST so the rating persists.
+  // We only record when the thumb is turned ON (not when toggled back off), and
+  // swallow any failure: a failed POST must never disrupt the review.
+  function rate(next: Feedback) {
+    setFeedback((cur) => {
+      const turningOn = cur !== next;
+      if (turningOn) {
+        void recordRedlineFeedback({
+          rating: next,
+          clauseName: redline.clauseName || undefined,
+          rationale: redline.rationale?.trim() || undefined,
+        }).catch(() => {
+          // Best-effort: the optimistic UI already reflects the rating.
+        });
+      }
+      return turningOn ? next : null;
+    });
+  }
+
   // ---- Collapsed resolved states -----------------------------------------
   if (decision === "accepted") {
     return (
@@ -191,21 +391,41 @@ export function RedlineCard({
 
   const rationale = redline.rationale?.trim();
   const collapseRationale = (rationale?.length ?? 0) > RATIONALE_INLINE_MAX;
+  const intent = distillIntent(rationale ?? "", redline.clauseName);
 
   // Secondary actions live behind the kebab so the primary row stays scannable.
   // "Copy proposed" is redundant when the card already shows it as the
   // non-applicable fallback button, so only offer it in the menu when the
   // primary action is Accept/Insert.
-  const overflowItems: OverflowMenuItem[] = applicable
-    ? [{ label: "Copy proposed", icon: <CopyIcon size={14} />, onSelect: copyProposed }]
-    : [];
+  const overflowItems: OverflowMenuItem[] = [];
+  if (applicable) {
+    overflowItems.push({ label: "Copy proposed", icon: <CopyIcon size={14} />, onSelect: copyProposed });
+  }
+  overflowItems.push({
+    label: "Regenerate suggestion",
+    icon: <WandIcon size={14} />,
+    onSelect: regenerate,
+  });
+  overflowItems.push({
+    label: feedback === "up" ? "Good suggestion (selected)" : "Good suggestion",
+    icon: <ThumbUpIcon size={14} />,
+    onSelect: () => rate("up"),
+  });
+  overflowItems.push({
+    label: feedback === "down" ? "Needs work (selected)" : "Needs work",
+    icon: <ThumbDownIcon size={14} />,
+    onSelect: () => rate("down"),
+  });
 
   return (
     <div className="card redline redline--enter" style={style} ref={focusRef} tabIndex={-1}>
       <div className="redline__head">
-        <div className="row" style={{ gap: 6, flexWrap: "wrap" }}>
+        <div className="row" style={{ gap: 6, flexWrap: "wrap", alignItems: "flex-start" }}>
           <span className="redline__num">{index + 1}</span>
-          <strong>{redline.clauseName}</strong>
+          <div className="redline__titlewrap">
+            <strong>{redline.clauseName}</strong>
+            {intent && <span className="redline__intent">{intent}</span>}
+          </div>
         </div>
         {!isInsertion && (
           <IconButton label="Find in document" onClick={locate}>
@@ -331,12 +551,23 @@ export function RedlineCard({
           </IconButton>
           {overflowItems.length > 0 && <OverflowMenu label="More actions" items={overflowItems} />}
           {!applicable && <span className="small muted">Verify manually</span>}
+          {regenerating && <span className="small muted">Generating an alternative...</span>}
+          {!regenerating && feedback && <span className="small muted">Feedback noted. Thank you.</span>}
           {note && (
             <span className={`small ${note.includes("Could not") ? "redline__note--err" : "muted"}`}>
               {note}
             </span>
           )}
         </div>
+      )}
+
+      {!editing && (
+        <CommentAction
+          redline={redline}
+          index={index}
+          proposed={proposed}
+          allowCounterparty={!isInsertion}
+        />
       )}
 
       <div className="redline__foot">

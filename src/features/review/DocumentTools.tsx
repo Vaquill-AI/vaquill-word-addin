@@ -1,6 +1,11 @@
 import { useState } from "react";
 import { Button, Banner } from "@/ui/primitives";
-import { highlightIssues, clearIssueHighlights } from "@/office/highlight";
+import {
+  highlightIssues,
+  clearIssueHighlights,
+  highlightCoverage,
+  clearCoverageHighlights,
+} from "@/office/highlight";
 import { insertRationaleComments } from "@/office/comments";
 import { bookmarkClauses } from "@/office/bookmarks";
 import { tagKeyFields } from "@/office/contentControls";
@@ -18,6 +23,7 @@ function bookmarkName(index: number): string {
  */
 export function DocumentTools({ redlines }: { redlines: RedlineSuggestion[] }) {
   const [highlighted, setHighlighted] = useState(false);
+  const [covered, setCovered] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
   const [note, setNote] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -40,6 +46,27 @@ export function DocumentTools({ redlines }: { redlines: RedlineSuggestion[] }) {
         );
         setHighlighted(true);
         setNote(`Highlighted ${n} clause${n === 1 ? "" : "s"} in the document.`);
+      }
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function toggleCoverage() {
+    setBusy("coverage");
+    setError(null);
+    setNote(null);
+    try {
+      if (covered) {
+        await clearCoverageHighlights(anchorable.map((r) => ({ currentLanguage: r.currentLanguage })));
+        setCovered(false);
+        setNote("Cleared the coverage highlights.");
+      } else {
+        const n = await highlightCoverage(anchorable.map((r) => ({ currentLanguage: r.currentLanguage })));
+        setCovered(true);
+        setNote(`Highlighted ${n} covered clause${n === 1 ? "" : "s"} in the document.`);
       }
     } catch (e) {
       setError((e as Error).message);
@@ -98,6 +125,15 @@ export function DocumentTools({ redlines }: { redlines: RedlineSuggestion[] }) {
           disabled={!!busy || anchorable.length === 0}
         >
           {highlighted ? "Clear highlights" : "Highlight issues"}
+        </Button>
+        <Button
+          variant={covered ? "primary" : "default"}
+          size="sm"
+          onClick={toggleCoverage}
+          loading={busy === "coverage"}
+          disabled={!!busy || anchorable.length === 0}
+        >
+          {covered ? "Clear coverage" : "Highlight covered clauses"}
         </Button>
         <Button
           variant="default"

@@ -1,0 +1,85 @@
+/* Apply-as-comment control for a redline card: a register picker
+   (counterparty vs internal) plus the generated-comment preview panel.
+   The internal panel is deliberately styled as a cautionary surface and
+   never offers an "insert" affordance. */
+
+.cmt {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cmt__bar {
+  align-items: center;
+}
+
+.cmt__picker {
+  display: inline-flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  padding: 2px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-muted);
+}
+
+.cmt__done {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin: 0;
+}
+
+.cmt__draft {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid var(--brand-border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+}
+
+/* Internal notes get a distinct caution surface so they are never mistaken for
+   something that was written into the document. */
+.cmt__draft--internal {
+  border-color: var(--warn-border, #d9a300);
+  background: var(--warn-surface, rgba(217, 163, 0, 0.08));
+}
+
+.cmt__draft-head {
+  display: flex;
+}
+
+.cmt__tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.cmt__tag--sendable {
+  color: var(--brand-fg);
+  background: var(--brand-soft, rgba(37, 99, 235, 0.1));
+}
+
+.cmt__tag--internal {
+  color: var(--warn-fg, #8a6400);
+  background: var(--warn-soft, rgba(217, 163, 0, 0.18));
+}
+
+.cmt__draft-body {
+  margin: 0;
+  white-space: pre-wrap;
+  line-height: 1.5;
+  font-size: 13px;
+  color: var(--text);
+}
+
+.cmt__internal-hint {
+  margin: 0;
+}

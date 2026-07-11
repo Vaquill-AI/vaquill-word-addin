@@ -13,12 +13,21 @@ import {
 import { getReviewPrefs } from "@/lib/prefs";
 import type { RunParams } from "./useReview";
 
-export function ReviewForm({ onRun, busy }: { onRun: (p: RunParams) => void; busy: boolean }) {
+export function ReviewForm({
+  onRun,
+  busy,
+  initial,
+}: {
+  onRun: (p: RunParams) => void;
+  busy: boolean;
+  /** Pre-fill from a "Run this playbook" handoff (contract type + playbook). */
+  initial?: { contractType?: string; playbookId?: string };
+}) {
   const prefs = getReviewPrefs();
-  const [contractType, setContractType] = useState(prefs.contractType || "nda");
+  const [contractType, setContractType] = useState(initial?.contractType || prefs.contractType || "nda");
   const [userSide, setUserSide] = useState("customer");
   const [scope, setScope] = useState<ReviewScope>("document");
-  const [playbookId, setPlaybookId] = useState("");
+  const [playbookId, setPlaybookId] = useState(initial?.playbookId ?? "");
   const [instructions, setInstructions] = useState("");
   const [includeExtras, setIncludeExtras] = useState(false);
   const [markupLevel, setMarkupLevel] = useState<"light" | "standard" | "firm">("standard");

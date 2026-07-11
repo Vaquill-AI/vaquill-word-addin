@@ -9,6 +9,7 @@ import { ReviewSummary } from "./ReviewSummary";
 import { SignoffGate } from "./SignoffGate";
 import { RedlineCard } from "./RedlineCard";
 import { ReviewOverview } from "./ReviewOverview";
+import { ReviewMemo } from "./ReviewMemo";
 import { ReviewFlags } from "./ReviewFlags";
 import { ReviewToolbar, type RedlineFilter } from "./ReviewToolbar";
 import { ReviewActionBar } from "./ReviewActionBar";
@@ -71,9 +72,17 @@ function fmtDate(iso: string): string {
   }
 }
 
-export function ReviewView() {
+export function ReviewView({
+  pendingPlaybook,
+  onPendingConsumed,
+}: {
+  /** A "Run this playbook" handoff from the Playbook tab: pre-fills the form. */
+  pendingPlaybook?: { playbookId: string; contractType: string } | null;
+  onPendingConsumed?: () => void;
+} = {}) {
   const { state, run, reset, hydrate } = useReviewContext();
   const [params, setParams] = useState<RunParams | null>(null);
+  const [formInit, setFormInit] = useState<{ contractType: string; playbookId: string } | null>(null);
   const [filter, setFilter] = useState<RedlineFilter>("all");
   const [snapshot, setSnapshot] = useState<ReviewSnapshot | null>(null);
   const [dismissedResume, setDismissedResume] = useState(false);
@@ -98,6 +107,17 @@ export function ReviewView() {
       alive = false;
     };
   }, []);
+
+  // "Run this playbook" handoff from the Playbook tab: reset to a fresh form
+  // pre-filled with the playbook's contract type + selection, then clear the
+  // pending signal. The guard on `pendingPlaybook` makes re-runs a no-op once
+  // consumed (the parent sets it back to null).
+  useEffect(() => {
+    if (!pendingPlaybook) return;
+    setFormInit(pendingPlaybook);
+    reset();
+    onPendingConsumed?.();
+  }, [pendingPlaybook, reset, onPendingConsumed]);
 
   // Persist a freshly completed review into the .docx (skip when resuming).
   useEffect(() => {
@@ -264,6 +284,7 @@ export function ReviewView() {
           )}
           <ReviewSummary result={result} />
           <ReviewOverview redlines={redlines} />
+          <ReviewMemo result={result} redlines={redlines} />
           <ReviewFlags flags={result.flags ?? []} />
           <OutlinePanel />
           {redlines.length > 0 && <DocumentTools redlines={redlines} />}
@@ -345,7 +366,12 @@ export function ReviewView() {
         </Banner>
       )}
 
-      <ReviewForm onRun={onRun} busy={busy} />
+      <ReviewForm
+        key={formInit?.playbookId ?? "blank"}
+        onRun={onRun}
+        busy={busy}
+        initial={formInit ?? undefined}
+      />
 
       {busy && (
         <div className="stack" style={{ gap: 8 }} ref={streamingRef}>

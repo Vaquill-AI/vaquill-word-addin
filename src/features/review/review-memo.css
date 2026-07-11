@@ -1,0 +1,203 @@
+/* Review memo: a read/summary view, deliberately quieter than the interactive
+   redline cards. Collapsible so it does not crowd the action-first results.
+   Group accents map nature to the shared theme tokens: Substantive (--red),
+   Housekeeping (--green), Flag for discussion (--yellow). Tracks light/dark. */
+
+.review-memo {
+  padding: var(--space-m);
+}
+
+.review-memo__head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-s);
+}
+
+.review-memo__toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--space-s);
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  text-align: left;
+  color: var(--text);
+}
+
+.review-memo__chevron {
+  display: inline-flex;
+  font-size: 16px;
+  line-height: 1;
+  color: var(--text-muted);
+  transition: transform 0.15s ease;
+}
+
+.review-memo__chevron--open {
+  transform: rotate(90deg);
+}
+
+.review-memo__title {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.review-memo__total {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.review-memo__body {
+  margin-top: var(--space-m);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-l);
+}
+
+.review-memo__intro {
+  margin: 0;
+}
+
+.review-memo__group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.review-memo__group-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-s);
+}
+
+.review-memo__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex: 0 0 auto;
+}
+
+.review-memo__group-head--red .review-memo__dot {
+  background: var(--red);
+}
+.review-memo__group-head--green .review-memo__dot {
+  background: var(--green);
+}
+.review-memo__group-head--yellow .review-memo__dot {
+  background: var(--yellow);
+}
+
+.review-memo__group-title {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.review-memo__group-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--surface);
+}
+
+.review-memo__group-head--red .review-memo__group-count {
+  background: var(--red);
+}
+.review-memo__group-head--green .review-memo__group-count {
+  background: var(--green);
+}
+.review-memo__group-head--yellow .review-memo__group-count {
+  background: var(--yellow);
+}
+
+.review-memo__blurb {
+  margin: 0;
+}
+
+.review-memo__list {
+  list-style: none;
+  margin: var(--space-xs) 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-s);
+}
+
+.review-memo__item {
+  padding-left: var(--space-m);
+  border-left: 2px solid var(--border);
+}
+
+.review-memo__meta {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+}
+
+/* Footnote marker: a small superscript number linking the memo line to its
+   clause in the document. Interactive by default; a plain static variant is used
+   for flags that have no locatable anchor. */
+.review-memo__footnote {
+  flex: 0 0 auto;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  transition: color 0.12s ease, border-color 0.12s ease, background 0.12s ease;
+}
+
+.review-memo__footnote:hover,
+.review-memo__footnote:focus-visible {
+  color: var(--brand);
+  border-color: var(--brand);
+}
+
+.review-memo__footnote--static {
+  cursor: default;
+}
+
+.review-memo__footnote--static:hover,
+.review-memo__footnote--static:focus-visible {
+  color: var(--text-muted);
+  border-color: var(--border);
+}
+
+.review-memo__clause {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.review-memo__section {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.review-memo__takeaway {
+  margin: 2px 0 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--text);
+}

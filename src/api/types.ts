@@ -27,6 +27,13 @@ export interface RedlineSuggestion {
   grounding: Grounding;
   approvalLevel?: ApprovalLevel | null;
   isDealBreaker: boolean;
+  /**
+   * The model's own classification of the change: "substantive" changes legal or
+   * commercial substance, "housekeeping" is typos / cross-refs / formatting /
+   * defined-term consistency. Optional and additive: absent on older reviews, in
+   * which case the memo falls back to a severity heuristic for grouping.
+   */
+  nature?: "substantive" | "housekeeping";
 }
 
 export interface ReviewApprovalReason {
