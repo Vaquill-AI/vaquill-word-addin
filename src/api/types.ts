@@ -51,6 +51,18 @@ export interface NegotiationPriority {
   items: string[];
 }
 
+/**
+ * A substantive observation the reviewer noticed but deliberately did NOT turn
+ * into a redline (a wrong entity name, an odd schedule entry, a genuine
+ * ambiguity). Surfaced as a "flag for discussion" for a human to confirm
+ * before signing. Optional and additive: absent when the model emits none.
+ */
+export interface ReviewFlag {
+  clauseName: string;
+  sectionReference?: string;
+  observation: string;
+}
+
 /** Analysis of a single contract clause (loosely rendered by the MVP). */
 export interface ClauseAnalysis {
   clauseName: string;
@@ -126,6 +138,8 @@ export interface ContractReviewResponse {
   clauses?: ClauseAnalysis[];
   liabilityExposure?: LiabilityExposure | null;
   counterpartyMatch?: CounterpartyMatch | null;
+  /** "Flag for discussion" items: noticed but not redlined. */
+  flags?: ReviewFlag[];
 }
 
 export interface ContractReviewRequest {

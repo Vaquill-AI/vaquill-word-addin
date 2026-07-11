@@ -1,0 +1,94 @@
+/* "Flag for discussion" panel. Amber/info styling that reads as advisory,
+   deliberately distinct from the redline cards (which propose edits). Uses the
+   shared --yellow / --yellow-tint theme tokens so it tracks light/dark. */
+
+.review-flags {
+  border-left: 3px solid var(--yellow);
+  background: var(--yellow-tint);
+}
+
+.review-flags__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.review-flags__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--yellow);
+  flex: 0 0 auto;
+}
+
+.review-flags__title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.review-flags__count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: var(--yellow);
+  color: var(--surface);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.review-flags__intro {
+  margin: 4px 0 0;
+  color: var(--text-muted);
+}
+
+.review-flags__list {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.review-flags__item {
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+}
+
+.review-flags__meta {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 3px;
+}
+
+.review-flags__clause {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.review-flags__section {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--yellow);
+}
+
+.review-flags__observation {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--text);
+}

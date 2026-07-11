@@ -1,0 +1,90 @@
+/* Enhancements layered on the base .redline styles in review.css:
+   the Redline/Final preview toggle, the edit-before-apply panel, and the
+   collapsible "Why this change" reasoning. */
+
+.redline__viewtoggle {
+  display: inline-flex;
+  gap: 2px;
+  padding: 2px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-muted);
+  align-self: flex-start;
+}
+
+.redline__viewbtn {
+  border: none;
+  background: none;
+  padding: 3px 10px;
+  border-radius: calc(var(--radius-sm) - 1px);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.redline__viewbtn--on {
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--shadow-2, 0 1px 2px rgba(0, 0, 0, 0.1));
+}
+
+.redline__viewbtn:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: -2px;
+}
+
+.redline__text--ins {
+  white-space: pre-wrap;
+}
+
+/* Edit-before-apply */
+.redline__edit {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.redline__editbox {
+  width: 100%;
+  resize: vertical;
+  min-height: 64px;
+  padding: 8px;
+  border: 1px solid var(--brand-border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  line-height: 1.5;
+}
+
+.redline__editbox:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: -1px;
+}
+
+.redline__edit-actions {
+  align-items: center;
+}
+
+/* Collapsible reasoning */
+.redline__why-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: none;
+  background: none;
+  padding: 0;
+  color: var(--brand-fg);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.redline__why-chev {
+  display: inline-flex;
+  transition: transform 0.15s ease;
+}
+
+.redline__why-chev--open {
+  transform: rotate(180deg);
+}

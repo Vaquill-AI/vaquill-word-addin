@@ -8,6 +8,8 @@ import { ReviewForm } from "./ReviewForm";
 import { ReviewSummary } from "./ReviewSummary";
 import { SignoffGate } from "./SignoffGate";
 import { RedlineCard } from "./RedlineCard";
+import { ReviewOverview } from "./ReviewOverview";
+import { ReviewFlags } from "./ReviewFlags";
 import { ReviewToolbar, type RedlineFilter } from "./ReviewToolbar";
 import { ReviewActionBar } from "./ReviewActionBar";
 import { SetupSummary } from "./SetupSummary";
@@ -261,6 +263,8 @@ export function ReviewView() {
             />
           )}
           <ReviewSummary result={result} />
+          <ReviewOverview redlines={redlines} />
+          <ReviewFlags flags={result.flags ?? []} />
           <OutlinePanel />
           {redlines.length > 0 && <DocumentTools redlines={redlines} />}
           <SaveToVaquill
