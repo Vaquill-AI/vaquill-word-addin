@@ -74,7 +74,10 @@ export interface ImportDraftRequest {
 }
 
 export interface DraftRef {
-  id: string;
+  // POST /drafting/import returns { draftId, title, category, ... } (camelCase,
+  // no `id` alias). Reading `id` here always yielded undefined, breaking the
+  // "Open it" link and the vendor-extraction flow.
+  draftId: string;
   title?: string;
 }
 

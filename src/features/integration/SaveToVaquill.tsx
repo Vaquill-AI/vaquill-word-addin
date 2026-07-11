@@ -67,13 +67,13 @@ export function SaveToVaquill(props: Props) {
         };
       }
       const ref = await importDraft(payload);
-      setDraftId(ref.id ?? null);
+      setDraftId(ref.draftId ?? null);
       setSaved({
         label:
           props.mode === "review"
             ? "Saved to Vaquill AI with redlines."
             : "Saved to Vaquill AI drafting.",
-        url: ref.id ? `${config.appBase}/drafting/${ref.id}` : undefined,
+        url: ref.draftId ? `${config.appBase}/drafting/${ref.draftId}` : undefined,
       });
     } catch (e) {
       setError((e as Error).message);
