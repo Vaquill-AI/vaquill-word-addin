@@ -8,7 +8,7 @@ import type { RunParams } from "./useReview";
 export function ReviewForm({ onRun, busy }: { onRun: (p: RunParams) => void; busy: boolean }) {
   const [contractType, setContractType] = useState("nda");
   const [userSide, setUserSide] = useState("customer");
-  const [jurisdiction, setJurisdiction] = useState("US");
+  const [jurisdiction, setJurisdiction] = useState("");
   const [scope, setScope] = useState<ReviewScope>("document");
   const [playbookId, setPlaybookId] = useState("");
   const [instructions, setInstructions] = useState("");

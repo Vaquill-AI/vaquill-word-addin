@@ -69,16 +69,21 @@ export const USER_SIDES: Option[] = [
 ];
 
 /** US-first jurisdictions. The backend accepts a free string; these are common. */
+// Governing-law options. `value` is the US STATE CODE sent as
+// dealContext.governingLaw (backend expects 'CA'/'NY'/'DE'); the empty value
+// means "no specific state" (general US / federal). The top-level review
+// `jurisdiction` is always "US" -- state names must NOT go into that field
+// (backend pattern ^([A-Z]{2}|INTL)$ 422s on "Delaware").
 export const JURISDICTIONS: Option[] = [
-  { value: "US", label: "United States (general)" },
-  { value: "Delaware", label: "Delaware" },
-  { value: "California", label: "California" },
-  { value: "New York", label: "New York" },
-  { value: "Texas", label: "Texas" },
-  { value: "Florida", label: "Florida" },
-  { value: "Illinois", label: "Illinois" },
-  { value: "Massachusetts", label: "Massachusetts" },
-  { value: "Washington", label: "Washington" },
+  { value: "", label: "United States (general)" },
+  { value: "DE", label: "Delaware" },
+  { value: "CA", label: "California" },
+  { value: "NY", label: "New York" },
+  { value: "TX", label: "Texas" },
+  { value: "FL", label: "Florida" },
+  { value: "IL", label: "Illinois" },
+  { value: "MA", label: "Massachusetts" },
+  { value: "WA", label: "Washington" },
 ];
 
 export type ReviewScope = "document" | "selection";

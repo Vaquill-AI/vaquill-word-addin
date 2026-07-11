@@ -115,7 +115,11 @@ export function useReview() {
       const base = {
         contractType: params.contractType,
         userSide: params.userSide,
-        jurisdiction: params.jurisdiction,
+        // Top-level jurisdiction is the country code (US). The chosen US state
+        // travels in dealContext.governingLaw; putting a state name in
+        // `jurisdiction` 422s (backend pattern ^([A-Z]{2}|INTL)$).
+        jurisdiction: "US",
+        dealContext: params.jurisdiction ? { governingLaw: params.jurisdiction } : undefined,
         playbookId: params.playbookId,
         reviewInstructions: params.reviewInstructions || undefined,
         matterId: params.matterId || undefined,

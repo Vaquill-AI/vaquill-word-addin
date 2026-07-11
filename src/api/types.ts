@@ -72,7 +72,12 @@ export interface ContractReviewRequest {
   documentText: string;
   contractType: string;
   userSide: string;
+  /** ISO-2 country code only (backend pattern ^([A-Z]{2}|INTL)$). US states go
+   *  in dealContext.governingLaw, NOT here. */
   jurisdiction: string;
+  /** Optional deal attributes conditional escalation rules evaluate. The
+   *  governing-law state (e.g. "CA", "NY", "DE") lives here. */
+  dealContext?: { governingLaw?: string };
   playbookId?: string;
   reviewInstructions?: string;
   matterId?: string;

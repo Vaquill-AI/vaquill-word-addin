@@ -19,7 +19,7 @@ import { useReviewContext } from "./ReviewProvider";
 import type { RunParams } from "./useReview";
 import { useReviewFreshness } from "./useReviewFreshness";
 import { useDecisions } from "./decisions";
-import { CONTRACT_TYPES, USER_SIDES, labelOf } from "./constants";
+import { CONTRACT_TYPES, JURISDICTIONS, USER_SIDES, labelOf } from "./constants";
 import { severityOf } from "@/lib/severity";
 import "./review.css";
 
@@ -167,7 +167,7 @@ export function ReviewView() {
       ? [
           labelOf(CONTRACT_TYPES, params.contractType),
           labelOf(USER_SIDES, params.userSide),
-          params.jurisdiction,
+          labelOf(JURISDICTIONS, params.jurisdiction),
         ]
       : [];
 

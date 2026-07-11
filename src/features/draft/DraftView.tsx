@@ -14,7 +14,7 @@ type Status = "idle" | "generating" | "done" | "error";
 export function DraftView() {
   const [category, setCategory] = useState("nda");
   const [title, setTitle] = useState("");
-  const [jurisdiction, setJurisdiction] = useState("US");
+  const [jurisdiction, setJurisdiction] = useState("");
   const [instructions, setInstructions] = useState("");
 
   const [status, setStatus] = useState<Status>("idle");
@@ -36,10 +36,10 @@ export function DraftView() {
       const r = await generateDraft({
         category,
         title: title.trim() || labelOf(DRAFT_CATEGORIES, category),
-        // The backend requires a governing law for US drafts; "United States
-        // (general)" maps to the "federal" sentinel (multi-state / federal),
-        // otherwise the specific state. Omitting it 422s.
-        governingLawState: jurisdiction === "US" ? "federal" : jurisdiction,
+        // The backend requires a governing law for US drafts. JURISDICTIONS
+        // values are US state codes (or "" for general); "" maps to the
+        // "federal" sentinel (multi-state / federal). Omitting it 422s.
+        governingLawState: jurisdiction || "federal",
         specialInstructions: instructions,
       });
       setResult(r);
