@@ -1,7 +1,16 @@
 import { useState } from "react";
 import { Button, Banner } from "@/ui/primitives";
 import { MatterPicker } from "./MatterPicker";
-import { importDraft, uploadTemplate, extractVendorFromDraft, type ImportRedline } from "@/api/platform";
+import {
+  importDraft,
+  saveDraftToMatter,
+  uploadTemplate,
+  extractVendorFromDraft,
+  createVendor,
+  type ImportRedline,
+  type VendorExtraction,
+} from "@/api/platform";
+import { ApiError } from "@/api/errors";
 import { readDocumentText } from "@/office/document";
 import { readDocumentBase64 } from "@/office/file";
 import { textToTiptap } from "@/lib/tiptap";
@@ -42,37 +51,41 @@ export function SaveToVaquill(props: Props) {
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState<{ label: string; url?: string } | null>(null);
   const [draftId, setDraftId] = useState<string | null>(null);
+  const [vendorProposal, setVendorProposal] = useState<VendorExtraction | null>(null);
 
   async function saveDraft() {
     setBusy("draft");
     setError(null);
     setSaved(null);
     try {
-      let payload;
       if (props.mode === "draft") {
-        const content = textToTiptap(props.draft.fullText, {
-          title: props.draft.title,
-          sectionTitles: props.draft.sections.map((s) => s.title),
+        // The generated draft ALREADY exists (POST /generate persisted it with
+        // its real DraftCategory + provenance). Re-importing it would create a
+        // duplicate, mis-typed "custom" row and orphan the real one. Instead,
+        // reuse the persisted id, optionally file it under a matter, and link.
+        const id = props.draft.draftId;
+        if (matterId) await saveDraftToMatter(id, matterId);
+        setDraftId(id);
+        setSaved({
+          label: matterId ? "Filed under the matter." : "Open your draft in Vaquill AI.",
+          url: `${config.appBase}/drafting/${id}`,
         });
-        payload = { title: props.draft.title, category: "custom", content, matter_id: matterId || undefined };
-      } else {
-        const text = await readDocumentText();
-        const content = textToTiptap(text, { title: props.title });
-        payload = {
-          title: props.title,
-          category: "custom",
-          content,
-          matter_id: matterId || undefined,
-          redlines: mapRedlines(props.redlines),
-        };
+        return;
       }
-      const ref = await importDraft(payload);
+      // Review mode: the reviewed contract is not yet a draft, so import it
+      // (with redlines rendered as tracked changes).
+      const text = await readDocumentText();
+      const content = textToTiptap(text, { title: props.title });
+      const ref = await importDraft({
+        title: props.title,
+        category: "custom",
+        content,
+        matter_id: matterId || undefined,
+        redlines: mapRedlines(props.redlines),
+      });
       setDraftId(ref.draftId ?? null);
       setSaved({
-        label:
-          props.mode === "review"
-            ? "Saved to Vaquill AI with redlines."
-            : "Saved to Vaquill AI drafting.",
+        label: "Saved to Vaquill AI with redlines.",
         url: ref.draftId ? `${config.appBase}/drafting/${ref.draftId}` : undefined,
       });
     } catch (e) {
@@ -98,12 +111,41 @@ export function SaveToVaquill(props: Props) {
     }
   }
 
-  async function addToVendors() {
+  // Step 1: extract a proposal (does not persist). Step 2: user confirms →
+  // create. Previously this called extract and claimed "Added to registry"
+  // even though nothing was saved (and the endpoint 404s when the feature is
+  // disabled).
+  async function proposeVendor() {
     if (!draftId) return;
     setBusy("vendor");
     setError(null);
     try {
-      await extractVendorFromDraft(draftId);
+      const { extraction } = await extractVendorFromDraft(draftId);
+      setVendorProposal(extraction);
+    } catch (e) {
+      if (e instanceof ApiError && (e.kind === "not_found" || e.status === 404)) {
+        setError("Vendor extraction isn't enabled for your account yet.");
+      } else {
+        setError((e as Error).message);
+      }
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function confirmVendor() {
+    if (!draftId || !vendorProposal) return;
+    setBusy("vendor");
+    setError(null);
+    try {
+      await createVendor({
+        name: vendorProposal.vendorName?.trim() || "Untitled vendor",
+        contactEmail: vendorProposal.contactEmail ?? undefined,
+        isSubprocessor: vendorProposal.isSubprocessor ?? true,
+        dataCategories: vendorProposal.dataCategories ?? [],
+        linkDraftId: draftId,
+      });
+      setVendorProposal(null);
       setSaved({ label: "Added to the vendor / sub-processor registry." });
     } catch (e) {
       setError((e as Error).message);
@@ -114,7 +156,11 @@ export function SaveToVaquill(props: Props) {
 
   const showVendor = props.mode === "review" && looksLikeDpa(props.contractType) && !!draftId;
   const draftLabel =
-    props.mode === "review" ? "Open in Vaquill AI (with redlines)" : "Save to Vaquill AI drafting";
+    props.mode === "review"
+      ? "Open in Vaquill AI (with redlines)"
+      : matterId
+        ? "File under matter"
+        : "Open in Vaquill AI drafting";
 
   return (
     <div className="card doc-tools">
@@ -146,10 +192,47 @@ export function SaveToVaquill(props: Props) {
           )}
         </p>
       )}
-      {showVendor && (
-        <Button variant="default" size="sm" onClick={addToVendors} loading={busy === "vendor"} disabled={!!busy}>
+      {showVendor && !vendorProposal && (
+        <Button
+          variant="default"
+          size="sm"
+          onClick={proposeVendor}
+          loading={busy === "vendor"}
+          disabled={!!busy}
+        >
           Add to vendor registry
         </Button>
+      )}
+      {vendorProposal && (
+        <div className="stack" style={{ gap: 8 }}>
+          <p className="small" style={{ margin: 0 }}>
+            Create sub-processor{" "}
+            <strong>{vendorProposal.vendorName || "Untitled vendor"}</strong> in the registry
+            {vendorProposal.subProcessors && vendorProposal.subProcessors.length > 0
+              ? ` (+${vendorProposal.subProcessors.length} sub-processors detected)`
+              : ""}
+            ?
+          </p>
+          <div className="row" style={{ gap: 8 }}>
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={confirmVendor}
+              loading={busy === "vendor"}
+              disabled={!!busy}
+            >
+              Create vendor
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setVendorProposal(null)}
+              disabled={!!busy}
+            >
+              Cancel
+            </Button>
+          </div>
+        </div>
       )}
       {error && <Banner tone="danger">{error}</Banner>}
     </div>

@@ -86,6 +86,16 @@ export async function importDraft(payload: ImportDraftRequest): Promise<DraftRef
   return request<DraftRef>("/api/v1/drafting/import", { method: "POST", body: payload });
 }
 
+/** File an EXISTING draft (already persisted by /generate) into a matter as a
+ *  matter document. Use this instead of re-importing a generated draft, which
+ *  would create a duplicate, mis-typed row. matterId is a query param. */
+export async function saveDraftToMatter(draftId: string, matterId: string): Promise<void> {
+  await request(
+    `/api/v1/drafting/drafts/${draftId}/save-to-matter?matterId=${encodeURIComponent(matterId)}`,
+    { method: "POST" },
+  );
+}
+
 function base64ToBlob(base64: string, type: string): Blob {
   const binary = atob(base64);
   const bytes = new Uint8Array(binary.length);
@@ -117,17 +127,41 @@ export async function uploadTemplate(
   return requestForm<TemplateRef>("/api/v1/templates/upload", form);
 }
 
-export interface VendorRef {
-  id?: string;
-  vendorId?: string;
-  name?: string;
+/** LLM-proposed vendor fields extracted from a DPA draft. NOT persisted; the
+ *  user confirms before creating (POST /vendors). */
+export interface VendorExtraction {
+  vendorName?: string | null;
+  contactEmail?: string | null;
+  isSubprocessor?: boolean;
+  dataCategories?: string[];
+  subProcessors?: string[];
+}
+
+export interface VendorExtractResult {
+  draftId: string;
+  extraction: VendorExtraction;
 }
 
 /**
- * Extract a sub-processor into the vendor registry from a saved DPA draft. Chains
- * off the draft id returned by importDraft, so reviewing a DPA in Word can land
- * it in the vendor/sub-processor registry in one more click.
+ * Extract a vendor/sub-processor PROPOSAL from a saved DPA draft. This does NOT
+ * create the vendor (the backend deliberately requires human confirmation, and
+ * the endpoint is gated behind a feature flag). Follow with createVendor().
  */
-export async function extractVendorFromDraft(draftId: string): Promise<VendorRef> {
-  return request<VendorRef>(`/api/v1/vendors/extract-from-draft/${draftId}`, { method: "POST" });
+export async function extractVendorFromDraft(draftId: string): Promise<VendorExtractResult> {
+  return request<VendorExtractResult>(`/api/v1/vendors/extract-from-draft/${draftId}`, {
+    method: "POST",
+  });
+}
+
+export interface VendorCreatePayload {
+  name: string;
+  contactEmail?: string;
+  isSubprocessor?: boolean;
+  dataCategories?: string[];
+  linkDraftId?: string;
+}
+
+/** Create a vendor in the registry, optionally linked to the source draft. */
+export async function createVendor(payload: VendorCreatePayload): Promise<{ id?: string }> {
+  return request<{ id?: string }>("/api/v1/vendors", { method: "POST", body: payload });
 }
