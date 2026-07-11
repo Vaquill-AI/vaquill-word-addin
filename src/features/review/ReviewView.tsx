@@ -76,6 +76,10 @@ export function ReviewView() {
   const [snapshot, setSnapshot] = useState<ReviewSnapshot | null>(null);
   const [dismissedResume, setDismissedResume] = useState(false);
   const [resumeChanged, setResumeChanged] = useState(false);
+  // The draft id SaveToVaquill yields once the reviewed contract is saved.
+  // When present, the governance sign-off runs through the backend's
+  // authority-enforced approval instead of the in-file attestation.
+  const [savedDraftId, setSavedDraftId] = useState<string | null>(null);
 
   const result = state.status === "done" ? state.result : null;
 
@@ -252,6 +256,7 @@ export function ReviewView() {
                 contractType: result.contractType ?? params?.contractType,
                 playbookId: params?.playbookId,
                 matterId: params?.matterId,
+                draftId: savedDraftId ?? undefined,
               }}
             />
           )}
@@ -264,6 +269,7 @@ export function ReviewView() {
             defaultMatterId={params?.matterId}
             contractType={result.contractType ?? params?.contractType}
             title={params ? `${labelOf(CONTRACT_TYPES, params.contractType)} (reviewed)` : "Reviewed contract"}
+            onSaved={setSavedDraftId}
           />
 
           {redlines.length === 0 ? (

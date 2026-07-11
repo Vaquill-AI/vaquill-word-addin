@@ -21,7 +21,15 @@ import type { DraftResult } from "@/api/drafting";
 type Props = (
   | { mode: "review"; redlines: RedlineSuggestion[]; title: string; contractType?: string }
   | { mode: "draft"; draft: DraftResult }
-) & { defaultMatterId?: string };
+) & {
+  defaultMatterId?: string;
+  /**
+   * Fired after the contract is saved to Vaquill AI and a draft id is known
+   * (or null if the save returned none). Lets a parent thread the id into the
+   * governance sign-off so it can run the backend's authority-enforced approval.
+   */
+  onSaved?: (draftId: string | null) => void;
+};
 
 function looksLikeDpa(contractType?: string): boolean {
   return /dpa|baa|data.?process/i.test(contractType ?? "");
@@ -66,6 +74,7 @@ export function SaveToVaquill(props: Props) {
         const id = props.draft.draftId;
         if (matterId) await saveDraftToMatter(id, matterId);
         setDraftId(id);
+        props.onSaved?.(id);
         setSaved({
           label: matterId ? "Filed under the matter." : "Open your draft in Vaquill AI.",
           url: `${config.appBase}/drafting/${id}`,
@@ -84,6 +93,7 @@ export function SaveToVaquill(props: Props) {
         redlines: mapRedlines(props.redlines),
       });
       setDraftId(ref.draftId ?? null);
+      props.onSaved?.(ref.draftId ?? null);
       setSaved({
         label: "Saved to Vaquill AI with redlines.",
         url: ref.draftId ? `${config.appBase}/drafting/${ref.draftId}` : undefined,

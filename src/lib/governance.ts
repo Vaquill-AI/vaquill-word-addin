@@ -38,10 +38,26 @@ export interface GovernanceLedger {
   contractType?: string;
   playbookId?: string;
   matterId?: string;
+  /**
+   * The saved Vaquill AI draft id, present only when the reviewed contract was
+   * saved to Vaquill (which yields a draft id). Its presence is what lets the
+   * sign-off run through the backend's authority-enforced approval instead of
+   * the in-file attestation.
+   */
+  draftId?: string;
   reviewedAt?: string;
   reviewedBy?: string;
   signedOffBy?: string;
   signedOffAt?: string;
+  /**
+   * True only when the sign-off was recorded through the backend's
+   * authority-enforced approval (a 403 would have blocked it). False / absent
+   * means the sign-off is the in-file attestation, which does NOT verify the
+   * signer's authority. Copy must not overstate enforcement when this is false.
+   */
+  signoffEnforced?: boolean;
+  /** Server-verified authority the sign-off was recorded under (enforced path only). */
+  signedOffRole?: string;
   events: GovernanceEvent[];
   integrity?: string;
 }
@@ -50,6 +66,8 @@ export interface ReviewMeta {
   contractType?: string;
   playbookId?: string;
   matterId?: string;
+  /** Saved Vaquill AI draft id, when the contract was already saved. */
+  draftId?: string;
 }
 
 // A minimal shape mirroring the backend ReviewApprovalGate.
@@ -122,6 +140,7 @@ export async function buildLedgerFromGate(
     contractType: meta.contractType,
     playbookId: meta.playbookId,
     matterId: meta.matterId,
+    draftId: meta.draftId,
     reviewedAt: at,
     reviewedBy: actor,
     events: [
@@ -139,18 +158,42 @@ export async function buildLedgerFromGate(
   return ledger;
 }
 
+export interface SignoffOptions {
+  /** True when recorded through the backend's authority-enforced approval. */
+  enforced?: boolean;
+  /** Server-verified authority role (enforced path only). */
+  role?: string | null;
+}
+
 export async function applySignoff(
   ledger: GovernanceLedger,
   actor: string,
   note?: string,
+  opts?: SignoffOptions,
 ): Promise<GovernanceLedger> {
   const at = nowIso();
+  const enforced = opts?.enforced ?? false;
+  const role = opts?.role ?? undefined;
   const next: GovernanceLedger = {
     ...ledger,
     status: "signed_off",
     signedOffBy: actor,
     signedOffAt: at,
-    events: [...ledger.events, { at, actor, action: "signed_off", note }],
+    signoffEnforced: enforced,
+    // Keep the field absent (not empty) when there is no server-verified role,
+    // so the stable-hash round-trips and older ledgers stay comparable.
+    ...(role ? { signedOffRole: role } : {}),
+    events: [
+      ...ledger.events,
+      {
+        at,
+        actor,
+        action: "signed_off",
+        note: enforced
+          ? [role ? `Authority-verified (${role})` : "Authority-verified", note].filter(Boolean).join(" - ")
+          : note,
+      },
+    ],
   };
   next.integrity = await computeIntegrity(next);
   return next;

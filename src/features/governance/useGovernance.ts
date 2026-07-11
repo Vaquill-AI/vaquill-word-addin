@@ -6,6 +6,11 @@ import {
   type GovernanceLedger,
   type IntegrityState,
 } from "@/lib/governance";
+import {
+  InsufficientAuthorityError,
+  recordDraftApproval,
+  type ApprovalDecisionRecord,
+} from "@/api/approvals";
 import { getUser } from "@/auth/session";
 
 export type { IntegrityState };
@@ -62,10 +67,54 @@ export function useGovernance() {
 
   const signOff = useCallback(
     async (note?: string) => {
-      if (!state.ledger) return;
+      const ledger = state.ledger;
+      if (!ledger) return;
       setState((s) => ({ ...s, busy: true, error: null }));
       try {
-        const next = await applySignoff(state.ledger, actor(), note);
+        const draftId = ledger.draftId;
+        const level = ledger.requiredLevel;
+
+        // Enforced path: when the reviewed contract was saved to Vaquill AI
+        // (draft id present) and a level is required, run the sign-off through
+        // the backend's authority-enforced approval. A 403 is a HARD block, and
+        // the server returns the verified role we stamp into the ledger.
+        if (draftId && level) {
+          try {
+            const record: ApprovalDecisionRecord = await recordDraftApproval({
+              draftId,
+              approvalLevel: level,
+              decision: "approved",
+              rationale: note,
+              verdictSnapshot: {
+                source: "word_addin",
+                requiredLevel: level,
+                dealBreakerCount: ledger.dealBreakerCount,
+                summary: ledger.summary,
+                reasons: ledger.reasons,
+              },
+            });
+            const next = await applySignoff(ledger, actor(), note, {
+              enforced: true,
+              role: record.decidedByRole ?? null,
+            });
+            await writeLedger(next);
+            setState({ status: "loaded", ledger: next, integrity: "verified", error: null, busy: false });
+          } catch (e) {
+            if (e instanceof InsufficientAuthorityError) {
+              // Insufficient authority: hard block, do not attest.
+              setState((s) => ({ ...s, busy: false, error: e.message }));
+              return;
+            }
+            // Network / server error: surface it and let the user retry rather
+            // than silently downgrading an enforced sign-off to an attestation.
+            setState((s) => ({ ...s, busy: false, error: (e as Error).message }));
+          }
+          return;
+        }
+
+        // Attestation fallback: no saved draft, so record the in-file
+        // (tamper-evident, authority-UNverified) attestation, unchanged.
+        const next = await applySignoff(ledger, actor(), note, { enforced: false });
         await writeLedger(next);
         setState({ status: "loaded", ledger: next, integrity: "verified", error: null, busy: false });
       } catch (e) {

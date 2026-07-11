@@ -30,14 +30,20 @@ function fmt(iso?: string): string {
 
 function StatusBanner({ ledger }: { ledger: GovernanceLedger }) {
   if (ledger.status === "signed_off") {
+    const roleLabel = ledger.signedOffRole ? LEVEL_LABEL[ledger.signedOffRole] ?? ledger.signedOffRole : null;
     return (
       <div className="gov-banner gov-banner--signed">
         <div className="row" style={{ justifyContent: "space-between" }}>
           <strong>Signed off</strong>
-          <Badge tone="green">Approved</Badge>
+          <Badge tone="green">{ledger.signoffEnforced ? "Authority verified" : "Attested"}</Badge>
         </div>
         <p className="small" style={{ margin: "4px 0 0" }}>
           {ledger.signedOffBy} on {fmt(ledger.signedOffAt)}.
+        </p>
+        <p className="small muted" style={{ margin: "4px 0 0" }}>
+          {ledger.signoffEnforced
+            ? `Authority checked by Vaquill AI${roleLabel ? ` (recorded as ${roleLabel})` : ""}.`
+            : "Recorded as an in-file attestation. Authority was not verified."}
         </p>
       </div>
     );
@@ -64,7 +70,17 @@ function StatusBanner({ ledger }: { ledger: GovernanceLedger }) {
   );
 }
 
-function SignoffAction({ onSignoff, busy }: { onSignoff: (note?: string) => void; busy: boolean }) {
+function SignoffAction({
+  onSignoff,
+  busy,
+  enforced,
+  error,
+}: {
+  onSignoff: (note?: string) => void;
+  busy: boolean;
+  enforced: boolean;
+  error?: string | null;
+}) {
   const [note, setNote] = useState("");
   return (
     <div className="card gov-action stack">
@@ -79,11 +95,11 @@ function SignoffAction({ onSignoff, busy }: { onSignoff: (note?: string) => void
       <Button variant="primary" block loading={busy} onClick={() => onSignoff(note || undefined)}>
         <CheckIcon size={14} /> Record my approval
       </Button>
+      {error && <Banner tone="danger">{error}</Banner>}
       <p className="small muted" style={{ margin: 0 }}>
-        This records your name and the required level as an attestation stamped into the file
-        (tamper-evident, not enforced): the pane does not verify your authority. For an
-        authority-checked approval that blocks on insufficient rank, use the saved draft in the
-        Vaquill AI web app.
+        {enforced
+          ? "Vaquill AI checks your authority on the server before recording this. If your account is below the required level, the approval is blocked and nothing is stamped into the file."
+          : "This records your name and the required level as an attestation stamped into the file (tamper-evident, not enforced): the pane does not verify your authority. For an authority-checked approval that blocks on insufficient rank, save this contract to Vaquill AI first, then sign off."}
       </p>
     </div>
   );
@@ -218,7 +234,14 @@ export function GovernanceView() {
         </div>
       )}
 
-      {ledger.status === "pending_signoff" && <SignoffAction onSignoff={signOff} busy={state.busy} />}
+      {ledger.status === "pending_signoff" && (
+        <SignoffAction
+          onSignoff={signOff}
+          busy={state.busy}
+          enforced={Boolean(ledger.draftId && ledger.requiredLevel)}
+          error={state.error}
+        />
+      )}
 
       <div className="stack" style={{ gap: 4 }}>
         <h2 className="small muted">History</h2>
