@@ -141,6 +141,12 @@ export interface ContractReviewRequest {
   playbookId?: string;
   reviewInstructions?: string;
   matterId?: string;
+  /** Markup aggressiveness: 'light' flags only escalation triggers, 'standard'
+   *  marks gaps to the preferred position, 'firm' hard-lines every deviation. */
+  markupLevel?: "light" | "standard" | "firm";
+  /** Whose paper: 'own' = defend our template, 'counterparty' = mark up their
+   *  form assertively. Orthogonal to userSide. Omit if unknown. */
+  paperSide?: "own" | "counterparty";
 }
 
 /** Accepted redline sent back for the authoritative server-generated DOCX. */

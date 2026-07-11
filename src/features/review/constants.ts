@@ -88,6 +88,20 @@ export const JURISDICTIONS: Option[] = [
 
 export type ReviewScope = "document" | "selection";
 
+/** How aggressively to mark up (backend markup_level). */
+export const MARKUP_LEVELS: Option[] = [
+  { value: "standard", label: "Standard (mark gaps to preferred)" },
+  { value: "light", label: "Light (only escalation triggers)" },
+  { value: "firm", label: "Firm (hard-line every deviation)" },
+];
+
+/** Whose paper this is (backend paper_side). "" omits it. */
+export const PAPER_SIDES: Option[] = [
+  { value: "", label: "Unknown / not sure" },
+  { value: "counterparty", label: "Their paper (mark up assertively)" },
+  { value: "own", label: "Our template (defend our positions)" },
+];
+
 /** Map an enum value back to its human label for display. */
 export function labelOf(options: Option[], value: string): string {
   return options.find((o) => o.value === value)?.label ?? value;

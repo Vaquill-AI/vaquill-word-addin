@@ -93,7 +93,7 @@ const RESULT: ContractReviewResponse = {
 };
 
 function Preview() {
-  const { decisionOf, setDecision, addressed } = useDecisions("demo");
+  const { decisionOf, setDecision, addressed } = useDecisions(RESULT.redlines, "demo");
   const [filter, setFilter] = useState<RedlineFilter>("all");
   const redlines = RESULT.redlines;
 

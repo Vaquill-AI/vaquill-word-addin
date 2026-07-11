@@ -30,6 +30,10 @@ export interface RunParams {
   includeExtras?: boolean;
   /** Scope this review to a Vaquill AI matter (carried through to saving). */
   matterId?: string;
+  /** Markup aggressiveness (light / standard / firm). */
+  markupLevel?: "light" | "standard" | "firm";
+  /** Whose paper this is (own / counterparty), or undefined if unknown. */
+  paperSide?: "own" | "counterparty";
 }
 
 export interface ReviewState {
@@ -123,6 +127,8 @@ export function useReview() {
         playbookId: params.playbookId,
         reviewInstructions: params.reviewInstructions || undefined,
         matterId: params.matterId || undefined,
+        markupLevel: params.markupLevel || undefined,
+        paperSide: params.paperSide || undefined,
       };
 
       setState((s) => ({ ...s, status: "streaming", docHash }));

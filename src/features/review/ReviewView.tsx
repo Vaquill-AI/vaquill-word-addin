@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Banner, Button, Badge } from "@/ui/primitives";
 import { InfoTip } from "@/ui/InfoTip";
 import { readReviewSnapshot, writeReviewSnapshot } from "@/office/reviewState";
@@ -121,7 +121,34 @@ export function ReviewView() {
       alive = false;
     };
   }, [snapshot]);
-  const { decisionOf, setDecision, addressed } = useDecisions(result?.id);
+  // Persist accept/reject decisions into the .docx snapshot (stable-id keyed) so
+  // reopening the file restores review progress.
+  const persistDecisions = useCallback(
+    (byId: Record<string, "pending" | "accepted" | "rejected">) => {
+      if (!result) return;
+      const currentResult = result;
+      setSnapshot((prev) => {
+        const base: ReviewSnapshot =
+          prev && prev.result.id === currentResult.id
+            ? prev
+            : {
+                savedAt: new Date().toISOString(),
+                result: currentResult,
+                docHash: state.docHash ?? undefined,
+              };
+        const next: ReviewSnapshot = { ...base, decisions: byId };
+        void writeReviewSnapshot(next).catch(() => {});
+        return next;
+      });
+    },
+    [result, state.docHash],
+  );
+  const { decisionOf, setDecision, addressed } = useDecisions(
+    result?.redlines ?? [],
+    result?.id,
+    snapshot?.decisions,
+    persistDecisions,
+  );
   const busy = state.status === "reading" || state.status === "streaming";
 
   // The progress card renders below the form and was easy to miss. When a run

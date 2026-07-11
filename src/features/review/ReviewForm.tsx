@@ -2,18 +2,29 @@ import { useState } from "react";
 import { Button, Field } from "@/ui/primitives";
 import { PlaybookPicker } from "./PlaybookPicker";
 import { MatterPicker } from "@/features/integration/MatterPicker";
-import { CONTRACT_TYPES, USER_SIDES, JURISDICTIONS, type ReviewScope } from "./constants";
+import {
+  CONTRACT_TYPES,
+  USER_SIDES,
+  JURISDICTIONS,
+  MARKUP_LEVELS,
+  PAPER_SIDES,
+  type ReviewScope,
+} from "./constants";
+import { getReviewPrefs } from "@/lib/prefs";
 import type { RunParams } from "./useReview";
 
 export function ReviewForm({ onRun, busy }: { onRun: (p: RunParams) => void; busy: boolean }) {
-  const [contractType, setContractType] = useState("nda");
+  const prefs = getReviewPrefs();
+  const [contractType, setContractType] = useState(prefs.contractType || "nda");
   const [userSide, setUserSide] = useState("customer");
-  const [jurisdiction, setJurisdiction] = useState("");
+  const [jurisdiction, setJurisdiction] = useState(prefs.jurisdiction || "");
   const [scope, setScope] = useState<ReviewScope>("document");
   const [playbookId, setPlaybookId] = useState("");
   const [instructions, setInstructions] = useState("");
   const [includeExtras, setIncludeExtras] = useState(false);
   const [matterId, setMatterId] = useState("");
+  const [markupLevel, setMarkupLevel] = useState<"light" | "standard" | "firm">("standard");
+  const [paperSide, setPaperSide] = useState("");
 
   return (
     <form
@@ -29,6 +40,8 @@ export function ReviewForm({ onRun, busy }: { onRun: (p: RunParams) => void; bus
           reviewInstructions: instructions,
           includeExtras: scope === "document" ? includeExtras : false,
           matterId: matterId || undefined,
+          markupLevel,
+          paperSide: (paperSide as "own" | "counterparty") || undefined,
         });
       }}
     >
@@ -75,6 +88,29 @@ export function ReviewForm({ onRun, busy }: { onRun: (p: RunParams) => void; bus
         <PlaybookPicker contractType={contractType} value={playbookId} onChange={setPlaybookId} />
 
         <MatterPicker value={matterId} onChange={setMatterId} label="Matter (optional)" />
+
+        <Field label="Markup level">
+          <select
+            value={markupLevel}
+            onChange={(e) => setMarkupLevel(e.target.value as "light" | "standard" | "firm")}
+          >
+            {MARKUP_LEVELS.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+        </Field>
+
+        <Field label="Whose paper">
+          <select value={paperSide} onChange={(e) => setPaperSide(e.target.value)}>
+            {PAPER_SIDES.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+        </Field>
       </div>
 
       {scope === "document" && (

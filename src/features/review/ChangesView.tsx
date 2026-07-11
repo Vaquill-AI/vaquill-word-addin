@@ -228,22 +228,40 @@ export function ChangesView() {
 
       {tcs.length > 0 && (
         <>
-          {pb.status === "ready" && pb.playbooks.length > 0 && (
-            <Field label="Triage against">
-              <select value={pbId} onChange={(e) => setPbId(e.target.value)} disabled={anyBusy}>
-                <option value="">General legal judgment</option>
-                {pb.playbooks.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name}
-                  </option>
-                ))}
-              </select>
-            </Field>
-          )}
-
-          <Button variant="primary" block onClick={runTriage} loading={triage === "running"} disabled={anyBusy}>
-            {triage === "done" ? "Re-run AI triage" : "AI triage the changes"}
-          </Button>
+          {(() => {
+            const hasPlaybooks = pb.status === "ready" && pb.playbooks.length > 0;
+            return (
+              <div className="row" style={{ gap: 8, alignItems: "flex-end", flexWrap: "wrap" }}>
+                {hasPlaybooks && (
+                  <div style={{ flex: "1 1 150px", minWidth: 0 }}>
+                    <Field label="Triage against">
+                      <select
+                        value={pbId}
+                        onChange={(e) => setPbId(e.target.value)}
+                        disabled={anyBusy}
+                      >
+                        <option value="">General legal judgment</option>
+                        {pb.playbooks.map((p) => (
+                          <option key={p.id} value={p.id}>
+                            {p.name}
+                          </option>
+                        ))}
+                      </select>
+                    </Field>
+                  </div>
+                )}
+                <Button
+                  variant="primary"
+                  block={!hasPlaybooks}
+                  onClick={runTriage}
+                  loading={triage === "running"}
+                  disabled={anyBusy}
+                >
+                  {triage === "done" ? "Re-run AI triage" : "AI triage the changes"}
+                </Button>
+              </div>
+            );
+          })()}
 
           {triage === "done" && (
             <div className="triage-summary">

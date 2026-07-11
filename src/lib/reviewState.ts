@@ -16,6 +16,11 @@ export interface ReviewSnapshot {
   /** SHA-256 of the document body at review time, so a later open can tell
    * whether the draft changed since. Absent on snapshots from older builds. */
   docHash?: string;
+  /** Per-redline accept/reject decisions, keyed by a STABLE redline identity
+   * (clauseName + current language), so reopening a reviewed file restores the
+   * reviewer's progress instead of resetting every redline to pending. Index
+   * keys would break if a re-run reorders redlines. Absent on older snapshots. */
+  decisions?: Record<string, "pending" | "accepted" | "rejected">;
 }
 
 function toBase64(s: string): string {
