@@ -36,7 +36,10 @@ export function DraftView() {
       const r = await generateDraft({
         category,
         title: title.trim() || labelOf(DRAFT_CATEGORIES, category),
-        governingLawState: jurisdiction === "US" ? undefined : jurisdiction,
+        // The backend requires a governing law for US drafts; "United States
+        // (general)" maps to the "federal" sentinel (multi-state / federal),
+        // otherwise the specific state. Omitting it 422s.
+        governingLawState: jurisdiction === "US" ? "federal" : jurisdiction,
         specialInstructions: instructions,
       });
       setResult(r);
