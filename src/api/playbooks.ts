@@ -135,6 +135,24 @@ export async function renamePlaybook(id: string, name: string): Promise<Playbook
 }
 
 /**
+ * Duplicate a playbook into a new user-owned copy. Done client-side: there is no
+ * dedicated /duplicate route, but the create endpoint accepts a full positions
+ * map (the same shape export/import round-trips), so we re-create it under a new
+ * name. Returns the new playbook.
+ */
+export async function duplicatePlaybook(source: PlaybookDetail): Promise<PlaybookDetail> {
+  const p = await request<PlaybookDetail>(PLAYBOOKS, {
+    method: "POST",
+    body: {
+      name: `Copy of ${source.name}`,
+      contractType: source.contractType,
+      positions: source.positions,
+    },
+  });
+  return normalizeDetail(p);
+}
+
+/**
  * Make this playbook the default for its contract type. The backend clears
  * `is_default` on the user's sibling playbooks of the same type atomically, so
  * there is never more than one default competing.
