@@ -102,8 +102,12 @@ export function SaveToVaquill(props: Props) {
     try {
       const { base64, filename } = await readDocumentBase64();
       const title = props.mode === "draft" ? props.draft.title : props.title;
-      await uploadTemplate(base64, filename, title);
-      setSaved({ label: "Saved the open document as a template." });
+      const ref = await uploadTemplate(base64, filename, title);
+      const templateId = ref.templateId ?? ref.id;
+      setSaved({
+        label: "Saved as a template. Variables are being detected in the background.",
+        url: templateId ? `${config.appBase}/templates/${templateId}` : undefined,
+      });
     } catch (e) {
       setError((e as Error).message);
     } finally {
