@@ -1,0 +1,139 @@
+.compliance-score {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* ---- Custom guideline checklist mode ----------------------------------- */
+.guidelines-editor {
+  width: 100%;
+  min-height: 140px;
+  resize: vertical;
+  padding: var(--space-s);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text);
+  font-family: inherit;
+  font-size: var(--fs-body);
+  line-height: 1.5;
+}
+
+.guideline-card__quote {
+  margin: 2px 0 0;
+  padding: 6px 10px;
+  border-left: 3px solid var(--border-strong);
+  background: var(--surface-muted);
+  color: var(--text);
+  font-size: var(--fs-body);
+  font-style: italic;
+  line-height: 1.45;
+}
+
+.guideline-card__ungrounded {
+  margin: 2px 0 0;
+}
+
+.req-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+}
+
+.req-card__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.req-card__name {
+  margin: 0;
+  font-size: var(--fs-body);
+  font-weight: 600;
+}
+
+.req-card__ref {
+  margin: 0;
+}
+
+.req-card__gap,
+.req-card__rec {
+  margin: 0;
+}
+
+.req-card__tag {
+  display: inline-block;
+  margin-right: 4px;
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  vertical-align: 1px;
+}
+
+.req-card__tag--gap {
+  background: var(--red-tint);
+  color: var(--red);
+}
+
+.req-card__tag--fix {
+  background: var(--green-tint);
+  color: var(--green);
+}
+
+/* ---- Draft a fix (gap remediation) ------------------------------------- */
+.draft-fix {
+  gap: var(--space-s);
+  margin-top: var(--space-xs);
+  padding-top: var(--space-s);
+  border-top: 1px dashed var(--border);
+}
+
+.draft-fix__cta {
+  align-self: flex-start;
+  margin-top: var(--space-xs);
+}
+
+.draft-fix__loading {
+  align-items: center;
+  gap: var(--space-s);
+  margin-top: var(--space-xs);
+}
+
+.draft-fix__label {
+  font-weight: 600;
+}
+
+.draft-fix__text {
+  max-height: 220px;
+  overflow-y: auto;
+  padding: var(--space-s);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-muted);
+  color: var(--text);
+  font-size: var(--fs-body);
+  line-height: 1.45;
+  white-space: pre-wrap;
+}
+
+.draft-fix__actions {
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+}
+
+.draft-fix__hint {
+  margin: 0;
+}
+
+.draft-fix__inserted {
+  color: var(--green);
+  font-weight: 600;
+}
