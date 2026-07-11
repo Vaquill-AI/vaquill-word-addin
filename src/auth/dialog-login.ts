@@ -12,7 +12,7 @@ import { authRedirectUrl } from "@/config";
  * the dialog is a separate browser context with no shared storage).
  */
 export type DialogPayload =
-  | { ok: true; accessToken: string; refreshToken: string }
+  | { ok: true; code: string }
   | { ok: false; error: string };
 
 export async function login(): Promise<void> {
@@ -20,6 +20,8 @@ export async function login(): Promise<void> {
 
   // Ask Supabase for the provider URL. skipBrowserRedirect keeps us from
   // navigating the task pane; we open the returned URL in the dialog instead.
+  // This call also generates the PKCE code_verifier and stores it on THIS
+  // (task-pane) client instance.
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "google",
     options: {
@@ -31,9 +33,20 @@ export async function login(): Promise<void> {
     throw error ?? new Error("Could not start sign-in.");
   }
 
+  // The dialog runs Google sign-in in its own browser context and relays the
+  // authorization code back (it has no verifier, so it cannot exchange).
   const payload = await openDialog(data.url);
   if (!payload.ok) throw new Error(payload.error);
-  await setSessionFromTokens(payload.accessToken, payload.refreshToken);
+
+  // Exchange the code HERE in the task pane, where signInWithOAuth stored the
+  // PKCE code_verifier. Doing this in the dialog fails with "PKCE code verifier
+  // not found in storage".
+  const { data: exchanged, error: exchangeError } =
+    await supabase.auth.exchangeCodeForSession(payload.code);
+  if (exchangeError || !exchanged.session) {
+    throw exchangeError ?? new Error("Could not complete sign-in.");
+  }
+  await setSessionFromTokens(exchanged.session.access_token, exchanged.session.refresh_token);
 }
 
 function openDialog(startUrl: string): Promise<DialogPayload> {

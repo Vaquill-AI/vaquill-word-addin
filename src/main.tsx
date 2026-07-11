@@ -1,6 +1,7 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { App } from "./App";
+import { isAuthCallback, relayAuthCallback } from "./auth/relay";
 import { assertConfigured } from "./config";
 import { isWordHost } from "./office/run";
 import "./styles/global.css";
@@ -10,6 +11,18 @@ import "./styles/global.css";
  * before React touches any Office API, then mount the app.
  */
 Office.onReady(() => {
+  // OAuth callback fallback: Supabase redirects the sign-in dialog to
+  // /auth.html, but when the exact redirect path isn't allow-listed it falls
+  // back to the Site URL (this page, at the root) with the code in the query.
+  // Detect that, relay the code to the pane, and stop — do NOT render the full
+  // app inside the dialog (which would show a duplicate screen and try to open
+  // a nested dialog).
+  const callbackParams = new URLSearchParams(window.location.search);
+  if (isAuthCallback(callbackParams)) {
+    relayAuthCallback(callbackParams);
+    return;
+  }
+
   const root = createRoot(document.getElementById("root")!);
   if (!isWordHost()) {
     root.render(
