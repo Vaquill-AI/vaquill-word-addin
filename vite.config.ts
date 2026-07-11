@@ -24,7 +24,10 @@ export default defineConfig({
   },
   build: {
     outDir: "dist",
-    sourcemap: true,
+    // No source maps in production: nginx blocks .map (return 404), so shipping
+    // a bundle that references one just produces console/log 404 noise on every
+    // load. This thin client has no server-side error reporting that needs them.
+    sourcemap: false,
     rollupOptions: {
       input: {
         taskpane: resolve(__dirname, "index.html"),
