@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Badge, Button } from "@/ui/primitives";
 import { CheckIcon, ChevronIcon } from "@/ui/icons";
-import { replaceSelectionTracked } from "@/office/selection";
+import { insertClauseTracked } from "@/office/richInsert";
 import type { PlaybookPosition } from "@/api/playbooks";
 
 function humanize(clauseType: string): string {
@@ -36,7 +36,7 @@ function Rung({
     setInserting(true);
     setErr(null);
     try {
-      await replaceSelectionTracked(text);
+      await insertClauseTracked(text);
       setDone(true);
       setTimeout(() => setDone(false), 1500);
     } catch (e) {

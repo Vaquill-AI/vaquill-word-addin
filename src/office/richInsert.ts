@@ -62,6 +62,57 @@ export async function insertDraftFormatted(draft: Draft): Promise<void> {
   });
 }
 
+/** Split clause text into non-empty paragraph blocks (blank-line delimited). */
+function clauseBlocks(text: string): string[] {
+  const blocks = text
+    .split(/\n\s*\n/)
+    .map((p) => p.trim())
+    .filter((p) => p.length > 0);
+  return blocks.length > 0 ? blocks : [text.trim()];
+}
+
+/**
+ * Insert a standalone clause (e.g. a playbook position / fallback rung) as a
+ * clean tracked insertion, on its own paragraph(s) immediately after the
+ * paragraph the cursor sits in.
+ *
+ * Deliberately NOT a word-level diff-replace (unlike replaceSelectionTracked):
+ * a playbook rung is standalone reference language, so diffing it against
+ * whatever text happens to be selected interleaves the two into unreadable
+ * garbage. Inserting whole paragraphs after the current one is non-destructive
+ * (it never overwrites the selection) and never splits a word mid-token.
+ */
+export async function insertClauseTracked(text: string): Promise<void> {
+  const blocks = clauseBlocks(text);
+  return runWord(async (context) => {
+    const doc = context.document;
+    doc.load("changeTrackingMode");
+    const paras = doc.getSelection().paragraphs;
+    paras.load("items");
+    await context.sync();
+
+    const priorMode = doc.changeTrackingMode;
+    doc.changeTrackingMode = Word.ChangeTrackingMode.trackAll;
+    try {
+      const items = paras.items;
+      const anchor = items.length > 0 ? items[items.length - 1] : undefined;
+      let cursor: Word.Paragraph | undefined;
+      for (const block of blocks) {
+        cursor = cursor
+          ? cursor.insertParagraph(block, Word.InsertLocation.after)
+          : anchor
+            ? anchor.insertParagraph(block, Word.InsertLocation.after)
+            : doc.body.insertParagraph(block, Word.InsertLocation.end);
+      }
+      cursor?.select();
+      await context.sync();
+    } finally {
+      doc.changeTrackingMode = priorMode;
+      await context.sync();
+    }
+  });
+}
+
 /**
  * Insert a missing clause as a tracked change: a heading plus body paragraph
  * appended to the end of the document. Change-tracking mode is saved and
