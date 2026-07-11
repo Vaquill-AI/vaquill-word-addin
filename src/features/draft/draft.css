@@ -6,6 +6,7 @@
 .draft-loading {
   gap: 8px;
   padding: 8px 10px;
+  border: 1px solid var(--border);
   border-radius: var(--radius);
   background: var(--surface-muted);
 }
@@ -23,6 +24,7 @@
   max-height: 320px;
   overflow-y: auto;
   padding: 10px 12px;
+  border: 1px solid var(--border);
   border-radius: var(--radius);
   background: var(--surface-muted);
   font-size: 12.5px;
@@ -39,6 +41,7 @@
 }
 .draft-issue {
   padding: 8px 10px;
+  border: 1px solid var(--border);
   border-radius: var(--radius);
   background: var(--surface-muted);
 }

@@ -1,6 +1,7 @@
-/* Verbatim clause pulled from the source contract. Tint-filled well, no border,
-   matching the .draft-preview treatment (moved off the old inline styles). */
+/* Verbatim clause pulled from the source contract. Bordered tint well, matching
+   the .draft-preview treatment (moved off the old inline styles). */
 .transplant-preview {
+  border: 1px solid var(--border);
   max-height: 240px;
   overflow-y: auto;
   padding: 8px 10px;

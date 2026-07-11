@@ -10,8 +10,8 @@
   gap: 6px;
   padding: 4px 10px;
   border-radius: 999px;
-  border: 1px solid transparent;
-  background: var(--fill-subtle);
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
   color: var(--text-muted);
   font-size: 12px;
   font-weight: 600;
@@ -20,7 +20,7 @@
 }
 
 .filter-chip:hover {
-  background: var(--fill-subtle-hover);
+  background: var(--surface-muted);
 }
 
 .filter-chip:focus-visible {
@@ -30,7 +30,7 @@
 
 .filter-chip--on {
   background: var(--brand-tint);
-  border-color: transparent;
+  border-color: var(--brand-border);
   color: var(--brand-fg);
 }
 

@@ -4,6 +4,7 @@ import { OverflowMenu } from "@/ui/OverflowMenu";
 import { LocateIcon } from "@/ui/icons";
 import { selectClauseInDocument } from "@/office/navigate";
 import { commentOnCitation } from "@/office/citations";
+import { config } from "@/config";
 import type { AuthorityResult, Verdict } from "@/api/authority";
 
 function verdictBadge(verdict: Verdict) {
@@ -36,18 +37,31 @@ function corpusLabel(corpusType?: string): string | undefined {
   }
 }
 
+/**
+ * The link to include in the document comment. Statutes resolve to an in-app
+ * section URL; cases use an in-app case link built from the cluster id. We
+ * deliberately do NOT use the external corpus host here: a comment travels with
+ * the .docx, so its link must point to our own app, not a third-party source.
+ */
+function commentUrl(r: AuthorityResult): string | undefined {
+  if (r.kind === "statute") return r.sectionUrl;
+  return r.clusterId ? `${config.appBase}/cases/${r.clusterId}` : undefined;
+}
+
 function commentText(r: AuthorityResult): string {
+  const url = commentUrl(r);
+  const source = url ? ` Source: ${url}` : "";
   if (r.kind === "statute") {
     if (r.verdict === "verified") {
       const label = r.label ?? r.raw;
-      return `${label}: resolved in Vaquill AI's US statutes corpus. Confirm it is current (not amended or repealed) before relying on it.`;
+      return `${label}: resolved in Vaquill AI's US statutes corpus. Confirm it is current (not amended or repealed) before relying on it.${source}`;
     }
     return `Could not resolve ${r.raw} in Vaquill AI's US statutes corpus. Verify this citation manually before relying on it.`;
   }
   if (r.verdict === "verified") {
     const name = r.caseName ?? "This citation";
     const yr = r.year ? ` (${r.year})` : "";
-    return `${name}${yr}: found in Vaquill AI's US case-law corpus. Confirm current treatment (not overruled or superseded) before relying on it.`;
+    return `${name}${yr}: found in Vaquill AI's US case-law corpus. Confirm current treatment (not overruled or superseded) before relying on it.${source}`;
   }
   return `No matching case found in the corpus for ${r.raw}. Verify this citation manually before relying on it.`;
 }

@@ -2,7 +2,7 @@
   position: relative;
 }
 
-/* Trigger matches the flat filled-field look of .field select. */
+/* Trigger matches the bordered .field select look. */
 .combobox__trigger {
   display: flex;
   align-items: center;
@@ -10,9 +10,9 @@
   gap: 8px;
   width: 100%;
   padding: 9px 11px;
-  border: 1px solid transparent;
+  border: 1px solid var(--control-border);
   border-radius: var(--radius-sm);
-  background: var(--fill-subtle);
+  background: var(--surface);
   color: var(--text);
   font-family: inherit;
   font-size: var(--fs-body);
@@ -21,7 +21,7 @@
   transition: background 0.12s ease, border-color 0.12s ease, box-shadow 0.12s ease;
 }
 .combobox__trigger:hover {
-  background: var(--fill-subtle-hover);
+  border-color: var(--neutral-fg-3);
 }
 .combobox__trigger:focus-visible {
   outline: none;
@@ -60,18 +60,20 @@
 .combobox__search {
   margin: 6px;
   padding: 7px 10px;
-  border: 1px solid transparent;
+  border: 1px solid var(--control-border);
   border-radius: var(--radius-sm);
-  background: var(--fill-subtle);
+  background: var(--surface);
   color: var(--text);
   font-family: inherit;
   font-size: var(--fs-body);
 }
 .combobox__search:focus {
   outline: none;
-  background: var(--surface);
   border-color: var(--brand);
   box-shadow: 0 0 0 2px var(--brand-tint);
+}
+.combobox__popover {
+  border: 1px solid var(--border);
 }
 .combobox__list {
   list-style: none;

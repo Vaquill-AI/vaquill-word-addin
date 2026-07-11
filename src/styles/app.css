@@ -10,7 +10,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 10px 14px;
-  /* Flat chrome: no border; separation comes from the canvas tint below. */
+  border-bottom: 1px solid var(--border);
   background: var(--surface);
   position: sticky;
   top: 0;
@@ -40,8 +40,7 @@
   display: flex;
   gap: 2px;
   padding: 0 6px;
-  /* One barely-there hairline for the whole chrome (the only stroke that stays). */
-  border-bottom: 1px solid var(--neutral-stroke-3);
+  border-bottom: 1px solid var(--border);
   background: var(--surface);
   position: sticky;
   top: 0;
@@ -87,11 +86,11 @@
   background: var(--text);
 }
 
-/* Second-level nav (e.g. the Review hub: Redlines / Citations / Sign-off).
-   No border; the flattened segmented control floats under the tabs. */
+/* Second-level nav (e.g. the Review hub: Redlines / Citations / Sign-off). */
 .subnav {
   padding: 8px 10px;
-  background: transparent;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
 }
 
 .app-body {

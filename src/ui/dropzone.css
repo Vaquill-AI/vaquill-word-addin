@@ -5,9 +5,10 @@
   text-align: center;
   gap: 8px;
   padding: 18px 16px;
+  border: 1.5px dashed var(--border-strong);
   border-radius: var(--radius-md);
   background: var(--surface-muted);
-  transition: background 0.12s ease;
+  transition: background 0.12s ease, border-color 0.12s ease;
 }
 
 .dropzone--drag,

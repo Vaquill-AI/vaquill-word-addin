@@ -40,8 +40,9 @@
   flex-direction: column;
   gap: 4px;
   padding: 10px;
+  border: 1px solid var(--border);
   border-radius: var(--radius-sm);
-  background: var(--surface-muted);
+  background: var(--surface);
 }
 
 .req-card__head {
@@ -115,6 +116,7 @@
   max-height: 220px;
   overflow-y: auto;
   padding: var(--space-s);
+  border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   background: var(--surface-muted);
   color: var(--text);

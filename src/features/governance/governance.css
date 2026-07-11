@@ -24,13 +24,13 @@
   padding-left: 18px;
 }
 
-/* One calm governance panel, not a boxed card: a tinted, borderless surface
-   with internal spacing. Sign-off and lock are mutually exclusive states, so at
-   most one shows at a time. */
+/* Governance panel (sign-off or lock; at most one shows at a time). */
 .gov-action {
   padding: 12px;
-  background: var(--fill-subtle);
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: var(--radius);
+  box-shadow: var(--shadow-2);
 }
 
 .gov-history {

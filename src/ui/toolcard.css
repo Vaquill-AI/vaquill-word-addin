@@ -13,16 +13,17 @@
   width: 100%;
   text-align: left;
   padding: 12px 14px;
-  border: 1px solid transparent;
+  border: 1px solid var(--border);
   border-radius: var(--radius-md, 10px);
-  background: transparent;
+  background: var(--surface);
   color: var(--text);
   cursor: pointer;
   transition: border-color 0.12s ease, background 0.12s ease;
 }
 
 .toolcard:hover:not(:disabled) {
-  background: var(--fill-subtle);
+  border-color: var(--border-strong);
+  background: var(--surface-muted);
 }
 
 .toolcard:focus-visible {

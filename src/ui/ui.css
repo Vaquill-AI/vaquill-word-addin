@@ -7,8 +7,8 @@
   gap: 6px;
   padding: 8px 14px;
   border-radius: var(--radius-sm);
-  border: 1px solid transparent;
-  background: var(--fill-subtle);
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
   color: var(--text);
   font-size: var(--fs-body);
   font-weight: 600;
@@ -17,7 +17,7 @@
   transition: background 0.12s ease, border-color 0.12s ease, box-shadow 0.12s ease;
 }
 .btn:hover:not(:disabled) {
-  background: var(--fill-subtle-hover);
+  background: var(--surface-muted);
 }
 .btn:disabled {
   opacity: 0.55;
@@ -107,38 +107,41 @@
   color: var(--brand);
 }
 
-/* Borderless, tint-only. Danger earns a left accent bar (via box-shadow, not a
-   full border) for extra salience without a boxed outline. */
 .banner {
-  border: none;
+  border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 10px 12px;
-  background: var(--fill-subtle);
+  background: var(--surface-muted);
 }
 .banner--warn {
   background: var(--yellow-tint);
+  border-color: var(--warning-border);
   color: var(--warning);
 }
 .banner--danger {
   background: var(--red-tint);
+  border-color: var(--danger-border);
   color: var(--danger);
-  box-shadow: inset 3px 0 0 var(--danger);
 }
 .banner--info {
   background: var(--brand-tint);
+  border-color: var(--brand-border);
 }
 
 /* Clean, flat content card: solid white, hairline border, a whisper of shadow
    for depth (replaces the old frosted-glass Mica look). Feature cards set their
    own padding; generic cards use .card--pad for a consistent 16px. */
-/* Borderless, tint-separated: a white card reads against the light-grey canvas
-   without a stroke or shadow. Use .card--sunken when a card sits on white. */
+/* Bordered white card with a whisper of elevation. .card--sunken fills with a
+   tint for the rare nested case. */
 .card {
+  border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   background: var(--surface);
+  box-shadow: var(--shadow-2);
 }
 .card--sunken {
   background: var(--fill-subtle);
+  box-shadow: none;
 }
 .card--pad {
   padding: var(--space-l);
@@ -154,30 +157,28 @@
   font-weight: 600;
   color: var(--text-muted);
 }
-/* Filled-grey, borderless at rest; a border + ring appear only on focus (the
-   Harvey/Linear input look, one less stroke on every form). */
+/* Bordered inputs; the border goes brand + a soft ring on focus. */
 .field select,
 .field input,
 .field textarea {
   padding: 9px 11px;
-  border: 1px solid transparent;
+  border: 1px solid var(--control-border);
   border-radius: var(--radius-sm);
   font-size: var(--fs-body);
   font-family: inherit;
-  background: var(--fill-subtle);
+  background: var(--surface);
   color: var(--text);
   transition: background 0.12s ease, border-color 0.12s ease, box-shadow 0.12s ease;
 }
 .field select:hover,
 .field input:hover,
 .field textarea:hover {
-  background: var(--fill-subtle-hover);
+  border-color: var(--neutral-fg-3);
 }
 .field select:focus,
 .field input:focus,
 .field textarea:focus {
   outline: none;
-  background: var(--surface);
   border-color: var(--brand);
   box-shadow: 0 0 0 2px var(--brand-tint);
 }
@@ -218,14 +219,14 @@ summary:focus-visible {
   border-radius: var(--radius-sm);
 }
 
-/* Bare filled track, no outer border; the selected pill is a flat white fill
-   with ink text (the fill IS the selected signal, so blue stays for links). */
+/* Filled track with a hairline; the selected pill is a flat white fill with ink
+   text (the fill IS the selected signal, so blue stays for links). */
 .seg {
   display: flex;
   gap: 2px;
   padding: 2px;
   background: var(--fill-subtle);
-  border: none;
+  border: 1px solid var(--border);
   border-radius: var(--radius-sm);
 }
 .seg__btn {
@@ -298,33 +299,35 @@ summary:focus-visible {
   max-width: 60%;
 }
 
-/* Borderless ghost: no resting stroke/fill, tint on hover, tint (no border)
-   when active. The overflow kebab reuses this class, so it lifts too. */
+/* Bordered icon button; tint on hover, brand when active. The overflow kebab
+   reuses this class. */
 .iconbtn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   width: 28px;
   height: 28px;
-  border: 1px solid transparent;
+  border: 1px solid var(--border-strong);
   border-radius: var(--radius-sm);
-  background: transparent;
+  background: var(--surface);
   color: var(--text-muted);
   cursor: pointer;
   transition: background 0.12s ease, color 0.12s ease, border-color 0.12s ease;
 }
 .iconbtn:hover {
-  background: var(--fill-subtle);
+  background: var(--surface-muted);
   color: var(--text);
 }
 .iconbtn--green:hover {
   color: var(--green);
+  border-color: var(--success-border);
 }
 .iconbtn--red:hover {
   color: var(--red);
+  border-color: var(--danger-border);
 }
 .iconbtn--active {
   background: var(--brand-tint);
-  border-color: transparent;
+  border-color: var(--brand);
   color: var(--brand);
 }
