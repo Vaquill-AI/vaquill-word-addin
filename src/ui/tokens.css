@@ -79,19 +79,19 @@
     "Segoe UI Web (West European)", -apple-system, BlinkMacSystemFont, Roboto,
     "Helvetica Neue", sans-serif;
   --font-mono: "Cascadia Code", "SFMono-Regular", ui-monospace, Menlo, Consolas, monospace;
-  --fs-caption: 12px; /* Fluent Caption1 */
-  --fs-body: 13px; /* dense body (Fluent Body1 is 14; 13 fits the narrow pane) */
-  --fs-body-lg: 14px;
-  --fs-view-title: 15px; /* per-view section heading (h1 inside the pane) */
-  --fs-subtitle: 16px; /* Fluent Subtitle2 */
-  --fs-title: 20px; /* Fluent Subtitle1 */
+  --fs-caption: 12px; /* meta / secondary labels */
+  --fs-body: 14px; /* comfortable body (was 13; the pane reads modern, not dense) */
+  --fs-body-lg: 15px;
+  --fs-view-title: 18px; /* per-view heading -- a clear, prominent title */
+  --fs-subtitle: 16px;
+  --fs-title: 22px;
   --fw-regular: 400;
   --fw-semibold: 600;
 
-  /* ---- Radii (Fluent 2) ---- */
-  --radius-sm: 4px; /* borderRadiusMedium - controls */
-  --radius-md: 6px; /* borderRadiusLarge */
-  --radius-lg: 8px; /* borderRadiusXLarge - cards */
+  /* ---- Radii (softer, modern) ---- */
+  --radius-sm: 6px; /* controls: buttons, inputs, chips */
+  --radius-md: 8px;
+  --radius-lg: 12px; /* cards */
   --radius: var(--radius-lg);
 
   /* ---- Spacing ramp (Fluent 2) ---- */
@@ -110,20 +110,14 @@
   --shadow-28: 0 0 8px rgba(0, 0, 0, 0.12), 0 14px 28px rgba(0, 0, 0, 0.14);
   --shadow: var(--shadow-2);
 
-  /* ---- Windows 11 materials ---- */
-  /* Acrylic: translucent chrome (header, tabs, sticky bars). Microsoft's
-     recipe: real-time blur + saturation + light tint. */
-  --acrylic-bg: rgba(250, 251, 253, 0.68);
-  --acrylic-blur: blur(30px) saturate(140%);
-  --acrylic-stroke: rgba(255, 255, 255, 0.6);
-  /* Mica card: frosted translucent content surface. Text stays legible because
-     the fill is near-white; the canvas shows through just enough to read as
-     glass, matching the Windows 11 layered look. */
-  --surface-glass: rgba(255, 255, 255, 0.64);
-  --card-blur: blur(18px) saturate(140%);
-  /* Mica: the quiet, cool wallpaper-tinted canvas the glass floats over
-     (Win11 light Mica base + faint Fluent-blue radial tints). */
-  --mica: radial-gradient(130% 90% at 100% 0%, rgba(15, 108, 189, 0.08) 0%, transparent 58%),
-    radial-gradient(130% 90% at 0% 100%, rgba(15, 108, 189, 0.06) 0%, transparent 55%),
-    linear-gradient(180deg, #eef1f6 0%, #e9edf3 100%);
+  /* ---- Surfaces (flat + clean; Office colors, modern layering) ----
+     The old Windows-11 acrylic/mica glass read as busy and dated. Chrome and
+     cards are now solid, with a quiet light-gray canvas so white cards stand
+     out cleanly -- the calm, spacious look of a modern legal-AI pane. */
+  --acrylic-bg: #ffffff; /* header, tabs, sticky bars */
+  --acrylic-blur: none;
+  --acrylic-stroke: var(--border);
+  --surface-glass: var(--surface); /* cards: solid white */
+  --card-blur: none;
+  --mica: #f3f4f6; /* canvas: quiet flat light-gray */
 }

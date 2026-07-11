@@ -51,11 +51,12 @@ a {
   gap: var(--space-s);
 }
 
-/* Section title shared by every feature view (was an inline fontSize:15). */
+/* Section title shared by every feature view: a clear, prominent heading. */
 .view-title {
   font-size: var(--fs-view-title);
   font-weight: 600;
-  line-height: 1.3;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
 }
 
 .muted {
