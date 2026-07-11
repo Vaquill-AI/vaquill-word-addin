@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Banner, Button, Badge } from "@/ui/primitives";
 import { InfoTip } from "@/ui/InfoTip";
 import { readReviewSnapshot, writeReviewSnapshot } from "@/office/reviewState";
@@ -15,7 +15,8 @@ import { DocumentTools } from "./DocumentTools";
 import { OutlinePanel } from "./OutlinePanel";
 import { SaveToVaquill } from "@/features/integration/SaveToVaquill";
 import { RecordGovernance } from "@/features/governance/RecordGovernance";
-import { useReview, type RunParams } from "./useReview";
+import { useReviewContext } from "./ReviewProvider";
+import type { RunParams } from "./useReview";
 import { useReviewFreshness } from "./useReviewFreshness";
 import { useDecisions } from "./decisions";
 import { CONTRACT_TYPES, USER_SIDES, labelOf } from "./constants";
@@ -29,6 +30,13 @@ const SIGNOFF_LABEL: Record<string, string> = {
 };
 
 function StreamingState({ label }: { label: string }) {
+  // A ticking elapsed counter so a long review visibly reads as "working"
+  // rather than a frozen shimmer, even between backend progress frames.
+  const [elapsed, setElapsed] = useState(0);
+  useEffect(() => {
+    const t = setInterval(() => setElapsed((e) => e + 1), 1000);
+    return () => clearInterval(t);
+  }, []);
   return (
     <div className="streaming">
       <div className="row" role="status" aria-live="polite" style={{ gap: 8 }}>
@@ -36,12 +44,19 @@ function StreamingState({ label }: { label: string }) {
         <span className="small" style={{ fontWeight: 600 }}>
           {label}
         </span>
+        <span className="small muted" style={{ marginLeft: "auto" }} aria-hidden>
+          {elapsed}s
+        </span>
       </div>
       <div className="streaming__skeleton">
         <span />
         <span />
         <span />
       </div>
+      <p className="small muted" style={{ margin: 0 }}>
+        Reviewing the contract clause by clause. This usually takes 30-60 seconds. You can switch
+        tabs while it runs.
+      </p>
     </div>
   );
 }
@@ -55,7 +70,7 @@ function fmtDate(iso: string): string {
 }
 
 export function ReviewView() {
-  const { state, run, reset, hydrate } = useReview();
+  const { state, run, reset, hydrate } = useReviewContext();
   const [params, setParams] = useState<RunParams | null>(null);
   const [filter, setFilter] = useState<RedlineFilter>("all");
   const [snapshot, setSnapshot] = useState<ReviewSnapshot | null>(null);
@@ -108,6 +123,15 @@ export function ReviewView() {
   }, [snapshot]);
   const { decisionOf, setDecision, addressed } = useDecisions(result?.id);
   const busy = state.status === "reading" || state.status === "streaming";
+
+  // The progress card renders below the form and was easy to miss. When a run
+  // starts, bring it into view so the user immediately sees it working.
+  const streamingRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (busy) {
+      streamingRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  }, [busy]);
 
   const redlines = result?.redlines ?? [];
   const counts = useMemo(
@@ -283,7 +307,7 @@ export function ReviewView() {
       <ReviewForm onRun={onRun} busy={busy} />
 
       {busy && (
-        <div className="stack" style={{ gap: 8 }}>
+        <div className="stack" style={{ gap: 8 }} ref={streamingRef}>
           <StreamingState
             label={
               state.status === "reading"

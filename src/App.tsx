@@ -13,6 +13,7 @@ import { GovernanceView } from "@/features/governance/GovernanceView";
 import { AssistantView } from "@/features/assistant/AssistantView";
 import { DraftView } from "@/features/draft/DraftView";
 import { PlaybookView } from "@/features/playbook/PlaybookView";
+import { ReviewProvider } from "@/features/review/ReviewProvider";
 import "./styles/app.css";
 
 /**
@@ -38,8 +39,9 @@ export function App() {
   useEffect(() => subscribe(setUser), []);
 
   return (
-    <div className="app">
-      <Header
+    <ReviewProvider>
+      <div className="app">
+        <Header
         right={
           user ? (
             <Button variant="ghost" size="sm" onClick={clearSession}>
@@ -129,6 +131,7 @@ export function App() {
           <PlaybookView />
         )}
       </div>
-    </div>
+      </div>
+    </ReviewProvider>
   );
 }
