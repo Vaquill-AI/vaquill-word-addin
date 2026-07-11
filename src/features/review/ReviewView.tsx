@@ -221,7 +221,11 @@ export function ReviewView() {
           {gate && (
             <RecordGovernance
               gate={gate}
-              meta={{ contractType: result.contractType ?? params?.contractType, playbookId: params?.playbookId }}
+              meta={{
+                contractType: result.contractType ?? params?.contractType,
+                playbookId: params?.playbookId,
+                matterId: params?.matterId,
+              }}
             />
           )}
           <ReviewSummary result={result} />

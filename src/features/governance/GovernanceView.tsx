@@ -77,10 +77,13 @@ function SignoffAction({ onSignoff, busy }: { onSignoff: (note?: string) => void
         />
       </div>
       <Button variant="primary" block loading={busy} onClick={() => onSignoff(note || undefined)}>
-        <CheckIcon size={14} /> Record my sign-off
+        <CheckIcon size={14} /> Record my approval
       </Button>
       <p className="small muted" style={{ margin: 0 }}>
-        Your sign-off is stamped into the document and travels with the file.
+        This records your name and the required level as an attestation stamped into the file
+        (tamper-evident, not enforced): the pane does not verify your authority. For an
+        authority-checked approval that blocks on insufficient rank, use the saved draft in the
+        Vaquill AI web app.
       </p>
     </div>
   );
@@ -152,7 +155,7 @@ export function GovernanceView() {
         <div className="stack" style={{ gap: 4 }}>
           <div className="row" style={{ justifyContent: "space-between", alignItems: "flex-start" }}>
             <h1 className="view-title">Sign-off</h1>
-            <InfoTip text="The approval record is stored inside this .docx, so it travels with the file even when it is emailed on. Integrity verified means the record was not hand-edited after it was stamped. Record your sign-off to prove the required manager, partner, or GC approval actually happened." />
+            <InfoTip text="The approval record is stored inside this .docx, so it travels with the file even when it is emailed on. It is a tamper-EVIDENT attestation (it flags accidental edits, but the pane does not verify the signer's authority). Record your approval to attest that the required manager, partner, or GC sign-off was obtained; the authority-enforced approval lives in the Vaquill AI web app." />
           </div>
           <p className="small muted" style={{ margin: 0 }}>
             This document has no sign-off record yet.
@@ -174,7 +177,7 @@ export function GovernanceView() {
       <div className="row" style={{ justifyContent: "space-between" }}>
         <div className="row" style={{ gap: 6, alignItems: "center" }}>
           <h1 className="view-title">Sign-off</h1>
-          <InfoTip side="left" text="This approval record lives inside the .docx and travels with the file when emailed. Integrity verified means it was not hand-edited after being stamped; Record modified means the stored record no longer matches its signature, so treat it with caution." />
+          <InfoTip side="left" text="This approval record lives inside the .docx and travels with the file when emailed. 'Integrity verified' flags that the record has not been accidentally edited since it was stamped -- a tamper-EVIDENT check, not tamper-proof (a determined user could strip or recompute the signature). 'Record modified' means the stored record no longer matches its signature, so treat it with caution." />
         </div>
         {integrity === "verified" ? (
           <Badge tone="green">Integrity verified</Badge>
