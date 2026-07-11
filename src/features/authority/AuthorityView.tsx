@@ -5,6 +5,7 @@ import { CheckIcon } from "@/ui/icons";
 import { useAuthorityScan } from "./useAuthorityScan";
 import { getExtractCoverage } from "./extract";
 import { AuthorityItem } from "./AuthorityItem";
+import { CitationStyle } from "./CitationStyle";
 import { insertTableOfAuthorities } from "@/office/citations";
 import "./authority.css";
 
@@ -117,6 +118,10 @@ export function AuthorityView() {
           <AuthorityItem key={r.raw} result={r} />
         ))}
       </div>
+
+      {state.status === "done" && state.results.length > 0 && (
+        <CitationStyle citations={state.results.map((r) => r.raw)} />
+      )}
 
       {state.status === "done" && verifiedWithNames.length > 0 && (
         <div className="stack" style={{ gap: 6 }}>

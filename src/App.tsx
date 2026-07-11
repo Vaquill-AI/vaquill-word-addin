@@ -10,8 +10,7 @@ import {
   PlaybookIcon,
   SettingsIcon,
   ArrowLeftIcon,
-  ShieldCheckIcon,
-  RedactIcon,
+  ToolsIcon,
 } from "@/ui/icons";
 import { subscribe } from "@/auth/session";
 import { LoginView } from "@/features/auth/LoginView";
@@ -22,8 +21,7 @@ import { GovernanceView } from "@/features/governance/GovernanceView";
 import { AssistantView } from "@/features/assistant/AssistantView";
 import { DraftView } from "@/features/draft/DraftView";
 import { PlaybookView } from "@/features/playbook/PlaybookView";
-import { ComplianceView } from "@/features/compliance/ComplianceView";
-import { RedactView } from "@/features/redact/RedactView";
+import { ToolsHub } from "@/features/toolshub/ToolsHub";
 import { ReviewProvider } from "@/features/review/ReviewProvider";
 import { OrgSwitcher } from "@/features/org/OrgSwitcher";
 import { SettingsView } from "@/features/settings/SettingsView";
@@ -31,11 +29,11 @@ import { subscribeActiveOrg } from "@/lib/org";
 import "./styles/app.css";
 
 /**
- * Four primary modes. Reviewing a document (redlines, citations, sign-off) is
- * one hub with a sub-nav; clause tools are folded into the Assistant as a
- * selection action, rather than one tab per feature.
+ * Five primary modes. Reviewing a document (redlines, citations, sign-off) is
+ * one hub with a sub-nav; the document utilities (Compliance, Redact, Fill) are
+ * folded under a single Tools launcher rather than one tab each.
  */
-type Tab = "review" | "draft" | "assistant" | "playbook" | "compliance" | "redact";
+type Tab = "review" | "draft" | "assistant" | "playbook" | "tools";
 type ReviewSub = "redlines" | "changes" | "citations" | "signoff";
 
 const TABS: { id: Tab; label: string; icon: (p: { size?: number }) => ReactNode }[] = [
@@ -43,8 +41,7 @@ const TABS: { id: Tab; label: string; icon: (p: { size?: number }) => ReactNode 
   { id: "draft", label: "Draft", icon: DraftIcon },
   { id: "assistant", label: "Assistant", icon: AssistantIcon },
   { id: "playbook", label: "Playbook", icon: PlaybookIcon },
-  { id: "compliance", label: "Compliance", icon: ShieldCheckIcon },
-  { id: "redact", label: "Redact", icon: RedactIcon },
+  { id: "tools", label: "Tools", icon: ToolsIcon },
 ];
 
 export function App() {
@@ -55,6 +52,11 @@ export function App() {
   // (matters/drafts/playbooks/clients) so they refetch under the new org.
   const [orgVersion, setOrgVersion] = useState(0);
   const [showSettings, setShowSettings] = useState(false);
+  // A "Run this playbook" handoff from the Playbook tab to the Review form.
+  const [pendingPlaybook, setPendingPlaybook] = useState<{
+    playbookId: string;
+    contractType: string;
+  } | null>(null);
 
   useEffect(() => subscribe(setUser), []);
   useEffect(() => subscribeActiveOrg(() => setOrgVersion((v) => v + 1)), []);
@@ -160,7 +162,10 @@ export function App() {
           </div>
         ) : tab === "review" ? (
           reviewSub === "redlines" ? (
-            <ReviewView />
+            <ReviewView
+              pendingPlaybook={pendingPlaybook}
+              onPendingConsumed={() => setPendingPlaybook(null)}
+            />
           ) : reviewSub === "changes" ? (
             <ChangesView />
           ) : reviewSub === "citations" ? (
@@ -173,11 +178,15 @@ export function App() {
         ) : tab === "assistant" ? (
           <AssistantView />
         ) : tab === "playbook" ? (
-          <PlaybookView />
-        ) : tab === "compliance" ? (
-          <ComplianceView />
+          <PlaybookView
+            onRunPlaybook={(pb) => {
+              setPendingPlaybook({ playbookId: pb.id, contractType: pb.contractType });
+              setReviewSub("redlines");
+              setTab("review");
+            }}
+          />
         ) : (
-          <RedactView />
+          <ToolsHub />
         )}
       </div>
       </div>

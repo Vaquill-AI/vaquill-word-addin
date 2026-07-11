@@ -98,6 +98,26 @@ export function ShieldCheckIcon({ size = 15 }: P) {
   );
 }
 
+export function ToolsIcon({ size = 15 }: P) {
+  return (
+    <svg {...base(size)} aria-hidden>
+      <rect x="3" y="3" width="7" height="7" rx="1" />
+      <rect x="14" y="3" width="7" height="7" rx="1" />
+      <rect x="3" y="14" width="7" height="7" rx="1" />
+      <rect x="14" y="14" width="7" height="7" rx="1" />
+    </svg>
+  );
+}
+
+export function FillIcon({ size = 15 }: P) {
+  return (
+    <svg {...base(size)} aria-hidden>
+      <rect x="4" y="3" width="16" height="18" rx="2" />
+      <path d="M8 9h8M8 13h8M8 17h4" />
+    </svg>
+  );
+}
+
 export function RedactIcon({ size = 15 }: P) {
   return (
     <svg {...base(size)} aria-hidden>

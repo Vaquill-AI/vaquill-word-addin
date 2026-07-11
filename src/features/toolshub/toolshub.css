@@ -1,0 +1,14 @@
+/* Consistent content padding for the Tools launcher and every tool it opens
+   (compliance, redact, fill, edit, transplant), so no tool view is edge-to-edge. */
+.toolshub,
+.toolshub-tool {
+  padding: var(--space-l);
+}
+
+.toolshub {
+  gap: var(--space-m);
+}
+
+.toolshub-tool {
+  gap: var(--space-s);
+}
