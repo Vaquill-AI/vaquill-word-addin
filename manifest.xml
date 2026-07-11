@@ -21,6 +21,13 @@
   <AppDomains>
     <AppDomain>https://word.vaquill.ai</AppDomain>
     <AppDomain>https://api.vaquill.ai</AppDomain>
+    <!-- Supabase auth (custom domain) is the start URL of the sign-in dialog
+         opened via Office.context.ui.displayDialogAsync; the dialog then
+         redirects to the Google OAuth consent page. Both domains must be
+         listed here or Office refuses to open the dialog with "The domain of
+         the URL is not included in the AppDomains element". -->
+    <AppDomain>https://dbs.vaquill.ai</AppDomain>
+    <AppDomain>https://accounts.google.com</AppDomain>
   </AppDomains>
 
   <Hosts>
