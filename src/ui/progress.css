@@ -1,0 +1,49 @@
+/* Progress affordances (bounded bar + scroll-to-bottom pill). Additive. */
+
+.pbar {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.pbar__track {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--surface-muted);
+  overflow: hidden;
+}
+
+.pbar__fill {
+  display: block;
+  height: 100%;
+  background: var(--brand);
+  transition: width 0.2s ease;
+}
+
+.scroll-pill {
+  position: absolute;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 5;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+  box-shadow: var(--shadow-8, 0 4px 12px rgba(0, 0, 0, 0.12));
+}
+
+.scroll-pill:hover {
+  background: var(--surface-muted);
+}
+
+.scroll-pill:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 1px;
+}
