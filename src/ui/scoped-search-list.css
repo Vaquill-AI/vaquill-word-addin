@@ -1,0 +1,88 @@
+/* Chrome for the reusable ScopedSearchList primitive (scope tabs + search +
+   scrollable body). Additive: scoped under .ssl so it never touches shared
+   selectors. */
+
+.ssl {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-s);
+  min-height: 0;
+}
+
+.ssl__toolbar {
+  display: flex;
+  gap: var(--space-s);
+  align-items: center;
+}
+
+.ssl__search {
+  position: relative;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.ssl__glyph {
+  position: absolute;
+  left: 8px;
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+.ssl__input {
+  width: 100%;
+  padding: 6px 26px 6px 28px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text);
+  font-size: var(--fs-body);
+}
+
+.ssl__input:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 1px;
+}
+
+/* Hide the native search clear so our own button is the single affordance. */
+.ssl__input::-webkit-search-cancel-button {
+  display: none;
+}
+
+.ssl__clear {
+  position: absolute;
+  right: 6px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+  padding: 2px 4px;
+  border-radius: var(--radius-sm);
+}
+
+.ssl__clear:hover {
+  color: var(--text);
+  background: var(--surface-muted);
+}
+
+.ssl__action {
+  flex-shrink: 0;
+}
+
+.ssl__list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.ssl__empty {
+  padding: 16px 8px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 12px;
+}
