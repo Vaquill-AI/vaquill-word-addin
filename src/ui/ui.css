@@ -164,6 +164,20 @@
   min-height: 54px;
 }
 
+/* Responsive field grid. In a narrow task pane it is a single column; as the
+   user widens the pane it flows short controls (selects, small inputs) into 2+
+   columns automatically. Wide controls (textareas, full-width rows) opt out
+   with .form-grid__full so they always span every column. */
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: var(--space-m);
+  align-items: start;
+}
+.form-grid__full {
+  grid-column: 1 / -1;
+}
+
 /* Keyboard focus ring across every interactive control (not just the kit
    primitives - links, disclosures, prompt chips, and the info button too). */
 .btn:focus-visible,

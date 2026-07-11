@@ -32,46 +32,50 @@ export function ReviewForm({ onRun, busy }: { onRun: (p: RunParams) => void; bus
         });
       }}
     >
-      <Field label="Contract type">
-        <select value={contractType} onChange={(e) => setContractType(e.target.value)}>
-          {CONTRACT_TYPES.map((o) => (
-            <option key={o.value} value={o.value}>
-              {o.label}
-            </option>
-          ))}
-        </select>
-      </Field>
+      {/* Short selects flow into 2+ columns as the pane widens; single column
+          when narrow. */}
+      <div className="form-grid">
+        <Field label="Contract type">
+          <select value={contractType} onChange={(e) => setContractType(e.target.value)}>
+            {CONTRACT_TYPES.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+        </Field>
 
-      <Field label="I represent the">
-        <select value={userSide} onChange={(e) => setUserSide(e.target.value)}>
-          {USER_SIDES.map((o) => (
-            <option key={o.value} value={o.value}>
-              {o.label}
-            </option>
-          ))}
-        </select>
-      </Field>
+        <Field label="I represent the">
+          <select value={userSide} onChange={(e) => setUserSide(e.target.value)}>
+            {USER_SIDES.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+        </Field>
 
-      <Field label="Governing law">
-        <select value={jurisdiction} onChange={(e) => setJurisdiction(e.target.value)}>
-          {JURISDICTIONS.map((o) => (
-            <option key={o.value} value={o.value}>
-              {o.label}
-            </option>
-          ))}
-        </select>
-      </Field>
+        <Field label="Governing law">
+          <select value={jurisdiction} onChange={(e) => setJurisdiction(e.target.value)}>
+            {JURISDICTIONS.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+        </Field>
 
-      <PlaybookPicker contractType={contractType} value={playbookId} onChange={setPlaybookId} />
+        <Field label="Scope">
+          <select value={scope} onChange={(e) => setScope(e.target.value as ReviewScope)}>
+            <option value="document">Whole document</option>
+            <option value="selection">Selected text only</option>
+          </select>
+        </Field>
 
-      <MatterPicker value={matterId} onChange={setMatterId} label="Matter (optional)" />
+        <PlaybookPicker contractType={contractType} value={playbookId} onChange={setPlaybookId} />
 
-      <Field label="Scope">
-        <select value={scope} onChange={(e) => setScope(e.target.value as ReviewScope)}>
-          <option value="document">Whole document</option>
-          <option value="selection">Selected text only</option>
-        </select>
-      </Field>
+        <MatterPicker value={matterId} onChange={setMatterId} label="Matter (optional)" />
+      </div>
 
       {scope === "document" && (
         <label className="row" style={{ gap: 8, cursor: "pointer" }}>
