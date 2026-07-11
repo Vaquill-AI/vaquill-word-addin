@@ -1,0 +1,66 @@
+.redact-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.redact-row:hover {
+  background: var(--surface-muted);
+}
+
+.redact-row input[type="checkbox"] {
+  flex: none;
+  cursor: pointer;
+}
+
+.redact-row__text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+}
+
+.redact-row__count {
+  flex: none;
+  font-variant-numeric: tabular-nums;
+}
+
+.redact-group-actions {
+  justify-content: flex-end;
+  margin-bottom: 2px;
+}
+
+.redact-linkbtn {
+  border: none;
+  background: none;
+  padding: 0;
+  color: var(--brand-fg);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.redact-linkbtn:hover {
+  text-decoration: underline;
+}
+
+.redact-progress {
+  width: 100%;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--surface-muted);
+  overflow: hidden;
+}
+
+.redact-progress__fill {
+  display: block;
+  height: 100%;
+  background: var(--brand);
+  transition: width 0.2s ease;
+}
