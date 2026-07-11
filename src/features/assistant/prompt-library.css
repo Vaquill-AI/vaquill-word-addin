@@ -1,0 +1,92 @@
+/* Prompt library sheet (opens above the composer). Additive, scoped.
+   The composer's `position: relative` anchor and the .composer__actions layout
+   live in assistant.css so they load even when this sheet is closed. */
+
+.prompt-lib__backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  border: none;
+  padding: 0;
+  background: rgba(0, 0, 0, 0.08);
+  cursor: default;
+}
+
+.prompt-lib {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 0;
+  right: 0;
+  z-index: 21;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: min(60vh, 460px);
+  padding: 12px;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md, 10px);
+  box-shadow: var(--shadow-8, 0 8px 24px rgba(0, 0, 0, 0.16));
+  overflow: hidden;
+}
+
+.prompt-lib__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* Let the embedded list take the remaining height and scroll internally. */
+.prompt-lib .ssl {
+  flex: 1;
+  min-height: 0;
+}
+
+.prompt-form textarea {
+  width: 100%;
+}
+
+.prompt-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+}
+
+.prompt-row:hover {
+  border-color: var(--border-strong);
+  background: var(--surface-muted);
+}
+
+.prompt-row__main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-align: left;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  padding: 0;
+  color: var(--text);
+}
+
+.prompt-row__title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  font-size: var(--fs-body);
+}
+
+.prompt-row__preview {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}

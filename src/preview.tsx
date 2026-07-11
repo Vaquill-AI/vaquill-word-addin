@@ -312,7 +312,17 @@ function AssistantPreview() {
               <MessageBubble key={m.id} message={m} />
             ))}
           </div>
-          <Composer onSend={() => {}} disabled={false} scope={scope} onScope={setScope} />
+          <Composer
+            value=""
+            onChange={() => {}}
+            onSend={() => {}}
+            disabled={false}
+            scope={scope}
+            onScope={setScope}
+            context={{ web: false, matterDocs: true, corpus: true }}
+            onContextChange={() => {}}
+            hasMatter={false}
+          />
         </div>
       </div>
     </div>

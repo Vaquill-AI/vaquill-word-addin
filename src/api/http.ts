@@ -9,7 +9,7 @@ import { ApiError, errorFromResponse } from "./errors";
  * refresh-and-retry before surfacing an unauthorized error.
  */
 export interface RequestOptions {
-  method?: "GET" | "POST" | "PUT" | "DELETE";
+  method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
   body?: unknown;
   /** Extra headers, e.g. X-Organization-ID for org selection. */
   headers?: Record<string, string>;

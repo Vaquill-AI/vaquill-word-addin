@@ -1,0 +1,92 @@
+.ctx-menu__backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  border: none;
+  background: transparent;
+  cursor: default;
+}
+
+.ctx-menu {
+  position: absolute;
+  bottom: 100%;
+  left: 8px;
+  right: 8px;
+  z-index: 41;
+  margin-bottom: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-raised);
+  box-shadow: var(--shadow-16, 0 8px 24px rgba(0, 0, 0, 0.18));
+}
+
+.ctx-menu__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 2px 6px 6px;
+}
+
+.ctx-source {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  width: 100%;
+  padding: 8px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: none;
+  text-align: left;
+  cursor: pointer;
+}
+
+.ctx-source:hover {
+  background: var(--surface-muted);
+}
+
+.ctx-source:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: -2px;
+}
+
+.ctx-source__check {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  margin-top: 1px;
+  border: 1.5px solid var(--border-strong);
+  border-radius: 4px;
+  color: var(--on-brand);
+}
+
+.ctx-source--on .ctx-source__check {
+  background: var(--brand);
+  border-color: var(--brand);
+}
+
+.ctx-source__text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.ctx-source__label {
+  font-weight: 600;
+}
+
+.ctx-source__blurb {
+  line-height: 1.35;
+}
+
+.ctx-menu__note {
+  margin: 4px 6px 2px;
+}

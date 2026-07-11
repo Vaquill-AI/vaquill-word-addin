@@ -1,7 +1,38 @@
 .assistant {
+  position: relative;
   height: 100%;
   display: flex;
   flex-direction: column;
+}
+
+/* Top bar: History / New chat. */
+.assistant__bar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  padding: 6px 10px 0;
+}
+.assistant__bar-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+}
+.assistant__bar-btn:hover:not(:disabled) {
+  background: var(--surface-muted);
+  color: var(--text);
+}
+.assistant__bar-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
 }
 
 .assistant__messages {
@@ -102,6 +133,52 @@
   overflow-wrap: anywhere;
 }
 
+/* Collapsible "Finished in N steps" reasoning trace under an assistant reply. */
+.msg__steps {
+  margin-top: 6px;
+  font-size: 12px;
+}
+.msg__steps > summary {
+  cursor: pointer;
+  color: var(--text-muted);
+  font-weight: 600;
+  list-style: none;
+}
+.msg__steps > summary::-webkit-details-marker {
+  display: none;
+}
+.msg__steps ol {
+  margin: 4px 0 0;
+  padding-left: 18px;
+  color: var(--text-muted);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* Copy / Edit actions inside a user bubble (on the brand background). */
+.msg__actions--user {
+  display: flex;
+  gap: 4px;
+  justify-content: flex-end;
+  margin-top: 6px;
+}
+.msg__action {
+  border: none;
+  background: transparent;
+  color: var(--on-brand);
+  opacity: 0.8;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+}
+.msg__action:hover {
+  opacity: 1;
+  background: rgba(255, 255, 255, 0.16);
+}
+
 .assistant__thinking {
   display: flex;
   align-items: center;
@@ -180,6 +257,7 @@
 
 /* ---- Composer (glass, matches chrome) ---- */
 .composer {
+  position: relative;
   border-top: 1px solid var(--border);
   background: var(--acrylic-bg);
   backdrop-filter: var(--acrylic-blur);
@@ -188,6 +266,38 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
+}
+.composer__actions {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.composer__lib-trigger {
+  flex-shrink: 0;
+}
+.composer__ctx-trigger {
+  position: relative;
+  flex-shrink: 0;
+  display: inline-flex;
+}
+.composer__ctx-badge {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  min-width: 14px;
+  height: 14px;
+  padding: 0 3px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: var(--brand);
+  color: var(--on-brand);
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 1;
+  pointer-events: none;
 }
 .composer__scope {
   display: flex;

@@ -3,7 +3,7 @@ import {
   streamAssistant,
   type ChatMessage,
   type ChatSource,
-  type AssistantGrounding,
+  type AssistantOptions,
 } from "@/api/chat";
 import { readDocumentText, readSelectionText } from "@/office/document";
 import { uuid } from "@/api/ids";
@@ -17,6 +17,13 @@ export interface AssistantMessage {
   content: string;
   sources?: ChatSource[];
   pending?: boolean;
+  /**
+   * The reasoning steps the backend reported for this answer, in order, for the
+   * collapsible "Finished in N steps" trace. Labels are sanitized at the source
+   * (`sanitizeStepLabel` in api/chat.ts strips any vendor / model / MCP / URL
+   * token before this is emitted), so persisting + displaying them is safe.
+   */
+  steps?: string[];
 }
 
 export interface AssistantState {
@@ -53,8 +60,29 @@ export function useAssistant() {
     }));
   }, []);
 
+  // Replace the whole conversation with a stored one (aborting any in-flight
+  // stream). Powers loading a past chat from History.
+  const loadMessages = useCallback((messages: AssistantMessage[]) => {
+    abortRef.current?.abort();
+    abortRef.current = null;
+    setState({ messages, streaming: false, thinking: null, error: null });
+  }, []);
+
+  // Drop the message with `id` and everything after it, aborting any in-flight
+  // stream. Powers edit-and-re-run: the edited turn (and its now-stale answer)
+  // is removed so re-sending replaces it rather than appending.
+  const truncateBefore = useCallback((id: string) => {
+    abortRef.current?.abort();
+    abortRef.current = null;
+    setState((s) => {
+      const idx = s.messages.findIndex((m) => m.id === id);
+      if (idx === -1) return s;
+      return { ...s, streaming: false, thinking: null, messages: s.messages.slice(0, idx) };
+    });
+  }, []);
+
   const send = useCallback(
-    async (text: string, scope: Scope, grounding?: AssistantGrounding) => {
+    async (text: string, scope: Scope, grounding?: AssistantOptions) => {
       const trimmed = text.trim();
       if (!trimmed) return;
 
@@ -106,7 +134,18 @@ export function useAssistant() {
           context,
           {
             signal: controller.signal,
-            onThinking: (label) => setState((s) => ({ ...s, thinking: label })),
+            onThinking: (label) =>
+              setState((s) => ({
+                ...s,
+                thinking: label,
+                // Accumulate the step onto this answer so it survives as an
+                // expandable trace after streaming (dedupe consecutive repeats).
+                messages: s.messages.map((m) => {
+                  if (m.id !== assistantId) return m;
+                  const steps = m.steps ?? [];
+                  return steps[steps.length - 1] === label ? m : { ...m, steps: [...steps, label] };
+                }),
+              })),
             onSources: (sources) => patchAssistant((m) => ({ ...m, sources })),
             onDelta: (delta) =>
               setState((s) => ({
@@ -152,5 +191,5 @@ export function useAssistant() {
   // Abort any in-flight stream when the view unmounts (tab switch).
   useEffect(() => () => abortRef.current?.abort(), []);
 
-  return { state, send, reset, stop };
+  return { state, send, reset, stop, truncateBefore, loadMessages };
 }

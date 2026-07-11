@@ -36,6 +36,8 @@ export interface AssistantGrounding {
   matterId?: string | null;
   /** Search the matter's uploaded documents (only meaningful with matterId). */
   enableMatterDocsSearch?: boolean;
+  /** Bring in current information from the web (Exa deep search on the backend). */
+  enableWebSearch?: boolean;
   /** US jurisdiction scope: state codes and/or 'federal' (e.g. ['ca','federal']). */
   usStates?: string[];
 }
@@ -56,6 +58,27 @@ const STEP_LABELS: Record<string, string> = {
 
 function humanizeStep(step: string): string {
   return STEP_LABELS[step] ?? "Working on it";
+}
+
+// Third-party source / model / infra proper nouns and URLs must never surface in
+// a customer-facing string (disclosure policy). The step trace is now PERSISTED
+// and shown expandably, and the raw backend `message` is preferred over the safe
+// fixed-map label, so this is the single choke point that guarantees a clean
+// label whether it came from the map or the backend. Defense-in-depth: even if
+// the server sanitizes, the client never relies on that.
+const VENDOR_RE =
+  /\b(openai|chatgpt|gpt[\w.-]*|anthropic|claude|qdrant|voyage\s?ai|voyage|pinecone|weaviate|cohere|hugging\s?face|huggingface|mcp|langchain|langgraph|azure\s?openai)\b/gi;
+const URL_RE = /\bhttps?:\/\/\S+|\bwww\.\S+/gi;
+
+function sanitizeStepLabel(label: string): string {
+  const cleaned = label
+    .replace(URL_RE, "")
+    .replace(VENDOR_RE, "")
+    .replace(/\(\s*\)/g, "")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+  // If stripping gutted the label, fall back to a safe neutral one.
+  return cleaned.length >= 3 ? cleaned : "Working on it";
 }
 
 function safeParse(data: string): Record<string, unknown> | null {
@@ -85,6 +108,7 @@ export async function streamAssistant(
   if (typeof opts?.enableMatterDocsSearch === "boolean") {
     body.enableMatterDocsSearch = opts.enableMatterDocsSearch;
   }
+  if (typeof opts?.enableWebSearch === "boolean") body.enableWebSearch = opts.enableWebSearch;
   if (opts?.usStates && opts.usStates.length > 0) body.usStates = opts.usStates;
 
   await postStream(CHAT, body, {
@@ -93,7 +117,9 @@ export async function streamAssistant(
       switch (event) {
         case "thinking": {
           const d = safeParse(data);
-          const label = (d?.message as string) ?? humanizeStep((d?.step as string) ?? "");
+          const label = sanitizeStepLabel(
+            (d?.message as string) ?? humanizeStep((d?.step as string) ?? ""),
+          );
           handlers.onThinking?.(label);
           break;
         }
