@@ -4,19 +4,21 @@ import { InfoTip } from "@/ui/InfoTip";
 import { MessageBubble } from "./MessageBubble";
 import { Composer } from "./Composer";
 import { SuggestedPrompts } from "./SuggestedPrompts";
-import { ScopeControls } from "./ScopeControls";
 import { useAssistant, type Scope } from "./useAssistant";
 import type { AssistantGrounding } from "@/api/chat";
 import { SelectionTools } from "@/features/tools/SelectionTools";
+import { getReviewPrefs, subscribeReviewPrefs } from "@/lib/prefs";
 import "./assistant.css";
 
 export function AssistantView() {
   const { state, send, stop } = useAssistant();
   const [scope, setScope] = useState<Scope>("document");
-  const [matterId, setMatterId] = useState("");
-  const [matterDocs, setMatterDocs] = useState(true);
-  const [usState, setUsState] = useState("");
+  // Matter + jurisdiction are the user's standing context, set once in Settings.
+  // The assistant reads them here instead of re-asking on every question.
+  const [prefs, setPrefs] = useState(getReviewPrefs());
   const endRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => subscribeReviewPrefs(setPrefs), []);
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -24,11 +26,11 @@ export function AssistantView() {
 
   const grounding = useMemo<AssistantGrounding>(
     () => ({
-      matterId: matterId || null,
-      enableMatterDocsSearch: matterId ? matterDocs : undefined,
-      usStates: usState ? [usState] : undefined,
+      matterId: prefs.matterId || null,
+      enableMatterDocsSearch: prefs.matterId ? true : undefined,
+      usStates: prefs.jurisdiction ? [prefs.jurisdiction] : undefined,
     }),
-    [matterId, matterDocs, usState],
+    [prefs.matterId, prefs.jurisdiction],
   );
 
   const empty = state.messages.length === 0;
@@ -36,14 +38,6 @@ export function AssistantView() {
   return (
     <div className="assistant">
       <div className="assistant__messages">
-        <ScopeControls
-          matterId={matterId}
-          onMatterId={setMatterId}
-          matterDocs={matterDocs}
-          onMatterDocs={setMatterDocs}
-          usState={usState}
-          onUsState={setUsState}
-        />
         <SelectionTools />
         {empty ? (
           <div className="assistant__intro">
@@ -55,6 +49,12 @@ export function AssistantView() {
               Ask anything about the contract you have open. Answers are grounded in the document and
               US law.
             </p>
+            {(prefs.jurisdiction || prefs.matterId) && (
+              <p className="small muted" style={{ margin: 0 }}>
+                Scoped to {prefs.jurisdiction || "all US"}
+                {prefs.matterId ? " and your matter" : ""}. Change in Settings.
+              </p>
+            )}
             <SuggestedPrompts onPick={(p) => send(p, scope, grounding)} />
           </div>
         ) : (

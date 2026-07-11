@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Button, Banner } from "@/ui/primitives";
-import { MatterPicker } from "./MatterPicker";
+import { getReviewPrefs } from "@/lib/prefs";
 import {
   importDraft,
   saveDraftToMatter,
@@ -54,7 +54,9 @@ function mapRedlines(redlines: RedlineSuggestion[]): ImportRedline[] {
  * or as a reusable template. Optionally scoped to a matter.
  */
 export function SaveToVaquill(props: Props) {
-  const [matterId, setMatterId] = useState(props.defaultMatterId ?? "");
+  // Matter is the user's standing context, set once in Settings (no per-save
+  // picker). An explicit defaultMatterId prop still wins when a caller passes one.
+  const matterId = props.defaultMatterId ?? getReviewPrefs().matterId ?? "";
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState<{ label: string; url?: string } | null>(null);
@@ -179,7 +181,11 @@ export function SaveToVaquill(props: Props) {
   return (
     <div className="card doc-tools">
       <h2 className="small muted" style={{ margin: 0 }}>Save to Vaquill AI</h2>
-      <MatterPicker value={matterId} onChange={setMatterId} />
+      {matterId && (
+        <p className="small muted" style={{ margin: 0 }}>
+          Files under your matter (set in Settings).
+        </p>
+      )}
       <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
         <Button variant="default" size="sm" onClick={saveDraft} loading={busy === "draft"} disabled={!!busy}>
           {draftLabel}

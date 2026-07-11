@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
-import { Badge, Banner, Field, Spinner } from "@/ui/primitives";
-import { getUser } from "@/auth/session";
+import { Badge, Banner, Button, Field, Spinner } from "@/ui/primitives";
+import { clearSession, getUser } from "@/auth/session";
 import { getActiveOrgId } from "@/lib/org";
 import { listMyOrganizations } from "@/api/organizations";
 import { fetchUsageSnapshot, type QuotaSnapshot, type UsageMetric } from "@/api/usage";
+import { MatterPicker } from "@/features/integration/MatterPicker";
 import {
   getReviewPrefs,
   setReviewPrefs,
@@ -100,7 +101,11 @@ function UsageSection({ state }: { state: UsageState }) {
         <Badge tone="brand">{snapshot.tierName || snapshot.tier || "Unknown"}</Badge>
       </div>
       {hasAnyMetric ? (
-        rows.map((r) => <MeterRow key={r.label} label={r.label} metric={r.metric} />)
+        <div className="form-grid">
+          {rows.map((r) => (
+            <MeterRow key={r.label} label={r.label} metric={r.metric} />
+          ))}
+        </div>
       ) : (
         <p className="small muted">No metered limits on your plan.</p>
       )}
@@ -179,35 +184,55 @@ export function SettingsView() {
       </div>
 
       <div className="card settings-card">
-        <h2 className="settings-heading">Review defaults</h2>
+        <h2 className="settings-heading">Workspace defaults</h2>
         <p className="small muted settings-heading__hint">
-          Pre-fill new reviews with your usual jurisdiction and contract type.
+          Set your matter and jurisdiction once. New reviews and the assistant use them
+          automatically, so you never re-pick them. Contract type pre-fills the review form.
         </p>
-        <Field label="Default jurisdiction">
-          <select
-            value={prefs.jurisdiction}
-            onChange={(e) => setReviewPrefs({ jurisdiction: e.target.value })}
-          >
-            {JURISDICTIONS.map((o) => (
-              <option key={o.value || "general"} value={o.value}>
-                {o.label}
-              </option>
-            ))}
-          </select>
-        </Field>
-        <Field label="Default contract type">
-          <select
-            value={prefs.contractType}
-            onChange={(e) => setReviewPrefs({ contractType: e.target.value })}
-          >
-            <option value="">No default</option>
-            {CONTRACT_TYPES.map((o) => (
-              <option key={o.value} value={o.value}>
-                {o.label}
-              </option>
-            ))}
-          </select>
-        </Field>
+        <div className="form-grid">
+          <MatterPicker
+            value={prefs.matterId}
+            onChange={(id) => setReviewPrefs({ matterId: id })}
+            label="Default matter"
+          />
+          <Field label="Default jurisdiction">
+            <select
+              value={prefs.jurisdiction}
+              onChange={(e) => setReviewPrefs({ jurisdiction: e.target.value })}
+            >
+              {JURISDICTIONS.map((o) => (
+                <option key={o.value || "general"} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field label="Default contract type">
+            <select
+              value={prefs.contractType}
+              onChange={(e) => setReviewPrefs({ contractType: e.target.value })}
+            >
+              <option value="">No default</option>
+              {CONTRACT_TYPES.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+          </Field>
+        </div>
+      </div>
+
+      <div className="card settings-card">
+        <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
+          <div className="stack" style={{ gap: 2 }}>
+            <span className="small">Signed in as {email || "this account"}</span>
+            <span className="small muted">Sign out to switch account or clear this device.</span>
+          </div>
+          <Button variant="default" size="sm" onClick={clearSession}>
+            Sign out
+          </Button>
+        </div>
       </div>
     </div>
   );

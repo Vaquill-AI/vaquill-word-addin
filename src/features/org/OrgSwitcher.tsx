@@ -5,9 +5,11 @@ import { getActiveOrgId, setActiveOrgId } from "@/lib/org";
 /**
  * Active-organization selector shown in the header. Lets a multi-org user pick
  * which workspace's matters, drafts, playbooks, and clients the add-in reads and
- * writes. Hides itself when the user belongs to no organizations (nothing to
- * switch). Changing it updates the store; the app shell remounts the data views
- * so they refetch under the new X-Organization-ID.
+ * writes. Hides itself when the user has fewer than two organizations (nothing
+ * to switch between) -- the active org is still resolved into the store below,
+ * so requests stay correctly scoped even with the control hidden. Changing it
+ * updates the store; the app shell remounts the data views so they refetch under
+ * the new X-Organization-ID.
  */
 export function OrgSwitcher() {
   const [orgs, setOrgs] = useState<Org[]>([]);
@@ -36,7 +38,9 @@ export function OrgSwitcher() {
     };
   }, []);
 
-  if (orgs.length === 0) return null;
+  // Nothing to switch between with 0 or 1 org: hide the control (the active org
+  // is already resolved into the store above), so it never reads as dead chrome.
+  if (orgs.length <= 1) return null;
 
   return (
     <select

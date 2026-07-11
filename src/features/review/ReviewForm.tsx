@@ -1,13 +1,13 @@
 import { useState } from "react";
 import { Button, Field } from "@/ui/primitives";
 import { PlaybookPicker } from "./PlaybookPicker";
-import { MatterPicker } from "@/features/integration/MatterPicker";
 import {
   CONTRACT_TYPES,
   USER_SIDES,
   JURISDICTIONS,
   MARKUP_LEVELS,
   PAPER_SIDES,
+  labelOf,
   type ReviewScope,
 } from "./constants";
 import { getReviewPrefs } from "@/lib/prefs";
@@ -17,12 +17,10 @@ export function ReviewForm({ onRun, busy }: { onRun: (p: RunParams) => void; bus
   const prefs = getReviewPrefs();
   const [contractType, setContractType] = useState(prefs.contractType || "nda");
   const [userSide, setUserSide] = useState("customer");
-  const [jurisdiction, setJurisdiction] = useState(prefs.jurisdiction || "");
   const [scope, setScope] = useState<ReviewScope>("document");
   const [playbookId, setPlaybookId] = useState("");
   const [instructions, setInstructions] = useState("");
   const [includeExtras, setIncludeExtras] = useState(false);
-  const [matterId, setMatterId] = useState("");
   const [markupLevel, setMarkupLevel] = useState<"light" | "standard" | "firm">("standard");
   const [paperSide, setPaperSide] = useState("");
 
@@ -31,6 +29,10 @@ export function ReviewForm({ onRun, busy }: { onRun: (p: RunParams) => void; bus
       className="stack"
       onSubmit={(e) => {
         e.preventDefault();
+        // Jurisdiction + matter are the user's standing context, set once in
+        // Settings. Read them fresh at submit so an edit in Settings applies
+        // without re-mounting this form.
+        const { jurisdiction, matterId } = getReviewPrefs();
         onRun({
           contractType,
           userSide,
@@ -68,16 +70,6 @@ export function ReviewForm({ onRun, busy }: { onRun: (p: RunParams) => void; bus
           </select>
         </Field>
 
-        <Field label="Governing law">
-          <select value={jurisdiction} onChange={(e) => setJurisdiction(e.target.value)}>
-            {JURISDICTIONS.map((o) => (
-              <option key={o.value} value={o.value}>
-                {o.label}
-              </option>
-            ))}
-          </select>
-        </Field>
-
         <Field label="Scope">
           <select value={scope} onChange={(e) => setScope(e.target.value as ReviewScope)}>
             <option value="document">Whole document</option>
@@ -86,8 +78,6 @@ export function ReviewForm({ onRun, busy }: { onRun: (p: RunParams) => void; bus
         </Field>
 
         <PlaybookPicker contractType={contractType} value={playbookId} onChange={setPlaybookId} />
-
-        <MatterPicker value={matterId} onChange={setMatterId} label="Matter (optional)" />
 
         <Field label="Markup level">
           <select
@@ -131,6 +121,11 @@ export function ReviewForm({ onRun, busy }: { onRun: (p: RunParams) => void; bus
           onChange={(e) => setInstructions(e.target.value)}
         />
       </Field>
+
+      <p className="small muted" style={{ margin: 0 }}>
+        Reviewing as {labelOf(JURISDICTIONS, prefs.jurisdiction)}
+        {prefs.matterId ? " · grounded in your matter" : ""}. Change in Settings.
+      </p>
 
       <Button type="submit" variant="primary" block loading={busy}>
         Review this contract

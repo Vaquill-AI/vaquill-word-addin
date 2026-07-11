@@ -283,47 +283,49 @@ export function DraftView() {
         </p>
       </div>
 
-      <Field label="Document type">
-        <select value={category} onChange={(e) => setCategory(e.target.value)}>
-          {DRAFT_CATEGORY_GROUPS.map((g) => (
-            <optgroup key={g.label} label={g.label}>
-              {g.options.map((o) => (
-                <option key={o.value} value={o.value}>
-                  {o.label}
-                </option>
-              ))}
-            </optgroup>
-          ))}
-        </select>
-      </Field>
+      <div className="form-grid">
+        <Field label="Document type">
+          <select value={category} onChange={(e) => setCategory(e.target.value)}>
+            {DRAFT_CATEGORY_GROUPS.map((g) => (
+              <optgroup key={g.label} label={g.label}>
+                {g.options.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
+              </optgroup>
+            ))}
+          </select>
+        </Field>
 
-      <Field label="Title">
-        <input
-          value={title}
-          placeholder={`e.g. Mutual ${labelOf(DRAFT_CATEGORIES, category)} - Acme and Beta`}
-          onChange={(e) => setTitle(e.target.value)}
-        />
-      </Field>
+        <Field label="Title">
+          <input
+            value={title}
+            placeholder={`e.g. Mutual ${labelOf(DRAFT_CATEGORIES, category)} - Acme and Beta`}
+            onChange={(e) => setTitle(e.target.value)}
+          />
+        </Field>
 
-      <Field label="Governing law">
-        <select value={jurisdiction} onChange={(e) => setJurisdiction(e.target.value)}>
-          {JURISDICTIONS.map((o) => (
-            <option key={o.value} value={o.value}>
-              {o.label}
-            </option>
-          ))}
-        </select>
-      </Field>
+        <Field label="Governing law">
+          <select value={jurisdiction} onChange={(e) => setJurisdiction(e.target.value)}>
+            {JURISDICTIONS.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+        </Field>
 
-      <Field label="Tone">
-        <select value={tone} onChange={(e) => setTone(e.target.value)}>
-          {DRAFT_TONES.map((o) => (
-            <option key={o.value} value={o.value}>
-              {o.label}
-            </option>
-          ))}
-        </select>
-      </Field>
+        <Field label="Tone">
+          <select value={tone} onChange={(e) => setTone(e.target.value)}>
+            {DRAFT_TONES.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+        </Field>
+      </div>
 
       <Field label="Key terms and instructions">
         <textarea
