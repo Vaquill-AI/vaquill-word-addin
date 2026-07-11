@@ -119,3 +119,43 @@
   max-width: 240px;
   color: var(--text-muted);
 }
+.login__form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  max-width: 280px;
+  text-align: left;
+}
+.login__form input[type="email"],
+.login__form input[type="password"] {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 8px 10px;
+  font: inherit;
+  color: var(--text);
+  background: var(--surface, #fff);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.login__form input:focus-visible {
+  outline: 2px solid var(--accent, #5b3a29);
+  outline-offset: 1px;
+  border-color: transparent;
+}
+.login__divider {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  max-width: 280px;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+.login__divider::before,
+.login__divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
