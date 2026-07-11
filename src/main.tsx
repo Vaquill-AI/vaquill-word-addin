@@ -2,6 +2,7 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { App } from "./App";
 import { isAuthCallback, relayAuthCallback } from "./auth/relay";
+import { initActiveOrg } from "./lib/org";
 import { assertConfigured } from "./config";
 import { isWordHost } from "./office/run";
 import "./styles/global.css";
@@ -22,6 +23,10 @@ Office.onReady(() => {
     relayAuthCallback(callbackParams);
     return;
   }
+
+  // Restore the persisted active organization before any API call so requests
+  // are scoped correctly from the first fetch.
+  initActiveOrg();
 
   const root = createRoot(document.getElementById("root")!);
   if (!isWordHost()) {

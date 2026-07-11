@@ -1,5 +1,6 @@
 import { config } from "@/config";
 import { getAccessToken, refresh } from "@/auth/session";
+import { getActiveOrgId } from "@/lib/org";
 import { ApiError, errorFromResponse } from "./errors";
 
 /**
@@ -16,10 +17,15 @@ export interface RequestOptions {
 }
 
 async function buildHeaders(token: string, extra?: Record<string, string>): Promise<HeadersInit> {
+  const orgId = getActiveOrgId();
   return {
     Authorization: `Bearer ${token}`,
     "Content-Type": "application/json",
     "X-Timezone": Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
+    // Scope every request to the chosen organization (matters, drafts,
+    // playbooks, clients, templates). Omitted when no org is selected, letting
+    // the backend resolve the user's default.
+    ...(orgId ? { "X-Organization-ID": orgId } : {}),
     ...extra,
   };
 }
@@ -65,11 +71,13 @@ export async function requestForm<T>(path: string, form: FormData): Promise<T> {
 
   const doFetch = async (bearer: string): Promise<Response> => {
     try {
+      const orgId = getActiveOrgId();
       return await fetch(`${config.apiBase}${path}`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${bearer}`,
           "X-Timezone": Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
+          ...(orgId ? { "X-Organization-ID": orgId } : {}),
         },
         body: form,
       });

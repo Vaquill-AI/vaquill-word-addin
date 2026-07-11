@@ -1,5 +1,6 @@
 import { config } from "@/config";
 import { getAccessToken, refresh } from "@/auth/session";
+import { getActiveOrgId } from "@/lib/org";
 import { ApiError, errorFromResponse } from "./errors";
 
 /**
@@ -30,6 +31,7 @@ async function openStream(path: string, body: unknown, bearer: string, opts: Str
         "Content-Type": "application/json",
         Accept: "text/event-stream",
         "X-Timezone": Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
+        ...(getActiveOrgId() ? { "X-Organization-ID": getActiveOrgId() as string } : {}),
         ...opts.headers,
       },
       body: JSON.stringify(body),

@@ -14,6 +14,8 @@ import { AssistantView } from "@/features/assistant/AssistantView";
 import { DraftView } from "@/features/draft/DraftView";
 import { PlaybookView } from "@/features/playbook/PlaybookView";
 import { ReviewProvider } from "@/features/review/ReviewProvider";
+import { OrgSwitcher } from "@/features/org/OrgSwitcher";
+import { subscribeActiveOrg } from "@/lib/org";
 import "./styles/app.css";
 
 /**
@@ -35,8 +37,12 @@ export function App() {
   const [user, setUser] = useState<User | null>(null);
   const [tab, setTab] = useState<Tab>("review");
   const [reviewSub, setReviewSub] = useState<ReviewSub>("redlines");
+  // Bumped whenever the active organization changes, to remount the data views
+  // (matters/drafts/playbooks/clients) so they refetch under the new org.
+  const [orgVersion, setOrgVersion] = useState(0);
 
   useEffect(() => subscribe(setUser), []);
+  useEffect(() => subscribeActiveOrg(() => setOrgVersion((v) => v + 1)), []);
 
   return (
     <ReviewProvider>
@@ -44,9 +50,12 @@ export function App() {
         <Header
         right={
           user ? (
-            <Button variant="ghost" size="sm" onClick={clearSession}>
-              Sign out
-            </Button>
+            <div className="row" style={{ gap: 8 }}>
+              <OrgSwitcher />
+              <Button variant="ghost" size="sm" onClick={clearSession}>
+                Sign out
+              </Button>
+            </div>
           ) : undefined
         }
       />
@@ -108,6 +117,7 @@ export function App() {
       <div
         className="app-body"
         id="app-panel"
+        key={orgVersion}
         role={user ? "tabpanel" : undefined}
         aria-labelledby={user ? `tab-${tab}` : undefined}
       >
