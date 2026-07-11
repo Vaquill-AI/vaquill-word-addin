@@ -1,13 +1,19 @@
 import { useMemo, useState } from "react";
-import { Banner, Button, Spinner, LiveRegion } from "@/ui/primitives";
+import { Banner, Button, Spinner, LiveRegion, SegmentedControl } from "@/ui/primitives";
 import { InfoTip } from "@/ui/InfoTip";
 import { FilterChips, type FilterChipOption } from "@/ui/FilterChips";
 import { StatusGroup } from "@/ui/StatusGroup";
+import type { RedactScope } from "@/office/redact";
 import { CATEGORIES } from "./categories";
 import type { RedactCandidate } from "./detect";
 import { CandidateRow } from "./CandidateRow";
 import { useRedact, type RedactState } from "./useRedact";
 import "./redact.css";
+
+const SCOPE_OPTIONS: { value: RedactScope; label: string }[] = [
+  { value: "document", label: "Whole document" },
+  { value: "selection", label: "Selection" },
+];
 
 const METADATA_NOTE =
   "Redaction removes the text from the body. Before sending, run Word's Inspect Document (File → Info → Check for Issues) to clear residual metadata, comments, and properties.";
@@ -19,6 +25,7 @@ function defaultCategories(): Set<string> {
 export function RedactView() {
   const { state, scan, setConfirmed, apply, reset } = useRedact();
   const [categories, setCategories] = useState<Set<string>>(defaultCategories);
+  const [scope, setScope] = useState<RedactScope>("document");
 
   function toggleCategory(key: string) {
     const next = new Set(categories);
@@ -47,6 +54,21 @@ export function RedactView() {
         {state.status === "error" && <Banner tone="danger">{state.error}</Banner>}
 
         <div className="stack" style={{ gap: 6 }}>
+          <span className="small" style={{ fontWeight: 600 }}>Scope</span>
+          <SegmentedControl
+            options={SCOPE_OPTIONS}
+            value={scope}
+            onChange={setScope}
+            label="Redaction scope"
+          />
+          <p className="small muted" style={{ margin: 0 }}>
+            {scope === "selection"
+              ? "Only the text you have highlighted is scanned and redacted."
+              : "The whole document is scanned and redacted."}
+          </p>
+        </div>
+
+        <div className="stack" style={{ gap: 6 }}>
           <span className="small" style={{ fontWeight: 600 }}>Categories to scan</span>
           <FilterChips
             options={categoryChips}
@@ -61,8 +83,13 @@ export function RedactView() {
           Word with Ctrl+Z.
         </Banner>
 
-        <Button variant="primary" block onClick={() => void scan(categories)} disabled={categories.size === 0}>
-          Scan document
+        <Button
+          variant="primary"
+          block
+          onClick={() => void scan(categories, scope)}
+          disabled={categories.size === 0}
+        >
+          {scope === "selection" ? "Scan selection" : "Scan document"}
         </Button>
         <p className="small muted" style={{ margin: 0 }}>
           Names, organizations, and locations are found with AI when you select those categories.
@@ -143,7 +170,7 @@ function RedactReview({
   state: Extract<RedactState, { status: "review" }>;
   onScanNew: () => void;
   onConfirm: (confirmed: ReadonlySet<string>) => void;
-  onApply: (values: string[]) => void;
+  onApply: (values: string[], scope: RedactScope) => void;
 }) {
   const { candidates, confirmed, aiPending } = state;
 
@@ -171,6 +198,10 @@ function RedactReview({
       else next.delete(c.text);
     }
     onConfirm(next);
+  }
+
+  function setAll(on: boolean) {
+    onConfirm(on ? new Set(candidates.map((c) => c.text)) : new Set());
   }
 
   const confirmedCount = candidates.filter((c) => confirmed.has(c.text)).length;
@@ -211,6 +242,18 @@ function RedactReview({
         Found {candidates.length} value{candidates.length === 1 ? "" : "s"}. Uncheck any you want to
         keep, then redact.
       </p>
+      <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
+        <span className="small muted">
+          {confirmedCount} of {candidates.length} selected
+        </span>
+        <button
+          type="button"
+          className="redact-linkbtn"
+          onClick={() => setAll(confirmedCount !== candidates.length)}
+        >
+          {confirmedCount === candidates.length ? "Clear all" : "Select all"}
+        </button>
+      </div>
       {aiPending && (
         <div className="row" style={{ gap: 8, alignItems: "center" }}>
           <Spinner />
@@ -251,7 +294,9 @@ function RedactReview({
           <Button
             variant="primary"
             block
-            onClick={() => onApply(candidates.filter((c) => confirmed.has(c.text)).map((c) => c.text))}
+            onClick={() =>
+              onApply(candidates.filter((c) => confirmed.has(c.text)).map((c) => c.text), state.scope)
+            }
             disabled={confirmedCount === 0}
           >
             {confirmedCount === 0

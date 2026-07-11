@@ -4,6 +4,13 @@ import { runWord } from "./run";
 const SEARCH_LIMIT = 255;
 export const DEFAULT_MARKER = "[REDACTED]";
 
+/**
+ * Where to look for occurrences to redact:
+ * - "document": the whole body (default).
+ * - "selection": only the text the user has highlighted.
+ */
+export type RedactScope = "document" | "selection";
+
 export interface RedactOutcome {
   /** Total occurrences replaced across all values. */
   redacted: number;
@@ -23,12 +30,17 @@ export interface RedactOutcome {
  * show an "Applying N of M" counter. Residual metadata (comments, document
  * properties, prior revisions) is out of scope here; the UI must tell the user
  * to run Word's Inspect Document before sending.
+ *
+ * `scope` limits where occurrences are searched and replaced: "document"
+ * (default) scans the whole body; "selection" scans only the current selection
+ * (Range.search), so text elsewhere in the document is left untouched.
  */
 export async function redactValues(
   values: string[],
-  opts: { marker?: string; onProgress?: (done: number, total: number) => void } = {},
+  opts: { marker?: string; scope?: RedactScope; onProgress?: (done: number, total: number) => void } = {},
 ): Promise<RedactOutcome> {
   const marker = opts.marker ?? DEFAULT_MARKER;
+  const scope = opts.scope ?? "document";
   // Longest-first: a short value that is a substring of a longer one (e.g. "$5"
   // inside "$500") must be redacted AFTER the longer value, or body.search would
   // match it inside the longer text and corrupt it ("[REDACTED]00"). Redacting
@@ -47,13 +59,18 @@ export async function redactValues(
     doc.changeTrackingMode = Word.ChangeTrackingMode.off;
     await context.sync();
 
+    // For selection scope, resolve the selected range once and search inside it
+    // (Range.search) so only occurrences within the highlighted text are hit.
+    // Whole-document scope keeps searching doc.body verbatim.
+    const searchRoot: Word.Body | Word.Range = scope === "selection" ? doc.getSelection() : doc.body;
+
     let redacted = 0;
     const notFound: string[] = [];
     try {
       let done = 0;
       for (const value of unique) {
         try {
-          const results = doc.body.search(value, { matchCase: true });
+          const results = searchRoot.search(value, { matchCase: true });
           results.load("items");
           await context.sync();
           const items = results.items;

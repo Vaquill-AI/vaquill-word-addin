@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { Banner, Button, Field, Spinner, LiveRegion } from "@/ui/primitives";
+import { ElapsedSeconds } from "@/ui/ElapsedSeconds";
 import { DistributionBar, type DistributionSegment } from "@/ui/DistributionBar";
 import { FilterChips, type FilterChipOption } from "@/ui/FilterChips";
 import { StatusGroup } from "@/ui/StatusGroup";
@@ -42,6 +43,7 @@ export function GuidelinesView() {
             Checking this document against your guidelines. This can take up to a minute.
           </span>
         </LiveRegion>
+        <ElapsedSeconds className="small muted" style={{ marginLeft: "auto" }} />
       </div>
     );
   }

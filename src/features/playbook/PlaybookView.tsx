@@ -6,6 +6,7 @@ import { usePlaybookDetails } from "./usePlaybookDetails";
 import { LadderCard } from "./LadderCard";
 import { TemplatePicker } from "./TemplatePicker";
 import { PlaybookLibrary, NewPlaybookButton } from "./PlaybookLibrary";
+import type { PlaybookDetail } from "@/api/playbooks";
 import "./playbook.css";
 import "./playbook-library.css";
 
@@ -15,7 +16,12 @@ function humanize(s: string): string {
   return s.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
-export function PlaybookView() {
+export function PlaybookView({
+  onRunPlaybook,
+}: {
+  /** Hand a playbook off to the Review tab to run against the open document. */
+  onRunPlaybook?: (playbook: PlaybookDetail) => void;
+} = {}) {
   const state = usePlaybookDetails();
   // null = library list; an id = that playbook's detail (its fallback ladders).
   const [openId, setOpenId] = useState<string | null>(null);
@@ -73,7 +79,7 @@ export function PlaybookView() {
 
     return (
       <div className="stack playbook-view">
-        <div className="row" style={{ gap: 8, alignItems: "center" }}>
+        <div className="row" style={{ gap: 8, alignItems: "center", justifyContent: "space-between" }}>
           <Button
             variant="ghost"
             size="sm"
@@ -85,6 +91,11 @@ export function PlaybookView() {
           >
             <ArrowLeftIcon size={14} /> Playbooks
           </Button>
+          {onRunPlaybook && (
+            <Button variant="primary" size="sm" onClick={() => onRunPlaybook(open)}>
+              Run against document
+            </Button>
+          )}
         </div>
         <div className="stack" style={{ gap: 2 }}>
           <h1 className="view-title">{open.name}</h1>
@@ -145,6 +156,14 @@ export function PlaybookView() {
           query={query}
           onQuery={setQuery}
           onOpen={setOpenId}
+          onRun={
+            onRunPlaybook
+              ? (id) => {
+                  const pb = playbooks.find((p) => p.id === id);
+                  if (pb) onRunPlaybook(pb);
+                }
+              : undefined
+          }
           action={<NewPlaybookButton onClick={() => setShowPicker(true)} />}
         />
       )}

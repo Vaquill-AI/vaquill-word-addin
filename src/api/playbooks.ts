@@ -12,6 +12,16 @@ export interface Playbook {
   description?: string | null;
   contractType: string;
   isDefault: boolean;
+  /** ISO timestamp of the last edit. Drives the "modified X ago" label. */
+  updatedAt?: string | null;
+  /** ISO timestamp the playbook was created. */
+  createdAt?: string | null;
+  /**
+   * Set when the playbook is shared across the user's organization (Playbook v2
+   * org-sharing); null / absent for a personal playbook. Surfaced as a "Shared"
+   * badge.
+   */
+  organizationId?: string | null;
 }
 
 interface PlaybookListResponse {
@@ -45,6 +55,16 @@ export interface PlaybookDetail {
   contractType: string;
   isDefault: boolean;
   positions: Record<string, PlaybookPosition>;
+  /** ISO timestamp of the last edit. Drives the "modified X ago" label. */
+  updatedAt?: string | null;
+  /** ISO timestamp the playbook was created. */
+  createdAt?: string | null;
+  /**
+   * Set when the playbook is shared across the user's organization (Playbook v2
+   * org-sharing); null / absent for a personal playbook. Surfaced as a "Shared"
+   * badge.
+   */
+  organizationId?: string | null;
 }
 
 interface PlaybookDetailListResponse {

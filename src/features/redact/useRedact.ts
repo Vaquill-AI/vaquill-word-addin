@@ -1,7 +1,7 @@
 import { useCallback, useState } from "react";
 import { detectEntities } from "@/api/redact";
-import { readDocumentText } from "@/office/document";
-import { redactValues } from "@/office/redact";
+import { readDocumentText, readSelectionText } from "@/office/document";
+import { redactValues, type RedactScope } from "@/office/redact";
 import { CATEGORIES } from "./categories";
 import { mergeAiEntities, scanText, type RedactCandidate } from "./detect";
 
@@ -12,6 +12,8 @@ export type RedactState =
   | { status: "scanning" }
   | {
       status: "review";
+      /** Which surface was scanned; the redact pass reuses it. */
+      scope: RedactScope;
       candidates: RedactCandidate[];
       confirmed: ReadonlySet<string>;
       /** True while the optional AI entity pass is still running. */
@@ -28,12 +30,23 @@ export type RedactState =
 export function useRedact() {
   const [state, setState] = useState<RedactState>({ status: "idle" });
 
-  const scan = useCallback(async (categories: ReadonlySet<string>) => {
+  const scan = useCallback(async (categories: ReadonlySet<string>, scope: RedactScope = "document") => {
     if (categories.size === 0) return;
     setState({ status: "scanning" });
     try {
-      const text = await readDocumentText();
-      if (text.trim().length < MIN_CHARS) {
+      // Selection scope reads only the highlighted text; document scope reads
+      // the whole body. A collapsed cursor reads as empty, so guard the user
+      // toward selecting something rather than silently scanning the whole doc.
+      const text = scope === "selection" ? await readSelectionText() : await readDocumentText();
+      if (scope === "selection") {
+        if (text.trim().length === 0) {
+          setState({
+            status: "error",
+            error: "Select some text first, or switch to whole document.",
+          });
+          return;
+        }
+      } else if (text.trim().length < MIN_CHARS) {
         setState({ status: "error", error: "This document has no text to scan yet." });
         return;
       }
@@ -43,6 +56,7 @@ export function useRedact() {
       const aiSelected = CATEGORIES.some((c) => c.ai && categories.has(c.key));
       setState({
         status: "review",
+        scope,
         candidates,
         confirmed: new Set(candidates.map((c) => c.text)),
         aiPending: aiSelected,
@@ -62,7 +76,7 @@ export function useRedact() {
         for (const c of merged) {
           if (!known.has(c.text)) confirmed.add(c.text);
         }
-        return { status: "review", candidates: merged, confirmed, aiPending: false };
+        return { status: "review", scope: s.scope, candidates: merged, confirmed, aiPending: false };
       });
     } catch (e) {
       setState({ status: "error", error: (e as Error).message });
@@ -73,7 +87,7 @@ export function useRedact() {
     setState((s) => (s.status === "review" ? { ...s, confirmed } : s));
   }, []);
 
-  const apply = useCallback(async (values: string[]) => {
+  const apply = useCallback(async (values: string[], scope: RedactScope = "document") => {
     const list = [...new Set(values)];
     setState({ status: "applying", done: 0, total: list.length });
     if (list.length === 0) {
@@ -82,6 +96,7 @@ export function useRedact() {
     }
     try {
       const outcome = await redactValues(list, {
+        scope,
         onProgress: (done, total) => setState({ status: "applying", done, total }),
       });
       setState({ status: "done", redacted: outcome.redacted, notFound: outcome.notFound });

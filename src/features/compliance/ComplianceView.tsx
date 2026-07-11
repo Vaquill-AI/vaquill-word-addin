@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { Badge, Banner, Button, Field, Spinner, LiveRegion, SegmentedControl } from "@/ui/primitives";
 import { InfoTip } from "@/ui/InfoTip";
+import { ElapsedSeconds } from "@/ui/ElapsedSeconds";
 import { DistributionBar, type DistributionSegment } from "@/ui/DistributionBar";
 import { FilterChips, type FilterChipOption } from "@/ui/FilterChips";
 import { StatusGroup } from "@/ui/StatusGroup";
@@ -122,6 +123,7 @@ function RegulationMode() {
             a minute.
           </span>
         </LiveRegion>
+        <ElapsedSeconds className="small muted" style={{ marginLeft: "auto" }} />
       </div>
     );
   }
