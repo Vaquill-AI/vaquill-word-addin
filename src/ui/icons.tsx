@@ -71,6 +71,42 @@ export function ArrowLeftIcon({ size = 15 }: P) {
   );
 }
 
+export function EditIcon({ size = 15 }: P) {
+  return (
+    <svg {...base(size)} aria-hidden>
+      <path d="M12 20h9" />
+      <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z" />
+    </svg>
+  );
+}
+
+export function WandIcon({ size = 15 }: P) {
+  return (
+    <svg {...base(size)} aria-hidden>
+      <path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3z" />
+      <path d="M5 3v4M3 5h4M19 17v4M17 19h4" />
+    </svg>
+  );
+}
+
+export function ShieldCheckIcon({ size = 15 }: P) {
+  return (
+    <svg {...base(size)} aria-hidden>
+      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+      <path d="m9 12 2 2 4-4" />
+    </svg>
+  );
+}
+
+export function RedactIcon({ size = 15 }: P) {
+  return (
+    <svg {...base(size)} aria-hidden>
+      <rect x="3" y="5" width="18" height="5" rx="1" fill="currentColor" stroke="none" />
+      <path d="M4 14h7M4 18h10" />
+    </svg>
+  );
+}
+
 export function StopIcon({ size = 15 }: P) {
   return (
     <svg {...base(size)} aria-hidden>

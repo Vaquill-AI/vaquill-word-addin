@@ -10,6 +10,8 @@ import {
   PlaybookIcon,
   SettingsIcon,
   ArrowLeftIcon,
+  ShieldCheckIcon,
+  RedactIcon,
 } from "@/ui/icons";
 import { subscribe } from "@/auth/session";
 import { LoginView } from "@/features/auth/LoginView";
@@ -20,6 +22,8 @@ import { GovernanceView } from "@/features/governance/GovernanceView";
 import { AssistantView } from "@/features/assistant/AssistantView";
 import { DraftView } from "@/features/draft/DraftView";
 import { PlaybookView } from "@/features/playbook/PlaybookView";
+import { ComplianceView } from "@/features/compliance/ComplianceView";
+import { RedactView } from "@/features/redact/RedactView";
 import { ReviewProvider } from "@/features/review/ReviewProvider";
 import { OrgSwitcher } from "@/features/org/OrgSwitcher";
 import { SettingsView } from "@/features/settings/SettingsView";
@@ -31,7 +35,7 @@ import "./styles/app.css";
  * one hub with a sub-nav; clause tools are folded into the Assistant as a
  * selection action, rather than one tab per feature.
  */
-type Tab = "review" | "draft" | "assistant" | "playbook";
+type Tab = "review" | "draft" | "assistant" | "playbook" | "compliance" | "redact";
 type ReviewSub = "redlines" | "changes" | "citations" | "signoff";
 
 const TABS: { id: Tab; label: string; icon: (p: { size?: number }) => ReactNode }[] = [
@@ -39,6 +43,8 @@ const TABS: { id: Tab; label: string; icon: (p: { size?: number }) => ReactNode 
   { id: "draft", label: "Draft", icon: DraftIcon },
   { id: "assistant", label: "Assistant", icon: AssistantIcon },
   { id: "playbook", label: "Playbook", icon: PlaybookIcon },
+  { id: "compliance", label: "Compliance", icon: ShieldCheckIcon },
+  { id: "redact", label: "Redact", icon: RedactIcon },
 ];
 
 export function App() {
@@ -166,8 +172,12 @@ export function App() {
           <DraftView />
         ) : tab === "assistant" ? (
           <AssistantView />
-        ) : (
+        ) : tab === "playbook" ? (
           <PlaybookView />
+        ) : tab === "compliance" ? (
+          <ComplianceView />
+        ) : (
+          <RedactView />
         )}
       </div>
       </div>
