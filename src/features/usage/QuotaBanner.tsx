@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Banner } from "@/ui/primitives";
+import { XIcon } from "@/ui/icons";
 import { fetchUsageSnapshot, type QuotaSnapshot, type UsageMetric } from "@/api/usage";
 import { config } from "@/config";
 import "./quota-banner.css";
@@ -97,7 +98,7 @@ export function QuotaBanner() {
             aria-label="Dismiss"
             onClick={dismiss}
           >
-            &times;
+            <XIcon size={14} />
           </button>
         </span>
       </div>

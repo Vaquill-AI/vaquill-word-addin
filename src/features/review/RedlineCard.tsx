@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Badge, Button, IconButton } from "@/ui/primitives";
 import { OverflowMenu, type OverflowMenuItem } from "@/ui/OverflowMenu";
+import { SplitButton } from "@/ui/SplitButton";
 import { LocateIcon, CheckIcon, XIcon, UndoIcon, CopyIcon, EditIcon, WandIcon, ChevronIcon } from "@/ui/icons";
 import { GroundingBadge } from "./GroundingBadge";
 import { InlineDiff } from "./InlineDiff";
@@ -249,12 +250,15 @@ export function RedlineCard({
     }
   }
 
-  async function accept() {
+  // Apply the (possibly edited) proposal. `tracked` (default) lands it as a
+  // reviewable tracked change; the split-button's "Apply clean" passes false to
+  // apply it directly without tracking.
+  async function applyWith(tracked: boolean) {
     setBusy(true);
     setNote(null);
     try {
-      if (isInsertion) await insertClauseFormatted(redline.clauseName, proposed);
-      else await applyVerifiedRedline({ ...redline, proposedLanguage: proposed });
+      if (isInsertion) await insertClauseFormatted(redline.clauseName, proposed, { tracked });
+      else await applyVerifiedRedline({ ...redline, proposedLanguage: proposed }, { tracked });
       decide("accepted");
     } catch (e) {
       setNote(
@@ -266,6 +270,7 @@ export function RedlineCard({
       setBusy(false);
     }
   }
+  const accept = () => applyWith(true);
 
   async function copyProposed() {
     try {
@@ -522,9 +527,20 @@ export function RedlineCard({
       {!editing && (
         <div className="redline__actions">
           {applicable ? (
-            <Button variant="primary" size="sm" onClick={accept} loading={busy}>
-              <CheckIcon size={14} /> {isInsertion ? "Insert clause" : "Accept"}
-            </Button>
+            <SplitButton
+              label={isInsertion ? "Insert clause" : "Accept"}
+              icon={<CheckIcon size={14} />}
+              onClick={accept}
+              loading={busy}
+              menuLabel="More apply options"
+              items={[
+                {
+                  label: "Apply clean (no tracked change)",
+                  icon: <CheckIcon size={14} />,
+                  onSelect: () => void applyWith(false),
+                },
+              ]}
+            />
           ) : (
             <Button variant="ghost" size="sm" onClick={copyProposed}>
               {copied ? (

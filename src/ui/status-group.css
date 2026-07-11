@@ -1,8 +1,8 @@
 .status-group {
-  border: 1px solid var(--border);
+  border: none;
   border-radius: var(--radius-md);
   overflow: hidden;
-  background: var(--surface);
+  background: var(--fill-subtle);
 }
 
 .status-group__head {
@@ -20,7 +20,7 @@
 }
 
 .status-group__head:hover {
-  background: var(--surface-muted);
+  background: var(--fill-subtle-hover);
 }
 
 .status-group__head:focus-visible {

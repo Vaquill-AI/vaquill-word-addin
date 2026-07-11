@@ -1,8 +1,10 @@
 import type { ButtonHTMLAttributes, ReactElement, ReactNode } from "react";
-import { cloneElement, isValidElement, useId, useRef } from "react";
+import { cloneElement, isValidElement, useEffect, useId, useRef } from "react";
 import "./ui.css";
+import "./toggle.css";
+import "./modal.css";
 
-type ButtonVariant = "default" | "primary" | "ghost";
+type ButtonVariant = "default" | "primary" | "ghost" | "danger";
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: ButtonVariant;
@@ -25,6 +27,7 @@ export function Button({
     "btn",
     variant === "primary" && "btn--primary",
     variant === "ghost" && "btn--ghost",
+    variant === "danger" && "btn--danger",
     size === "sm" && "btn--sm",
     block && "btn--block",
     className,
@@ -179,5 +182,156 @@ export function IconButton({
     >
       {children}
     </button>
+  );
+}
+
+/**
+ * Binary on/off switch (`role="switch"`). Use for a single boolean setting; use
+ * `SegmentedControl` for 2-3 mutually exclusive options instead. On = brand,
+ * because a switch-on is a selected state (blue is correct here, on-spec).
+ */
+export function Toggle({
+  checked,
+  onChange,
+  label,
+  disabled,
+  size = "md",
+}: {
+  checked: boolean;
+  onChange: (next: boolean) => void;
+  label: string;
+  disabled?: boolean;
+  size?: "sm" | "md";
+}) {
+  const cls = ["toggle", checked && "toggle--on", size === "sm" && "toggle--sm"]
+    .filter(Boolean)
+    .join(" ");
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      aria-label={label}
+      title={label}
+      disabled={disabled}
+      className={cls}
+      onClick={() => onChange(!checked)}
+    >
+      <span className="toggle__knob" aria-hidden />
+    </button>
+  );
+}
+
+/**
+ * Compact centered overlay dialog for the narrow task pane. Renders nothing when
+ * closed; on open it focuses the panel and traps Escape / backdrop to `onClose`.
+ * A scrim + shadow separate it (no border), and focus returns to the opener.
+ */
+export function Modal({
+  open,
+  onClose,
+  title,
+  children,
+  footer,
+}: {
+  open: boolean;
+  onClose: () => void;
+  title: string;
+  children: ReactNode;
+  footer?: ReactNode;
+}) {
+  const panelRef = useRef<HTMLDivElement>(null);
+  const openerRef = useRef<Element | null>(null);
+  const titleId = useId();
+
+  useEffect(() => {
+    if (!open) return;
+    openerRef.current = document.activeElement;
+    panelRef.current?.focus();
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        onClose();
+      }
+    }
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      (openerRef.current as HTMLElement | null)?.focus?.();
+    };
+  }, [open, onClose]);
+
+  if (!open) return null;
+  return (
+    <div
+      className="modal__overlay"
+      onMouseDown={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
+      <div
+        className="modal__panel"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        tabIndex={-1}
+        ref={panelRef}
+      >
+        <p className="modal__title" id={titleId}>
+          {title}
+        </p>
+        <div className="modal__body">{children}</div>
+        {footer && <div className="modal__footer">{footer}</div>}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Confirmation dialog for destructive or consequential actions (delete, redact).
+ * Cancel takes default focus so the destructive path is never a stray Enter away.
+ */
+export function ConfirmDialog({
+  open,
+  title,
+  body,
+  confirmLabel = "Confirm",
+  cancelLabel = "Cancel",
+  tone = "default",
+  onConfirm,
+  onCancel,
+}: {
+  open: boolean;
+  title: string;
+  body: ReactNode;
+  confirmLabel?: string;
+  cancelLabel?: string;
+  tone?: "default" | "danger";
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  const cancelRef = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    if (open) requestAnimationFrame(() => cancelRef.current?.focus());
+  }, [open]);
+
+  return (
+    <Modal
+      open={open}
+      onClose={onCancel}
+      title={title}
+      footer={
+        <>
+          <button type="button" ref={cancelRef} className="btn btn--ghost btn--sm" onClick={onCancel}>
+            {cancelLabel}
+          </button>
+          <Button variant={tone === "danger" ? "danger" : "primary"} size="sm" onClick={onConfirm}>
+            {confirmLabel}
+          </Button>
+        </>
+      }
+    >
+      {body}
+    </Modal>
   );
 }

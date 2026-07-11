@@ -3,23 +3,14 @@
   padding: 14px;
 }
 
-.gov-banner {
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 10px 12px;
-}
-.gov-banner--pending {
-  background: var(--danger-tint);
-  border-color: var(--danger-border);
-  color: var(--danger);
-}
-.gov-banner--signed {
+/* Sign-off status uses the shared .banner system (info / danger via the Banner
+   component). The signed-off "success" tone is not in shared ui.css, so it lives
+   here as a local modifier on the same .banner base: green tint + a left accent
+   bar, matching the danger banner's inset-shadow accent. */
+.banner--gov-signed {
   background: var(--success-tint);
-  border-color: var(--success-border);
   color: var(--success);
-}
-.gov-banner--cleared {
-  background: var(--surface-muted);
+  box-shadow: inset 3px 0 0 var(--success);
 }
 
 .gov-meta {
@@ -33,8 +24,13 @@
   padding-left: 18px;
 }
 
+/* One calm governance panel, not a boxed card: a tinted, borderless surface
+   with internal spacing. Sign-off and lock are mutually exclusive states, so at
+   most one shows at a time. */
 .gov-action {
   padding: 12px;
+  background: var(--fill-subtle);
+  border-radius: var(--radius);
 }
 
 .gov-history {

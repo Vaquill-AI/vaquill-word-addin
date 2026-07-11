@@ -1,0 +1,130 @@
+/* ---- Playbook fit report ------------------------------------------------- */
+/*
+ * Self-contained styles for the fit report. The result-card and quote classes
+ * mirror the compliance feature but are redeclared here so the playbook tab does
+ * not depend on the compliance stylesheet being loaded.
+ */
+
+.compliance-score {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: var(--space-l);
+}
+
+.req-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+}
+
+.req-card__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.req-card__name {
+  margin: 0;
+  font-size: var(--fs-body);
+  font-weight: 600;
+}
+
+.fit-card__rung {
+  margin-left: auto;
+}
+
+.guideline-card__quote {
+  margin: 2px 0 0;
+  padding: 6px 10px;
+  border-left: 3px solid var(--border-strong);
+  background: var(--surface-muted);
+  color: var(--text);
+  font-size: var(--fs-body);
+  font-style: italic;
+  line-height: 1.45;
+}
+
+.guideline-card__ungrounded {
+  margin: 2px 0 0;
+}
+
+/* ---- The fallback ladder (the one-up: kept visible per clause) ---------- */
+.fit-ladder {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 6px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--border);
+}
+
+.fit-ladder__caption {
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.fit-rung {
+  border-left: 2px solid var(--border);
+  padding: 2px 0 2px 10px;
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+
+.fit-rung--matched {
+  border-left-color: var(--brand);
+  background: var(--brand-tint);
+}
+
+.fit-rung__head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.fit-rung__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex: 0 0 auto;
+}
+.fit-rung__dot--green {
+  background: var(--success);
+}
+.fit-rung__dot--amber {
+  background: var(--warning);
+}
+.fit-rung__dot--red {
+  background: var(--danger);
+}
+
+.fit-rung__label {
+  flex: 1;
+  font-weight: 600;
+  font-size: 12px;
+}
+
+.fit-rung__here {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--brand);
+  background: var(--brand-tint);
+  padding: 1px 6px;
+  border-radius: 999px;
+}
+
+.fit-rung__text {
+  margin: 2px 0 0;
+  font-size: 12.5px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: var(--text);
+}

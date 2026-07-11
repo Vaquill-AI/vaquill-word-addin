@@ -120,4 +120,24 @@
   --surface-glass: var(--surface); /* cards: solid white */
   --card-blur: none;
   --mica: #f3f4f6; /* canvas: quiet flat light-gray */
+
+  /* ---- Action button: black translucent (Office acrylic material) ----
+     Warm near-black carried as an RGB triplet so each state tunes only the
+     alpha, plus a top-highlight sheen that sells the "material" read. The
+     Assistant composer adopts these now; the app-wide .btn--primary remap is a
+     later phase, so these are additive and change nothing until consumed. */
+  --ink: 27, 26, 24;
+  --btn-primary-bg: rgba(var(--ink), 0.9);
+  --btn-primary-bg-hover: rgba(var(--ink), 0.96);
+  --btn-primary-bg-pressed: rgb(14, 13, 12);
+  --btn-primary-fg: #ffffff;
+  --btn-primary-sheen: inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  /* Destructive action (ConfirmDialog, bulk delete). */
+  --btn-danger-bg: var(--danger);
+  --btn-danger-bg-hover: #8a1f24;
+  --btn-danger-fg: #ffffff;
+
+  /* ---- Subtle tint fills: separate borderless surfaces by tint, not stroke. ---- */
+  --fill-subtle: var(--neutral-bg-3); /* #f5f5f5 */
+  --fill-subtle-hover: var(--neutral-bg-4); /* #f0f0f0 */
 }

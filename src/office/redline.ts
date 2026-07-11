@@ -51,7 +51,15 @@ export interface ApplyResult {
  * Loads the matched range's own text as the diff baseline so the diff always
  * matches exactly, even if the search normalized incidental characters.
  */
-export async function applyVerifiedRedline(r: RedlineSuggestion): Promise<ApplyResult> {
+export async function applyVerifiedRedline(
+  r: RedlineSuggestion,
+  opts: { tracked?: boolean } = {},
+): Promise<ApplyResult> {
+  // `tracked` (default) applies the edit as a reviewable tracked change. Passing
+  // tracked:false performs a "clean" apply: change tracking is forced off for the
+  // edit so the replacement lands directly in the text (Word's Undo still
+  // reverses it). Prior tracking mode is always restored.
+  const tracked = opts.tracked ?? true;
   const query = r.currentLanguage.trim();
   if (!query || query.length > WORD_SEARCH_LIMIT) {
     throw new OfficeError("This redline is too long to apply in place. Use Accept via Vaquill AI instead.");
@@ -80,12 +88,12 @@ export async function applyVerifiedRedline(r: RedlineSuggestion): Promise<ApplyR
     await context.sync();
 
     const priorMode = doc.changeTrackingMode;
-    doc.changeTrackingMode = Word.ChangeTrackingMode.trackAll;
+    doc.changeTrackingMode = tracked ? Word.ChangeTrackingMode.trackAll : Word.ChangeTrackingMode.off;
     await context.sync();
 
     try {
       const diff = await applyWordDiff(context, range, range.text, r.proposedLanguage, {
-        enableTracking: true,
+        enableTracking: tracked,
         logLevel: "error",
       });
       return {

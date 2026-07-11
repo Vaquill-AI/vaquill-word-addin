@@ -19,6 +19,19 @@
   margin: 0;
 }
 
+/* Account card header: identity on the left, a right-aligned ghost Sign out
+   (folded in from the former standalone sign-out card). */
+.settings-account__top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-m);
+}
+.settings-account__top .settings-account {
+  flex: 1;
+  min-width: 0;
+}
+
 .settings-account {
   gap: var(--space-xs);
 }

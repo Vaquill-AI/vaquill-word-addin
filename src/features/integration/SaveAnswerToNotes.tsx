@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/ui/primitives";
 import { listClients, createClientNote, type Client } from "@/api/platform";
 
@@ -6,27 +6,53 @@ import { listClients, createClientNote, type Client } from "@/api/platform";
  * Save an assistant answer as a note on a Vaquill AI client. Lazy: it loads
  * clients only when expanded, and hides gracefully when there are none. Keeps the
  * research done in Word from being lost to the local session.
+ *
+ * `defaultOpen` starts it expanded (used when opened from the answer's overflow
+ * menu, where the "Save to notes" trigger lives in the kebab, not inline);
+ * `onClose` fires when the user cancels so the caller can unmount it.
  */
-export function SaveAnswerToNotes({ content }: { content: string }) {
-  const [open, setOpen] = useState(false);
+export function SaveAnswerToNotes({
+  content,
+  defaultOpen = false,
+  onClose,
+}: {
+  content: string;
+  defaultOpen?: boolean;
+  onClose?: () => void;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
   const [clients, setClients] = useState<Client[] | null>(null);
   const [clientId, setClientId] = useState("");
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  async function loadClients() {
+    if (clients !== null) return;
+    try {
+      const c = await listClients();
+      setClients(c);
+      if (c[0]) setClientId(c[0].id);
+    } catch {
+      setClients([]);
+    }
+  }
+
   async function expand() {
     setOpen(true);
     setError(null);
-    if (clients === null) {
-      try {
-        const c = await listClients();
-        setClients(c);
-        if (c[0]) setClientId(c[0].id);
-      } catch {
-        setClients([]);
-      }
-    }
+    await loadClients();
+  }
+
+  // When mounted already-open (from the kebab), load the client list eagerly.
+  useEffect(() => {
+    if (defaultOpen) void loadClients();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  function cancel() {
+    setOpen(false);
+    onClose?.();
   }
 
   async function save() {
@@ -72,7 +98,7 @@ export function SaveAnswerToNotes({ content }: { content: string }) {
       <Button variant="default" size="sm" onClick={save} loading={busy} disabled={!clientId}>
         Save
       </Button>
-      <Button variant="ghost" size="sm" onClick={() => setOpen(false)}>
+      <Button variant="ghost" size="sm" onClick={cancel}>
         Cancel
       </Button>
       {error && <span className="small" style={{ color: "var(--danger)" }}>{error}</span>}

@@ -10,11 +10,8 @@
   align-items: center;
   justify-content: space-between;
   padding: 10px 14px;
-  border-bottom: 1px solid var(--border);
-  /* Acrylic chrome over the Mica canvas. */
-  background: var(--acrylic-bg);
-  backdrop-filter: var(--acrylic-blur);
-  -webkit-backdrop-filter: var(--acrylic-blur);
+  /* Flat chrome: no border; separation comes from the canvas tint below. */
+  background: var(--surface);
   position: sticky;
   top: 0;
   z-index: 5;
@@ -43,10 +40,9 @@
   display: flex;
   gap: 2px;
   padding: 0 6px;
-  border-bottom: 1px solid var(--border);
-  background: var(--acrylic-bg);
-  backdrop-filter: var(--acrylic-blur);
-  -webkit-backdrop-filter: var(--acrylic-blur);
+  /* One barely-there hairline for the whole chrome (the only stroke that stays). */
+  border-bottom: 1px solid var(--neutral-stroke-3);
+  background: var(--surface);
   position: sticky;
   top: 0;
   z-index: 4;
@@ -78,7 +74,7 @@
   color: var(--text);
 }
 .tabnav__tab--on {
-  color: var(--brand);
+  color: var(--text);
 }
 .tabnav__tab--on::after {
   content: "";
@@ -88,16 +84,14 @@
   bottom: -1px;
   height: 2px;
   border-radius: 2px 2px 0 0;
-  background: var(--brand);
+  background: var(--text);
 }
 
-/* Second-level nav (e.g. the Review hub: Redlines / Citations / Sign-off). */
+/* Second-level nav (e.g. the Review hub: Redlines / Citations / Sign-off).
+   No border; the flattened segmented control floats under the tabs. */
 .subnav {
-  padding: 6px 10px;
-  border-bottom: 1px solid var(--border);
-  background: var(--acrylic-bg);
-  backdrop-filter: var(--acrylic-blur);
-  -webkit-backdrop-filter: var(--acrylic-blur);
+  padding: 8px 10px;
+  background: transparent;
 }
 
 .app-body {

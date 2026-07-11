@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Badge, IconButton } from "@/ui/primitives";
+import { OverflowMenu } from "@/ui/OverflowMenu";
 import { LocateIcon } from "@/ui/icons";
 import { selectClauseInDocument } from "@/office/navigate";
 import { commentOnCitation } from "@/office/citations";
@@ -157,9 +158,17 @@ export function AuthorityItem({ result }: { result: AuthorityResult }) {
         <IconButton label="Find in document" onClick={locate}>
           <LocateIcon size={14} />
         </IconButton>
-        <button className="authority__link" onClick={comment} disabled={busy}>
-          {commented ? "Commented" : "Comment in document"}
-        </button>
+        <OverflowMenu
+          label="More citation actions"
+          items={[
+            {
+              label: commented ? "Commented" : "Comment in document",
+              onSelect: () => {
+                if (!busy) void comment();
+              },
+            },
+          ]}
+        />
         {note && <span className="small muted">{note}</span>}
       </div>
     </div>

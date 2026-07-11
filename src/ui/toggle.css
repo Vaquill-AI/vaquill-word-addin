@@ -1,0 +1,49 @@
+/* Binary on/off switch. Compact (macOS-native scale). On-track is brand,
+   because a switch-on is a selected state. */
+.toggle {
+  position: relative;
+  width: 34px;
+  height: 20px;
+  flex: none;
+  border: none;
+  border-radius: 999px;
+  background: var(--fill-subtle-hover);
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.toggle--on {
+  background: var(--brand);
+}
+.toggle__knob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: var(--shadow-2);
+  transition: transform 0.15s ease;
+}
+.toggle--on .toggle__knob {
+  transform: translateX(14px);
+}
+.toggle--sm {
+  width: 28px;
+  height: 16px;
+}
+.toggle--sm .toggle__knob {
+  width: 12px;
+  height: 12px;
+}
+.toggle--sm.toggle--on .toggle__knob {
+  transform: translateX(12px);
+}
+.toggle:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.toggle:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}

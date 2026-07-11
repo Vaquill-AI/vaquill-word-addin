@@ -1,6 +1,6 @@
 import { forwardRef, useImperativeHandle, useRef, useState } from "react";
-import { Button, IconButton } from "@/ui/primitives";
-import { StopIcon } from "@/ui/icons";
+import { IconButton } from "@/ui/primitives";
+import { StopIcon, WandIcon } from "@/ui/icons";
 import { FocusControl } from "./FocusControl";
 import { PromptLibrary } from "./PromptLibrary";
 import { ContextMenu, activeContextCount, type ContextConfig } from "./ContextMenu";
@@ -10,20 +10,20 @@ export interface ComposerHandle {
   focus: () => void;
 }
 
-function LibraryGlyph() {
+/** "+" add-context trigger (Harvey's composer language) — opens the sources menu. */
+function PlusGlyph() {
   return (
-    <svg viewBox="0 0 24 24" width={15} height={15} fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-      <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
-      <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+    <svg viewBox="0 0 24 24" width={16} height={16} fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M12 5v14M5 12h14" />
     </svg>
   );
 }
 
-function SourcesGlyph() {
+/** Send: an arrow-up glyph inside a circular black button (modern-chat pattern). */
+function ArrowUpGlyph() {
   return (
-    <svg viewBox="0 0 24 24" width={15} height={15} fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-      <path d="M12 2 2 7l10 5 10-5-10-5z" />
-      <path d="m2 17 10 5 10-5M2 12l10 5 10-5" />
+    <svg viewBox="0 0 24 24" width={16} height={16} fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M12 19V5M5 12l7-7 7 7" />
     </svg>
   );
 }
@@ -90,8 +90,8 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
           onClose={() => setContextOpen(false)}
         />
       )}
-      <FocusControl scope={scope} onScope={onScope} />
-      <div className="composer__input">
+      <div className="composer__box">
+        <FocusControl scope={scope} onScope={onScope} />
         <textarea
           ref={taRef}
           value={value}
@@ -109,11 +109,11 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
         <div className="composer__actions">
           <span className="composer__ctx-trigger">
             <IconButton
-              label={`Context sources${ctxCount > 0 ? ` (${ctxCount} on)` : ""}`}
+              label={`Add context${ctxCount > 0 ? ` (${ctxCount} on)` : ""}`}
               onClick={() => setContextOpen((v) => !v)}
               active={contextOpen}
             >
-              <SourcesGlyph />
+              <PlusGlyph />
             </IconButton>
             {ctxCount > 0 && (
               <span className="composer__ctx-badge" aria-hidden>
@@ -121,23 +121,35 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
               </span>
             )}
           </span>
-          <span className="composer__lib-trigger">
-            <IconButton
-              label="Prompt library"
-              onClick={() => setLibraryOpen((v) => !v)}
-              active={libraryOpen}
-            >
-              <LibraryGlyph />
-            </IconButton>
-          </span>
+          <IconButton
+            label="Prompt library"
+            onClick={() => setLibraryOpen((v) => !v)}
+            active={libraryOpen}
+          >
+            <WandIcon size={16} />
+          </IconButton>
+          <span className="composer__spacer" />
           {disabled && onStop ? (
-            <Button variant="default" size="sm" onClick={onStop}>
-              <StopIcon size={13} /> Stop
-            </Button>
+            <button
+              type="button"
+              className="composer__send composer__send--stop"
+              onClick={onStop}
+              aria-label="Stop generating"
+              title="Stop"
+            >
+              <StopIcon size={14} />
+            </button>
           ) : (
-            <Button variant="primary" size="sm" onClick={submit} disabled={disabled || !value.trim()}>
-              Send
-            </Button>
+            <button
+              type="button"
+              className="composer__send"
+              onClick={submit}
+              disabled={disabled || !value.trim()}
+              aria-label="Send"
+              title="Send"
+            >
+              <ArrowUpGlyph />
+            </button>
           )}
         </div>
       </div>

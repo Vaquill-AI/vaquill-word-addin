@@ -354,7 +354,7 @@ function GovernancePreview() {
             <h1 style={{ fontSize: 15 }}>Sign-off</h1>
             <Badge tone="green">Integrity verified</Badge>
           </div>
-          <div className="gov-banner gov-banner--pending">
+          <div className="banner banner--danger">
             <div className="row" style={{ justifyContent: "space-between" }}>
               <strong>Sign-off required before sending</strong>
               <Badge tone="red">Partner sign-off</Badge>
@@ -374,7 +374,7 @@ function GovernancePreview() {
               <li><strong>Governing Law: </strong>Counterparty-favorable jurisdiction</li>
             </ul>
           </div>
-          <div className="card gov-action stack">
+          <div className="gov-action stack">
             <div className="field">
               <label>Add a note (optional)</label>
               <textarea placeholder="e.g. Approved the New York to Delaware change." />

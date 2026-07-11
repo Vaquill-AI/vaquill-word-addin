@@ -119,7 +119,14 @@ export async function insertClauseTracked(text: string): Promise<void> {
  * restored around the insert (mirroring redline.ts) so we never leave the
  * document stuck in track-all.
  */
-export async function insertClauseFormatted(clauseName: string, text: string): Promise<void> {
+export async function insertClauseFormatted(
+  clauseName: string,
+  text: string,
+  opts: { tracked?: boolean } = {},
+): Promise<void> {
+  // `tracked` (default) inserts the clause as a reviewable tracked change; pass
+  // tracked:false for a clean insert (change tracking forced off for the edit).
+  const tracked = opts.tracked ?? true;
   const html = `<h2>${escapeHtml(clauseName)}</h2><p>${escapeHtml(text)}</p>`;
   return runWord(async (context) => {
     const doc = context.document;
@@ -127,7 +134,7 @@ export async function insertClauseFormatted(clauseName: string, text: string): P
     await context.sync();
 
     const priorMode = doc.changeTrackingMode;
-    doc.changeTrackingMode = Word.ChangeTrackingMode.trackAll;
+    doc.changeTrackingMode = tracked ? Word.ChangeTrackingMode.trackAll : Word.ChangeTrackingMode.off;
     try {
       doc.body.insertHtml(html, Word.InsertLocation.end);
       await context.sync();

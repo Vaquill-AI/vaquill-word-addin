@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Badge, Banner, Button, Spinner, LiveRegion } from "@/ui/primitives";
+import { Badge, Banner, Button, Spinner } from "@/ui/primitives";
+import { Dropzone } from "@/ui/Dropzone";
 import { InfoTip } from "@/ui/InfoTip";
 import { CheckIcon } from "@/ui/icons";
 import { applyFills } from "@/office/fill";
@@ -73,27 +74,14 @@ export function FillView() {
               </div>
             </div>
 
-            {extracting ? (
-              <div className="row" style={{ gap: 8, alignItems: "center" }}>
-                <Spinner />
-                <LiveRegion>
-                  <span className="small muted">Reading the reference and extracting values...</span>
-                </LiveRegion>
-              </div>
-            ) : (
-              <label className="fill-attach">
-                <input
-                  type="file"
-                  accept={ACCEPT}
-                  onChange={(e) => {
-                    const f = e.target.files?.[0];
-                    if (f) void extract(f, state.placeholders);
-                  }}
-                />
-                <span className="fill-attach__cta">Attach reference document</span>
-                <span className="small muted">PDF, Word, or text. Max 10MB.</span>
-              </label>
-            )}
+            <Dropzone
+              accept={ACCEPT}
+              label="Attach reference document"
+              hint="PDF, Word, or text. Max 10MB."
+              busy={extracting}
+              busyLabel="Reading the reference and extracting values..."
+              onFile={(f) => void extract(f, state.placeholders)}
+            />
           </>
         )}
       </div>

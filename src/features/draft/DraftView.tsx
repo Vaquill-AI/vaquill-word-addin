@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { Button, Banner, Badge, Field, Spinner } from "@/ui/primitives";
+import { Button, Banner, Badge, Field, Spinner, SegmentedControl } from "@/ui/primitives";
 import { InfoTip } from "@/ui/InfoTip";
 import { CheckIcon, CopyIcon } from "@/ui/icons";
 import {
@@ -316,15 +316,19 @@ export function DraftView() {
           </select>
         </Field>
 
-        <Field label="Tone">
-          <select value={tone} onChange={(e) => setTone(e.target.value)}>
-            {DRAFT_TONES.map((o) => (
-              <option key={o.value} value={o.value}>
-                {o.label}
-              </option>
-            ))}
-          </select>
-        </Field>
+        {/* Tone is a short, fixed enum (Protective / Balanced / Permissive), so it
+            reads as a segmented control spanning the full grid width, not a dropdown. */}
+        <div className="form-grid__full stack" style={{ gap: 6 }}>
+          <span className="small" style={{ fontWeight: 600 }}>
+            Tone
+          </span>
+          <SegmentedControl
+            options={DRAFT_TONES.map((o) => ({ value: o.value, label: o.label }))}
+            value={tone}
+            onChange={setTone}
+            label="Drafting tone"
+          />
+        </div>
       </div>
 
       <Field label="Key terms and instructions">

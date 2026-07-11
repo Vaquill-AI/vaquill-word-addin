@@ -1,0 +1,63 @@
+.split-btn {
+  position: relative;
+  display: inline-flex;
+}
+
+/* Square the inner edges so the primary + caret read as one connected control. */
+.split-btn__primary {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.split-btn__caret {
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+  padding-left: 7px;
+  padding-right: 7px;
+  border-left: 1px solid rgba(255, 255, 255, 0.35);
+}
+
+.split-btn__menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 20;
+  min-width: 200px;
+  padding: 4px;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-8);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.split-btn__item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 7px 10px;
+  border: none;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  font-size: var(--fs-body);
+  text-align: left;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.split-btn__item:hover {
+  background: var(--surface-muted);
+}
+
+.split-btn__item:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: -2px;
+}
+
+.split-btn__item--danger {
+  color: var(--red);
+}

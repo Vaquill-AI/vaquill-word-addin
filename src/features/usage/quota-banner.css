@@ -15,11 +15,13 @@
 }
 
 .quota-banner__dismiss {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   border: none;
   background: transparent;
   color: inherit;
   cursor: pointer;
-  font-size: 16px;
   line-height: 1;
   padding: 0 2px;
   opacity: 0.7;

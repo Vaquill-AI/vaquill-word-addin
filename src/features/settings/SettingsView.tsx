@@ -168,13 +168,18 @@ export function SettingsView() {
       <h1 className="view-title">Account</h1>
 
       <div className="card settings-card">
-        <div className="stack settings-account">
-          {displayName && <span className="settings-account__name">{displayName}</span>}
-          <span className="small muted">{email || "Not signed in"}</span>
-          <div className="row settings-account__org">
-            <span className="small muted">Organization</span>
-            <span className="small">{orgName ?? "Default workspace"}</span>
+        <div className="settings-account__top">
+          <div className="stack settings-account">
+            {displayName && <span className="settings-account__name">{displayName}</span>}
+            <span className="small muted">{email || "Not signed in"}</span>
+            <div className="row settings-account__org">
+              <span className="small muted">Organization</span>
+              <span className="small">{orgName ?? "Default workspace"}</span>
+            </div>
           </div>
+          <Button variant="ghost" size="sm" onClick={clearSession}>
+            Sign out
+          </Button>
         </div>
       </div>
 
@@ -220,18 +225,6 @@ export function SettingsView() {
               ))}
             </select>
           </Field>
-        </div>
-      </div>
-
-      <div className="card settings-card">
-        <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
-          <div className="stack" style={{ gap: 2 }}>
-            <span className="small">Signed in as {email || "this account"}</span>
-            <span className="small muted">Sign out to switch account or clear this device.</span>
-          </div>
-          <Button variant="default" size="sm" onClick={clearSession}>
-            Sign out
-          </Button>
         </div>
       </div>
     </div>

@@ -31,8 +31,10 @@ function fmt(iso?: string): string {
 function StatusBanner({ ledger }: { ledger: GovernanceLedger }) {
   if (ledger.status === "signed_off") {
     const roleLabel = ledger.signedOffRole ? LEVEL_LABEL[ledger.signedOffRole] ?? ledger.signedOffRole : null;
+    // Success tone is not in the shared Banner component, so this reuses the
+    // shared .banner base with a local green modifier (see governance.css).
     return (
-      <div className="gov-banner gov-banner--signed">
+      <div className="banner banner--gov-signed">
         <div className="row" style={{ justifyContent: "space-between" }}>
           <strong>Signed off</strong>
           <Badge tone="green">{ledger.signoffEnforced ? "Authority verified" : "Attested"}</Badge>
@@ -50,23 +52,23 @@ function StatusBanner({ ledger }: { ledger: GovernanceLedger }) {
   }
   if (ledger.status === "pending_signoff") {
     return (
-      <div className="gov-banner gov-banner--pending">
+      <Banner tone="danger">
         <div className="row" style={{ justifyContent: "space-between" }}>
           <strong>Sign-off required before sending</strong>
           {ledger.requiredLevel && <Badge tone="red">{LEVEL_LABEL[ledger.requiredLevel]} sign-off</Badge>}
         </div>
         {ledger.summary && <p className="small" style={{ margin: "6px 0 0" }}>{ledger.summary}</p>}
-      </div>
+      </Banner>
     );
   }
   return (
-    <div className="gov-banner gov-banner--cleared">
+    <Banner tone="info">
       <div className="row" style={{ justifyContent: "space-between" }}>
         <strong>No sign-off required</strong>
         <Badge tone="green">Clear to send</Badge>
       </div>
       {ledger.summary && <p className="small muted" style={{ margin: "4px 0 0" }}>{ledger.summary}</p>}
-    </div>
+    </Banner>
   );
 }
 
@@ -83,7 +85,7 @@ function SignoffAction({
 }) {
   const [note, setNote] = useState("");
   return (
-    <div className="card gov-action stack">
+    <div className="gov-action stack">
       <div className="field">
         <label>Add a note (optional)</label>
         <textarea
@@ -129,7 +131,7 @@ function LockControl() {
   }
 
   return (
-    <div className="card gov-action stack">
+    <div className="gov-action stack">
       <span className="small" style={{ fontWeight: 600 }}>Lock the approved terms</span>
       <p className="small muted" style={{ margin: 0 }}>
         Make the fields Vaquill AI tagged (amounts, dates, defined terms) read-only, so nobody edits the

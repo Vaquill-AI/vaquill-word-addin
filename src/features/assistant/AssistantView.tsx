@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Banner, LiveRegion, Spinner } from "@/ui/primitives";
-import { InfoTip } from "@/ui/InfoTip";
+import { ChevronIcon } from "@/ui/icons";
 import { MessageBubble } from "./MessageBubble";
 import { Composer, type ComposerHandle } from "./Composer";
 import { SuggestedPrompts } from "./SuggestedPrompts";
@@ -32,7 +32,7 @@ function PlusGlyph() {
 }
 
 export function AssistantView() {
-  const { state, send, stop, reset, truncateBefore, loadMessages } = useAssistant();
+  const { state, send, stop, reset, truncateBefore, loadMessages, regenerate } = useAssistant();
   const [scope, setScope] = useState<Scope>("document");
   // Composer draft is owned here so the prompt library and edit-and-re-run can
   // write into it.
@@ -49,7 +49,12 @@ export function AssistantView() {
   // The assistant reads them here instead of re-asking on every question.
   const [prefs, setPrefs] = useState(getReviewPrefs());
   const endRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
   const composerRef = useRef<ComposerHandle>(null);
+  // Whether the transcript is scrolled to the bottom. When the user scrolls up
+  // mid-stream we stop auto-following and offer a "jump to latest" pill instead
+  // of yanking them back down.
+  const [atBottom, setAtBottom] = useState(true);
   // The device-local conversation this transcript persists to. Null until the
   // first turn creates one (or a past chat is loaded).
   const convIdRef = useRef<string | null>(null);
@@ -60,6 +65,10 @@ export function AssistantView() {
     truncateBefore(message.id);
     setDraft(message.content);
     requestAnimationFrame(() => composerRef.current?.focus());
+  }
+
+  function handleRegenerate(message: AssistantMessage) {
+    regenerate(message.id, scope, grounding);
   }
 
   function newChat() {
@@ -92,9 +101,23 @@ export function AssistantView() {
 
   useEffect(() => subscribeReviewPrefs(setPrefs), []);
 
+  // Auto-follow the stream only while the user is already at the bottom; if they
+  // have scrolled up to read, leave their position alone.
   useEffect(() => {
+    if (atBottom) endRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [state.messages, state.thinking, atBottom]);
+
+  function onMessagesScroll() {
+    const el = scrollRef.current;
+    if (!el) return;
+    const distance = el.scrollHeight - el.scrollTop - el.clientHeight;
+    setAtBottom(distance < 48);
+  }
+
+  function jumpToLatest() {
+    setAtBottom(true);
     endRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [state.messages, state.thinking]);
+  }
 
   const grounding = useMemo<AssistantOptions>(
     () => ({
@@ -117,37 +140,43 @@ export function AssistantView() {
         <ChatHistory activeId={convIdRef.current} onPick={loadChat} onClose={() => setHistoryOpen(false)} />
       )}
       <div className="assistant__bar">
-        <button type="button" className="assistant__bar-btn" onClick={() => setHistoryOpen(true)}>
-          <ClockGlyph /> History
+        <button
+          type="button"
+          className="assistant__bar-btn"
+          onClick={() => setHistoryOpen(true)}
+          aria-label="Chat history"
+          title="History"
+        >
+          <ClockGlyph />
         </button>
         <button
           type="button"
           className="assistant__bar-btn"
           onClick={newChat}
           disabled={!canNewChat}
+          aria-label="New chat"
+          title="New chat"
         >
-          <PlusGlyph /> New chat
+          <PlusGlyph />
         </button>
       </div>
-      <div className="assistant__messages">
+      <div className="assistant__messages" ref={scrollRef} onScroll={onMessagesScroll}>
         <QuotaBanner />
         <SelectionTools />
         {empty ? (
           <div className="assistant__intro">
-            <div className="row" style={{ justifyContent: "space-between", alignItems: "flex-start" }}>
-              <h1 className="view-title">Assistant</h1>
-              <InfoTip text="Ask anything about the open contract; answers are grounded in the document and US law, with sources you can check. Select text in the document first to rewrite, explain, or run a risk / compliance check on just that clause. It answers questions, it does not edit the file on its own." />
-            </div>
-            <p className="small muted" style={{ margin: 0 }}>
-              Ask anything about the contract you have open. Answers are grounded in the document and
-              US law.
-            </p>
-            {(prefs.jurisdiction || prefs.matterId) && (
-              <p className="small muted" style={{ margin: 0 }}>
-                Scoped to {prefs.jurisdiction || "all US"}
-                {prefs.matterId ? " and your matter" : ""}. Change in Settings.
+            <div className="assistant__greeting">
+              <p className="assistant__greeting-title">Ask anything about the open contract.</p>
+              <p className="assistant__greeting-sub">
+                Grounded in the document and US law, with sources you can check.
               </p>
-            )}
+              {(prefs.jurisdiction || prefs.matterId) && (
+                <p className="assistant__greeting-scope">
+                  Scoped to {prefs.jurisdiction || "all US"}
+                  {prefs.matterId ? " and your matter" : ""}. Change in Settings.
+                </p>
+              )}
+            </div>
             <SuggestedPrompts onPick={(p) => send(p, scope, grounding)} />
           </div>
         ) : (
@@ -157,6 +186,9 @@ export function AssistantView() {
                 key={m.id}
                 message={m}
                 onEdit={m.role === "user" && !state.streaming ? handleEdit : undefined}
+                onRegenerate={
+                  m.role === "assistant" && !state.streaming ? handleRegenerate : undefined
+                }
               />
             ))}
             {state.thinking && (
@@ -170,6 +202,17 @@ export function AssistantView() {
           </>
         )}
       </div>
+      {!empty && !atBottom && (
+        <button
+          type="button"
+          className="assistant__jump"
+          onClick={jumpToLatest}
+          aria-label="Jump to latest"
+          title="Jump to latest"
+        >
+          <ChevronIcon size={16} />
+        </button>
+      )}
       <Composer
         ref={composerRef}
         value={draft}

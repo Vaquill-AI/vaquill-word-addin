@@ -3,18 +3,17 @@
   padding: 14px;
 }
 
-/* Embedded selection tools (inside the Assistant). */
+/* Embedded selection tools (inside the Assistant). Flat, borderless card: the
+   old glass/shadow/border tokens are now flattened. A white surface holds the
+   tinted wells inside (matching the foundation card idiom), so nested tint
+   surfaces stay separable without any stroke. */
 .selection-tools {
   display: flex;
   flex-direction: column;
   gap: 10px;
   padding: 12px;
-  border: 1px solid var(--border);
   border-radius: var(--radius);
-  background: var(--surface-glass);
-  backdrop-filter: var(--card-blur);
-  -webkit-backdrop-filter: var(--card-blur);
-  box-shadow: var(--shadow-2);
+  background: var(--surface);
 }
 
 .sel {
@@ -22,14 +21,11 @@
   flex-direction: column;
   gap: 6px;
   padding: 10px 12px;
-  border: 1px solid var(--border);
   border-radius: var(--radius);
   background: var(--surface-muted);
 }
 .sel--empty {
   gap: 4px;
-  border-style: dashed;
-  border-color: var(--border-strong);
   text-align: left;
 }
 .sel__text {

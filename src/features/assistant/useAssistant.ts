@@ -39,6 +39,12 @@ const INITIAL: AssistantState = { messages: [], streaming: false, thinking: null
 export function useAssistant() {
   const [state, setState] = useState<AssistantState>(INITIAL);
   const abortRef = useRef<AbortController | null>(null);
+  // Mirror of the latest committed messages so `send`/`regenerate` can read the
+  // current transcript without being rebuilt on every keystroke of state change.
+  const messagesRef = useRef<AssistantMessage[]>(state.messages);
+  useEffect(() => {
+    messagesRef.current = state.messages;
+  }, [state.messages]);
 
   const reset = useCallback(() => {
     abortRef.current?.abort();
@@ -93,9 +99,11 @@ export function useAssistant() {
       const userMsg: AssistantMessage = { id: uuid(), role: "user", content: trimmed };
       const assistantId = uuid();
 
-      // History sent to the backend (prior turns + this question).
+      // History sent to the backend (prior turns + this question). Read from the
+      // ref so this reflects the latest committed transcript (e.g. right after a
+      // truncation during regenerate), not a stale render closure.
       const history: ChatMessage[] = [
-        ...state.messages.map((m) => ({ role: m.role, content: m.content })),
+        ...messagesRef.current.map((m) => ({ role: m.role, content: m.content })),
         { role: "user", content: trimmed },
       ];
 
@@ -185,11 +193,28 @@ export function useAssistant() {
         }));
       }
     },
-    [state.messages],
+    [],
+  );
+
+  // Re-run the question that produced a given assistant answer: drop that answer
+  // and its question, then resend the question. Deferred to a macrotask so the
+  // truncation commits (and messagesRef updates) before `send` rebuilds history.
+  const regenerate = useCallback(
+    (assistantId: string, scope: Scope, grounding?: AssistantOptions) => {
+      const msgs = messagesRef.current;
+      const idx = msgs.findIndex((m) => m.id === assistantId);
+      if (idx <= 0) return;
+      const user = msgs[idx - 1];
+      if (!user || user.role !== "user") return;
+      truncateBefore(user.id);
+      const content = user.content;
+      setTimeout(() => void send(content, scope, grounding), 0);
+    },
+    [truncateBefore, send],
   );
 
   // Abort any in-flight stream when the view unmounts (tab switch).
   useEffect(() => () => abortRef.current?.abort(), []);
 
-  return { state, send, reset, stop, truncateBefore, loadMessages };
+  return { state, send, reset, stop, truncateBefore, loadMessages, regenerate };
 }

@@ -12,40 +12,6 @@
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 }
 
-.fill-attach {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  align-items: center;
-  text-align: center;
-  padding: 16px;
-  border: 1.5px dashed var(--border-strong);
-  border-radius: var(--radius-md);
-  cursor: pointer;
-}
-
-.fill-attach:hover {
-  background: var(--surface-muted);
-}
-
-.fill-attach:focus-within {
-  outline: 2px solid var(--brand);
-  outline-offset: 2px;
-}
-
-.fill-attach input[type="file"] {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  opacity: 0;
-  pointer-events: none;
-}
-
-.fill-attach__cta {
-  font-weight: 600;
-  color: var(--brand-fg);
-}
-
 .fill-card {
   display: flex;
   flex-direction: column;

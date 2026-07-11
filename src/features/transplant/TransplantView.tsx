@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Badge, Banner, Button, Field, Spinner, LiveRegion } from "@/ui/primitives";
+import { Badge, Banner, Button, Field } from "@/ui/primitives";
+import { Dropzone } from "@/ui/Dropzone";
 import { InfoTip } from "@/ui/InfoTip";
 import { CheckIcon } from "@/ui/icons";
 import { extractClause, type ExtractedClause } from "@/api/clause";
@@ -7,7 +8,7 @@ import { reconcileTerms, type Reconciliation } from "@/api/reconcile";
 import { insertClauseTracked } from "@/office/richInsert";
 import { readDocumentText } from "@/office/document";
 import { ApiError, friendlyMessage } from "@/api/errors";
-import "@/features/fill/fill.css"; // reuse the .fill-attach dropzone
+import "./transplant.css";
 
 const ACCEPT = ".pdf,.docx,.doc,.txt";
 
@@ -102,30 +103,16 @@ export function TransplantView() {
         />
       </Field>
 
-      {state.status === "extracting" ? (
-        <div className="row" style={{ gap: 8, alignItems: "center" }}>
-          <Spinner />
-          <LiveRegion>
-            <span className="small muted">Finding the clause in the source...</span>
-          </LiveRegion>
-        </div>
-      ) : (
-        <label className="fill-attach">
-          <input
-            type="file"
-            accept={ACCEPT}
-            disabled={!clause.trim()}
-            onChange={(e) => {
-              const f = e.target.files?.[0];
-              if (f) void extract(f);
-            }}
-          />
-          <span className="fill-attach__cta">Attach source contract</span>
-          <span className="small muted">
-            {clause.trim() ? "PDF, Word, or text. Max 10MB." : "Describe the clause first."}
-          </span>
-        </label>
-      )}
+      <Dropzone
+        accept={ACCEPT}
+        label="Attach source contract"
+        hint="PDF, Word, or text. Max 10MB."
+        disabled={!clause.trim()}
+        disabledHint="Describe the clause first."
+        busy={state.status === "extracting"}
+        busyLabel="Finding the clause in the source..."
+        onFile={(f) => void extract(f)}
+      />
 
       {state.status === "error" && <Banner tone="danger">{state.error}</Banner>}
 
@@ -138,20 +125,7 @@ export function TransplantView() {
                 New
               </Button>
             </div>
-            <div
-              className="small"
-              style={{
-                whiteSpace: "pre-wrap",
-                maxHeight: 240,
-                overflowY: "auto",
-                padding: 8,
-                border: "1px solid var(--border)",
-                borderRadius: "var(--radius-sm)",
-                background: "var(--surface-muted)",
-              }}
-            >
-              {recon?.reconciledText ?? state.clause.text}
-            </div>
+            <div className="transplant-preview">{recon?.reconciledText ?? state.clause.text}</div>
 
             {recon ? (
               <div className="stack" style={{ gap: 4 }}>

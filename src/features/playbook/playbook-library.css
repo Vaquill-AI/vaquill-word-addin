@@ -1,36 +1,33 @@
+/* Borderless list rows: no per-row card. Rows read as one list, separated by a
+   hairline divider and lifted by a full-row hover tint (north-star: strip
+   borders, list not cards). */
 .playbook-row {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding-right: 10px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  background: var(--surface);
-  transition: border-color 0.12s ease;
+  padding-right: 6px;
+  border-radius: var(--radius-sm);
+  transition: background 0.12s ease;
 }
 
 .playbook-row:hover {
-  border-color: var(--border-strong);
+  background: var(--fill-subtle);
 }
 
-/* The clickable open-the-playbook area (fills the row, leaving room for Run). */
+/* The clickable open-the-playbook area (fills the row, leaving room for actions). */
 .playbook-row__main {
   display: flex;
   flex: 1;
   min-width: 0;
   flex-direction: column;
   gap: 3px;
-  padding: 10px 12px;
+  padding: 10px 6px 10px 8px;
   border: none;
   background: none;
   color: var(--text);
   text-align: left;
   cursor: pointer;
-  border-radius: var(--radius-md);
-}
-
-.playbook-row__main:hover {
-  background: var(--surface-muted);
+  border-radius: var(--radius-sm);
 }
 
 .playbook-row__main:focus-visible {
@@ -47,4 +44,18 @@
 
 .playbook-row__meta {
   display: block;
+}
+
+/* Unified empty state (zero playbooks) rendered through ScopedSearchList.empty. */
+.playbook-empty {
+  gap: 6px;
+  align-items: center;
+  text-align: center;
+}
+.playbook-empty__title {
+  font-weight: 600;
+}
+.playbook-empty__cta {
+  margin-top: 2px;
+  justify-content: center;
 }

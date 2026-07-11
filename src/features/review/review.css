@@ -345,11 +345,21 @@
   gap: 8px;
   flex-wrap: wrap;
 }
-.change-item {
-  padding: 10px 12px;
+/* Borderless row, not a card: hairline divider + spacing separate each change
+   (and comment). No card surface, no shadow. The founder-named de-box.
+   Compound selector so it deterministically overrides .card regardless of
+   stylesheet import order. */
+.card.change-item {
+  padding: 10px 2px;
   display: flex;
   flex-direction: column;
   gap: 6px;
+  background: none;
+  border-radius: 0;
+  border-bottom: 1px solid var(--border);
+}
+.card.change-item:last-child {
+  border-bottom: none;
 }
 .change-item__head {
   display: flex;

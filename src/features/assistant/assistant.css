@@ -16,14 +16,12 @@
 .assistant__bar-btn {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  justify-content: center;
   border: none;
   background: transparent;
   color: var(--text-muted);
-  font-size: 12px;
-  font-weight: 600;
   cursor: pointer;
-  padding: 4px 8px;
+  padding: 6px;
   border-radius: var(--radius-sm);
 }
 .assistant__bar-btn:hover:not(:disabled) {
@@ -45,10 +43,96 @@
   gap: 12px;
 }
 
+/* Floating "jump to latest" pill, shown when the user has scrolled up mid-stream
+   (an overlay, so a shadow is allowed). */
+.assistant__jump {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 132px;
+  z-index: 6;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--text-muted);
+  box-shadow: var(--shadow-8);
+  cursor: pointer;
+}
+.assistant__jump:hover {
+  background: var(--fill-subtle);
+  color: var(--text);
+}
+
+/* Calm, centered empty state (Harvey/GC-AI): a short greeting floating with
+   breathing room, then tappable starter chips. No H1, no info button, no
+   stacked paragraphs. */
 .assistant__intro {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 16px;
+  margin: auto 0;
+  padding: 8px 2px;
+}
+.assistant__greeting {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  text-align: center;
+}
+.assistant__greeting-title {
+  margin: 0;
+  font-size: var(--fs-body-lg);
+  font-weight: 600;
+  color: var(--text);
+}
+.assistant__greeting-sub {
+  margin: 0;
+  font-size: var(--fs-body);
+  color: var(--text-muted);
+}
+.assistant__greeting-scope {
+  margin: 2px 0 0;
+  font-size: var(--fs-caption);
+  color: var(--text-muted);
+}
+
+/* Starter suggestion chips (replaces the three bordered ToolCards). */
+.suggest-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: center;
+}
+.suggest-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border: none;
+  border-radius: 999px;
+  background: var(--fill-subtle);
+  color: var(--text);
+  font-size: 12.5px;
+  font-weight: 500;
+  line-height: 1.2;
+  cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+.suggest-chip:hover {
+  background: var(--brand-tint);
+  color: var(--brand);
+}
+.suggest-chip__icon {
+  display: inline-flex;
+  color: var(--text-muted);
+}
+.suggest-chip:hover .suggest-chip__icon {
+  color: var(--brand);
 }
 
 /* ---- Message bubbles ---- */
@@ -58,11 +142,10 @@
 .msg--user {
   align-self: flex-end;
   max-width: 85%;
-  background: var(--brand);
-  color: var(--on-brand);
+  background: var(--fill-subtle);
+  color: var(--text);
   padding: 8px 12px;
   border-radius: 12px 12px 4px 12px;
-  box-shadow: var(--shadow-2);
 }
 .msg--user p {
   margin: 0;
@@ -156,18 +239,24 @@
   gap: 2px;
 }
 
-/* Copy / Edit actions inside a user bubble (on the brand background). */
+/* Copy / Edit actions inside a user bubble. Hidden until the bubble is hovered
+   or focused, so the transcript stays calm. */
 .msg__actions--user {
   display: flex;
   gap: 4px;
   justify-content: flex-end;
   margin-top: 6px;
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+.msg--user:hover .msg__actions--user,
+.msg__actions--user:focus-within {
+  opacity: 1;
 }
 .msg__action {
   border: none;
   background: transparent;
-  color: var(--on-brand);
-  opacity: 0.8;
+  color: var(--text-muted);
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
@@ -175,8 +264,8 @@
   border-radius: var(--radius-sm);
 }
 .msg__action:hover {
-  opacity: 1;
-  background: rgba(255, 255, 255, 0.16);
+  color: var(--text);
+  background: var(--fill-subtle-hover);
 }
 
 .assistant__thinking {
@@ -185,9 +274,26 @@
   gap: 8px;
 }
 
-/* Save-answer-to-notes action under an assistant reply. */
+/* Answer actions under an assistant reply (kebab + folded save-to-notes). */
 .msg__actions {
   margin-top: 6px;
+}
+/* The assistant kebab stays quiet until the answer is hovered or focused. */
+.msg__actions--assistant {
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+.msg--assistant:hover .msg__actions--assistant,
+.msg__actions--assistant:focus-within {
+  opacity: 1;
+}
+.msg__actions-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.msg__actions-note {
+  line-height: 1;
 }
 .msg__save-note {
   border: none;
@@ -255,26 +361,61 @@
   color: var(--brand);
 }
 
-/* ---- Composer (glass, matches chrome) ---- */
+/* ---- Composer: one unified input surface (Harvey hero) ----
+   The focus chip, textarea, and action row live inside a single rounded box, so
+   there are no boxes-within-boxes and the whole thing reads as one input. */
 .composer {
   position: relative;
-  border-top: 1px solid var(--border);
-  background: var(--acrylic-bg);
-  backdrop-filter: var(--acrylic-blur);
-  -webkit-backdrop-filter: var(--acrylic-blur);
-  padding: 10px 14px;
+  border-top: 1px solid var(--neutral-stroke-3);
+  background: var(--surface);
+  padding: 10px 12px 12px;
+}
+.composer__box {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  transition: border-color 0.12s ease, box-shadow 0.12s ease;
+}
+.composer__box:focus-within {
+  border-color: var(--brand);
+  box-shadow: 0 0 0 2px var(--brand-tint);
+}
+.composer__box textarea {
+  width: 100%;
+  resize: none;
+  border: none;
+  background: transparent;
+  padding: 2px 4px;
+  font-family: inherit;
+  font-size: var(--fs-body);
+  line-height: 1.5;
+  color: var(--text);
+}
+.composer__box textarea:focus {
+  outline: none;
 }
 .composer__actions {
   display: flex;
-  align-items: flex-end;
-  gap: 6px;
-  flex-shrink: 0;
+  align-items: center;
+  gap: 4px;
 }
-.composer__lib-trigger {
-  flex-shrink: 0;
+.composer__spacer {
+  flex: 1;
+}
+/* Flatten the two composer icon buttons (the global .iconbtn keeps its resting
+   border for now; this override is scoped to the Assistant slice). */
+.composer__actions .iconbtn {
+  width: 30px;
+  height: 30px;
+  border-color: transparent;
+  background: transparent;
+}
+.composer__actions .iconbtn:hover {
+  background: var(--fill-subtle);
 }
 .composer__ctx-trigger {
   position: relative;
@@ -283,8 +424,8 @@
 }
 .composer__ctx-badge {
   position: absolute;
-  top: -2px;
-  right: -2px;
+  top: 0;
+  right: 0;
   min-width: 14px;
   height: 14px;
   padding: 0 3px;
@@ -299,38 +440,37 @@
   line-height: 1;
   pointer-events: none;
 }
-.composer__scope {
-  display: flex;
+/* Circular black send (arrow-up) — the hero action. */
+.composer__send {
+  display: inline-flex;
   align-items: center;
-  gap: 8px;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  border: none;
+  border-radius: 50%;
+  background: var(--btn-primary-bg);
+  color: var(--btn-primary-fg);
+  box-shadow: var(--btn-primary-sheen);
+  cursor: pointer;
+  transition: background 0.12s ease, opacity 0.12s ease;
 }
-.composer__scope select {
-  padding: 4px 8px;
-  border: 1px solid var(--control-border);
-  border-radius: var(--radius-sm);
-  font-size: 12px;
-  font-family: inherit;
-  background: var(--surface);
+.composer__send:hover:not(:disabled) {
+  background: var(--btn-primary-bg-hover);
+}
+.composer__send:active:not(:disabled) {
+  background: var(--btn-primary-bg-pressed);
+}
+.composer__send:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.composer__send--stop {
+  background: var(--fill-subtle);
   color: var(--text);
+  box-shadow: none;
 }
-.composer__input {
-  display: flex;
-  gap: 8px;
-  align-items: flex-end;
-}
-.composer__input textarea {
-  flex: 1;
-  resize: none;
-  padding: 8px 10px;
-  border: 1px solid var(--control-border);
-  border-radius: var(--radius-sm);
-  font-family: inherit;
-  font-size: var(--fs-body);
-  background: var(--surface);
-  color: var(--text);
-}
-.composer__input textarea:focus {
-  outline: none;
-  border-bottom-color: var(--brand);
-  box-shadow: inset 0 -1px 0 0 var(--brand);
+.composer__send--stop:hover:not(:disabled) {
+  background: var(--fill-subtle-hover);
 }

@@ -1,17 +1,50 @@
 import { useState } from "react";
-import { Button, Field } from "@/ui/primitives";
+import { Button, Field, SegmentedControl, Toggle } from "@/ui/primitives";
 import { PlaybookPicker } from "./PlaybookPicker";
 import {
   CONTRACT_TYPES,
   USER_SIDES,
   JURISDICTIONS,
-  MARKUP_LEVELS,
-  PAPER_SIDES,
   labelOf,
   type ReviewScope,
 } from "./constants";
 import { getReviewPrefs } from "@/lib/prefs";
 import type { RunParams } from "./useReview";
+
+type MarkupLevel = "light" | "standard" | "firm";
+type PaperSide = "" | "counterparty" | "own";
+
+/** Scale of markup, ordered light to firm for the segmented control. */
+const MARKUP_OPTIONS: { value: MarkupLevel; label: string }[] = [
+  { value: "light", label: "Light" },
+  { value: "standard", label: "Standard" },
+  { value: "firm", label: "Firm" },
+];
+
+/** Live named-level caption shown under the markup segmented control. */
+const MARKUP_CAPTION: Record<MarkupLevel, string> = {
+  light: "Light: only flag escalation triggers.",
+  standard: "Standard: mark gaps to your preferred position.",
+  firm: "Firm: hard-line every deviation.",
+};
+
+const PAPER_OPTIONS: { value: PaperSide; label: string }[] = [
+  { value: "", label: "Not sure" },
+  { value: "counterparty", label: "Their paper" },
+  { value: "own", label: "Our paper" },
+];
+
+/** Aggressiveness nuance, moved off the segment labels into helper text. */
+const PAPER_CAPTION: Record<PaperSide, string> = {
+  "": "We infer whose paper it is and mark up accordingly.",
+  counterparty: "Their paper: mark up assertively.",
+  own: "Our template: defend our positions.",
+};
+
+const SCOPE_OPTIONS: { value: ReviewScope; label: string }[] = [
+  { value: "document", label: "Whole doc" },
+  { value: "selection", label: "Selection" },
+];
 
 export function ReviewForm({
   onRun,
@@ -30,8 +63,8 @@ export function ReviewForm({
   const [playbookId, setPlaybookId] = useState(initial?.playbookId ?? "");
   const [instructions, setInstructions] = useState("");
   const [includeExtras, setIncludeExtras] = useState(false);
-  const [markupLevel, setMarkupLevel] = useState<"light" | "standard" | "firm">("standard");
-  const [paperSide, setPaperSide] = useState("");
+  const [markupLevel, setMarkupLevel] = useState<MarkupLevel>("standard");
+  const [paperSide, setPaperSide] = useState<PaperSide>("");
 
   return (
     <form
@@ -56,19 +89,20 @@ export function ReviewForm({
         });
       }}
     >
-      {/* Short selects flow into 2+ columns as the pane widens; single column
-          when narrow. */}
-      <div className="form-grid">
-        <Field label="Contract type">
-          <select value={contractType} onChange={(e) => setContractType(e.target.value)}>
-            {CONTRACT_TYPES.map((o) => (
-              <option key={o.value} value={o.value}>
-                {o.label}
-              </option>
-            ))}
-          </select>
-        </Field>
+      {/* Contract type is the document's identity: full-width, top slot. */}
+      <Field label="Contract type">
+        <select value={contractType} onChange={(e) => setContractType(e.target.value)}>
+          {CONTRACT_TYPES.map((o) => (
+            <option key={o.value} value={o.value}>
+              {o.label}
+            </option>
+          ))}
+        </select>
+      </Field>
 
+      {/* Two genuinely long lists, paired 2-col; they flow to one column when
+          the pane is narrow. */}
+      <div className="form-grid">
         <Field label="I represent the">
           <select value={userSide} onChange={(e) => setUserSide(e.target.value)}>
             {USER_SIDES.map((o) => (
@@ -79,48 +113,52 @@ export function ReviewForm({
           </select>
         </Field>
 
-        <Field label="Scope">
-          <select value={scope} onChange={(e) => setScope(e.target.value as ReviewScope)}>
-            <option value="document">Whole document</option>
-            <option value="selection">Selected text only</option>
-          </select>
-        </Field>
-
         <PlaybookPicker contractType={contractType} value={playbookId} onChange={setPlaybookId} />
+      </div>
 
-        <Field label="Markup level">
-          <select
-            value={markupLevel}
-            onChange={(e) => setMarkupLevel(e.target.value as "light" | "standard" | "firm")}
-          >
-            {MARKUP_LEVELS.map((o) => (
-              <option key={o.value} value={o.value}>
-                {o.label}
-              </option>
-            ))}
-          </select>
-        </Field>
+      {/* Short enumerations: segmented, full-width rows (not dropdowns). */}
+      <div className="field">
+        <label>Scope</label>
+        <SegmentedControl
+          label="Scope"
+          options={SCOPE_OPTIONS}
+          value={scope}
+          onChange={setScope}
+        />
+      </div>
 
-        <Field label="Whose paper">
-          <select value={paperSide} onChange={(e) => setPaperSide(e.target.value)}>
-            {PAPER_SIDES.map((o) => (
-              <option key={o.value} value={o.value}>
-                {o.label}
-              </option>
-            ))}
-          </select>
-        </Field>
+      <div className="field">
+        <label>Whose paper</label>
+        <SegmentedControl
+          label="Whose paper"
+          options={PAPER_OPTIONS}
+          value={paperSide}
+          onChange={setPaperSide}
+        />
+        <span className="small muted">{PAPER_CAPTION[paperSide]}</span>
+      </div>
+
+      <div className="field">
+        <label>Markup level</label>
+        <SegmentedControl
+          label="Markup level"
+          options={MARKUP_OPTIONS}
+          value={markupLevel}
+          onChange={setMarkupLevel}
+        />
+        <span className="small muted">{MARKUP_CAPTION[markupLevel]}</span>
       </div>
 
       {scope === "document" && (
-        <label className="row" style={{ gap: 8, cursor: "pointer" }}>
-          <input
-            type="checkbox"
+        <div className="row" style={{ gap: 8, alignItems: "center" }}>
+          <Toggle
             checked={includeExtras}
-            onChange={(e) => setIncludeExtras(e.target.checked)}
+            onChange={setIncludeExtras}
+            label="Include footnotes and headers/footers"
+            size="sm"
           />
           <span className="small">Include footnotes and headers/footers</span>
-        </label>
+        </div>
       )}
 
       <Field label="Focus (optional)">

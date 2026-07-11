@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Banner, Button, Spinner, LiveRegion, SegmentedControl } from "@/ui/primitives";
+import { Banner, Button, Spinner, LiveRegion, SegmentedControl, ConfirmDialog } from "@/ui/primitives";
 import { InfoTip } from "@/ui/InfoTip";
 import { FilterChips, type FilterChipOption } from "@/ui/FilterChips";
 import { StatusGroup } from "@/ui/StatusGroup";
@@ -173,6 +173,8 @@ function RedactReview({
   onApply: (values: string[], scope: RedactScope) => void;
 }) {
   const { candidates, confirmed, aiPending } = state;
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const scopeLabel = state.scope === "selection" ? "Selection" : "Whole document";
 
   const byCategory = useMemo(() => {
     const map = new Map<string, RedactCandidate[]>();
@@ -204,7 +206,8 @@ function RedactReview({
     onConfirm(on ? new Set(candidates.map((c) => c.text)) : new Set());
   }
 
-  const confirmedCount = candidates.filter((c) => confirmed.has(c.text)).length;
+  const confirmedValues = candidates.filter((c) => confirmed.has(c.text)).map((c) => c.text);
+  const confirmedCount = confirmedValues.length;
   const occurrences = candidates
     .filter((c) => confirmed.has(c.text))
     .reduce((sum, c) => sum + c.count, 0);
@@ -294,9 +297,7 @@ function RedactReview({
           <Button
             variant="primary"
             block
-            onClick={() =>
-              onApply(candidates.filter((c) => confirmed.has(c.text)).map((c) => c.text), state.scope)
-            }
+            onClick={() => setConfirmOpen(true)}
             disabled={confirmedCount === 0}
           >
             {confirmedCount === 0
@@ -305,6 +306,34 @@ function RedactReview({
           </Button>
         </div>
       </div>
+
+      <ConfirmDialog
+        open={confirmOpen}
+        tone="danger"
+        title="Redact selected values?"
+        confirmLabel={`Redact ${confirmedCount} value${confirmedCount === 1 ? "" : "s"}`}
+        cancelLabel="Cancel"
+        onCancel={() => setConfirmOpen(false)}
+        onConfirm={() => {
+          setConfirmOpen(false);
+          onApply(confirmedValues, state.scope);
+        }}
+        body={
+          <div className="stack" style={{ gap: 8 }}>
+            <p style={{ margin: 0 }}>
+              Permanently remove {confirmedCount} value{confirmedCount === 1 ? "" : "s"} ({occurrences}{" "}
+              occurrence{occurrences === 1 ? "" : "s"}) from the document?
+            </p>
+            <p className="small muted" style={{ margin: 0 }}>
+              Scope: {scopeLabel}.
+            </p>
+            <p className="small muted" style={{ margin: 0 }}>
+              This cannot be undone from the pane; Ctrl+Z in Word may reverse it. Keep an unredacted
+              copy.
+            </p>
+          </div>
+        }
+      />
     </div>
   );
 }

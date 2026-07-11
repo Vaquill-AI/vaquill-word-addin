@@ -4,6 +4,7 @@ import { InfoTip } from "@/ui/InfoTip";
 import { ArrowLeftIcon } from "@/ui/icons";
 import { usePlaybookDetails } from "./usePlaybookDetails";
 import { LadderCard } from "./LadderCard";
+import { PlaybookFit } from "./PlaybookFit";
 import { TemplatePicker } from "./TemplatePicker";
 import { PlaybookLibrary, NewPlaybookButton } from "./PlaybookLibrary";
 import type { PlaybookDetail } from "@/api/playbooks";
@@ -28,6 +29,8 @@ export function PlaybookView({
   const [query, setQuery] = useState("");
   const [clauseFilter, setClauseFilter] = useState("");
   const [showPicker, setShowPicker] = useState(false);
+  // When true (in the detail view), show the fit report for the open playbook.
+  const [showFit, setShowFit] = useState(false);
 
   if (state.status === "loading") {
     return (
@@ -66,6 +69,11 @@ export function PlaybookView({
     );
   }
 
+  // ---- Fit report: evaluate the open contract against this playbook ------
+  if (open && showFit) {
+    return <PlaybookFit playbook={open} onBack={() => setShowFit(false)} />;
+  }
+
   // ---- Detail: one playbook's clause ladders -----------------------------
   if (open) {
     const q = clauseFilter.trim().toLowerCase();
@@ -86,16 +94,22 @@ export function PlaybookView({
             onClick={() => {
               setOpenId(null);
               setClauseFilter("");
+              setShowFit(false);
             }}
             aria-label="Back to playbooks"
           >
             <ArrowLeftIcon size={14} /> Playbooks
           </Button>
-          {onRunPlaybook && (
-            <Button variant="primary" size="sm" onClick={() => onRunPlaybook(open)}>
-              Run against document
+          <div className="row" style={{ gap: 6 }}>
+            <Button variant="default" size="sm" onClick={() => setShowFit(true)}>
+              Check contract fit
             </Button>
-          )}
+            {onRunPlaybook && (
+              <Button variant="primary" size="sm" onClick={() => onRunPlaybook(open)}>
+                Run against document
+              </Button>
+            )}
+          </div>
         </div>
         <div className="stack" style={{ gap: 2 }}>
           <h1 className="view-title">{open.name}</h1>
@@ -140,33 +154,23 @@ export function PlaybookView({
         </p>
       </div>
 
-      {playbooks.length === 0 ? (
-        <div className="stack" style={{ gap: 8 }}>
-          <Banner tone="info">
-            You have no playbooks yet. Create one from a starter template to browse each clause's
-            fallback ladder.
-          </Banner>
-          <Button variant="primary" size="sm" onClick={() => setShowPicker(true)}>
-            New playbook
-          </Button>
-        </div>
-      ) : (
-        <PlaybookLibrary
-          playbooks={playbooks}
-          query={query}
-          onQuery={setQuery}
-          onOpen={setOpenId}
-          onRun={
-            onRunPlaybook
-              ? (id) => {
-                  const pb = playbooks.find((p) => p.id === id);
-                  if (pb) onRunPlaybook(pb);
-                }
-              : undefined
-          }
-          action={<NewPlaybookButton onClick={() => setShowPicker(true)} />}
-        />
-      )}
+      <PlaybookLibrary
+        playbooks={playbooks}
+        query={query}
+        onQuery={setQuery}
+        onOpen={setOpenId}
+        onNew={() => setShowPicker(true)}
+        reload={state.reload}
+        onRun={
+          onRunPlaybook
+            ? (id) => {
+                const pb = playbooks.find((p) => p.id === id);
+                if (pb) onRunPlaybook(pb);
+              }
+            : undefined
+        }
+        action={<NewPlaybookButton onClick={() => setShowPicker(true)} />}
+      />
     </div>
   );
 }

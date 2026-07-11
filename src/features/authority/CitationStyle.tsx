@@ -32,8 +32,10 @@ export function CitationStyle({ citations }: { citations: string[] }) {
   }
 
   if (state.status === "idle") {
+    // Ghost weight: this is the optional secondary action beside the prominent
+    // "Insert Table of Authorities" in the grouped footer row.
     return (
-      <Button variant="default" size="sm" onClick={run}>
+      <Button variant="ghost" size="sm" onClick={run}>
         Check citation style (Bluebook)
       </Button>
     );

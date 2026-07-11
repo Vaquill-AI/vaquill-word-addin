@@ -1,0 +1,39 @@
+/* Compact centered overlay dialog. Scrim + shadow separate it (no border). */
+.modal__overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.32);
+}
+.modal__panel {
+  width: 100%;
+  max-width: 320px;
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-28);
+  padding: 16px;
+}
+.modal__panel:focus {
+  outline: none;
+}
+.modal__title {
+  margin: 0 0 8px;
+  font-size: var(--fs-subtitle);
+  font-weight: 600;
+  color: var(--text);
+}
+.modal__body {
+  color: var(--text-muted);
+  font-size: var(--fs-body);
+  line-height: 1.5;
+}
+.modal__footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 16px;
+}

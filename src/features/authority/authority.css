@@ -17,12 +17,21 @@
   flex-wrap: wrap;
 }
 
-.authority {
-  padding: 10px 12px;
+/* Borderless row, not a card: hairline divider + spacing separate each
+   citation. Matches the change-item de-box. Compound selector so it
+   deterministically overrides .card regardless of stylesheet import order. */
+.card.authority {
+  padding: 10px 2px;
   display: flex;
   flex-direction: column;
   gap: 6px;
+  background: none;
+  border-radius: 0;
+  border-bottom: 1px solid var(--border);
   animation: cardIn 0.22s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+.card.authority:last-child {
+  border-bottom: none;
 }
 .authority__top {
   display: flex;

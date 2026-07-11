@@ -40,9 +40,8 @@
   flex-direction: column;
   gap: 4px;
   padding: 10px;
-  border: 1px solid var(--border);
   border-radius: var(--radius-sm);
-  background: var(--surface);
+  background: var(--surface-muted);
 }
 
 .req-card__head {
@@ -94,7 +93,7 @@
   gap: var(--space-s);
   margin-top: var(--space-xs);
   padding-top: var(--space-s);
-  border-top: 1px dashed var(--border);
+  border-top: 1px solid var(--border);
 }
 
 .draft-fix__cta {
@@ -116,7 +115,6 @@
   max-height: 220px;
   overflow-y: auto;
   padding: var(--space-s);
-  border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   background: var(--surface-muted);
   color: var(--text);

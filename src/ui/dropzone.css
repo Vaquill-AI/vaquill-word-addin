@@ -1,0 +1,105 @@
+.dropzone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 8px;
+  padding: 18px 16px;
+  border-radius: var(--radius-md);
+  background: var(--surface-muted);
+  transition: background 0.12s ease;
+}
+
+.dropzone--drag,
+.dropzone:hover:not(.dropzone--disabled) {
+  background: var(--fill-subtle-hover);
+}
+
+.dropzone--disabled {
+  opacity: 0.6;
+}
+
+.dropzone:focus-within {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+/* Visually hidden but focusable, so the label affordance stays keyboard-reachable. */
+.dropzone__input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.dropzone__glyph {
+  display: flex;
+  color: var(--text-muted);
+}
+
+.dropzone__label {
+  font-weight: 600;
+  color: var(--text);
+}
+
+.dropzone__cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 14px;
+  border-radius: var(--radius-sm);
+  background: var(--btn-primary-bg);
+  color: var(--btn-primary-fg);
+  box-shadow: var(--btn-primary-sheen);
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.dropzone__cta:hover {
+  background: var(--btn-primary-bg-hover);
+}
+
+.dropzone--disabled .dropzone__cta {
+  pointer-events: none;
+  opacity: 0.5;
+}
+
+/* Filled / busy states: chip-first layout instead of the centered picker. */
+.dropzone--status {
+  align-items: stretch;
+  text-align: left;
+  gap: 10px;
+}
+
+.dropzone__chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+}
+
+.dropzone__chip-name {
+  flex: 1;
+  font-weight: 600;
+  word-break: break-all;
+}
+
+.dropzone__chip-x {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.dropzone__chip-x:hover {
+  background: var(--fill-subtle-hover);
+  color: var(--text);
+}

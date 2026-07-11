@@ -117,6 +117,45 @@ export async function createPlaybookFromTemplate(
   });
 }
 
+/** Normalize a single-playbook response so `positions` is always a map. */
+function normalizeDetail(p: PlaybookDetail): PlaybookDetail {
+  return { ...p, positions: p.positions ?? {} };
+}
+
+/**
+ * Rename a playbook. Returns the updated playbook.
+ * PUT /playbooks/{id} with { name } (PlaybookUpdateRequest).
+ */
+export async function renamePlaybook(id: string, name: string): Promise<PlaybookDetail> {
+  const p = await request<PlaybookDetail>(`${PLAYBOOKS}/${id}`, {
+    method: "PUT",
+    body: { name },
+  });
+  return normalizeDetail(p);
+}
+
+/**
+ * Make this playbook the default for its contract type. The backend clears
+ * `is_default` on the user's sibling playbooks of the same type atomically, so
+ * there is never more than one default competing.
+ * PUT /playbooks/{id} with { isDefault: true } (PlaybookUpdateRequest).
+ */
+export async function setPlaybookDefault(id: string): Promise<PlaybookDetail> {
+  const p = await request<PlaybookDetail>(`${PLAYBOOKS}/${id}`, {
+    method: "PUT",
+    body: { isDefault: true },
+  });
+  return normalizeDetail(p);
+}
+
+/**
+ * Delete a playbook. Irreversible: removes the playbook and its clause
+ * positions. DELETE /playbooks/{id} (204 No Content).
+ */
+export async function deletePlaybook(id: string): Promise<void> {
+  await request<void>(`${PLAYBOOKS}/${id}`, { method: "DELETE" });
+}
+
 /** A safe clause key derived from a clause name. */
 export function clauseKey(clauseName: string): string {
   return (

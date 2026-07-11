@@ -119,21 +119,30 @@ export function AuthorityView() {
         ))}
       </div>
 
+      {/* One grouped footer action row: Insert ToA is the single prominent
+          action; Check citation style sits beside it as a ghost trigger (and
+          expands its own results below when run). No stacked full-width buttons. */}
       {state.status === "done" && state.results.length > 0 && (
-        <CitationStyle citations={state.results.map((r) => r.raw)} />
-      )}
-
-      {state.status === "done" && verifiedWithNames.length > 0 && (
-        <div className="stack" style={{ gap: 6 }}>
-          <Button variant="default" block onClick={insertToA} loading={toaBusy}>
-            {toaDone ? (
-              <>
-                <CheckIcon size={14} /> Table of Authorities inserted
-              </>
-            ) : (
-              `Insert Table of Authorities (${verifiedWithNames.length})`
+        <div className="stack" style={{ gap: 8 }}>
+          <div className="row" style={{ gap: 8, flexWrap: "wrap", alignItems: "flex-start" }}>
+            {verifiedWithNames.length > 0 && (
+              <Button
+                variant="default"
+                onClick={insertToA}
+                loading={toaBusy}
+                style={{ flex: "1 1 auto" }}
+              >
+                {toaDone ? (
+                  <>
+                    <CheckIcon size={14} /> Table of Authorities inserted
+                  </>
+                ) : (
+                  `Insert Table of Authorities (${verifiedWithNames.length})`
+                )}
+              </Button>
             )}
-          </Button>
+            <CitationStyle citations={state.results.map((r) => r.raw)} />
+          </div>
           {toaError && <Banner tone="danger">{toaError}</Banner>}
         </div>
       )}
