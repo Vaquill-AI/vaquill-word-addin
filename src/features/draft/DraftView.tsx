@@ -1,14 +1,19 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Button, Banner, Badge, Field, Spinner } from "@/ui/primitives";
 import { InfoTip } from "@/ui/InfoTip";
 import { CheckIcon, CopyIcon } from "@/ui/icons";
 import {
   generateDraft,
+  generateDraftQueued,
+  cancelDraftGeneration,
+  isGenerationCancelled,
   DRAFT_CATEGORIES,
   DRAFT_CATEGORY_GROUPS,
   DRAFT_TONES,
+  type DraftParams,
   type DraftResult,
   type DraftIssue,
+  type GenerationProgress,
 } from "@/api/drafting";
 import { insertDraftFormatted } from "@/office/richInsert";
 import { JURISDICTIONS, labelOf } from "@/features/review/constants";
@@ -40,6 +45,11 @@ export function DraftView() {
   const [inserting, setInserting] = useState(false);
   const [copied, setCopied] = useState(false);
   const [copyNote, setCopyNote] = useState<string | null>(null);
+  const [progress, setProgress] = useState<GenerationProgress | null>(null);
+
+  // Lets us abort the local poll and stop the backend worker on Cancel.
+  const abortRef = useRef<AbortController | null>(null);
+  const draftIdRef = useRef<string | null>(null);
 
   async function generate() {
     setStatus("generating");
@@ -48,23 +58,64 @@ export function DraftView() {
     setInserted(false);
     setCopied(false);
     setCopyNote(null);
+    setProgress(null);
+
+    const controller = new AbortController();
+    abortRef.current = controller;
+    draftIdRef.current = null;
+
+    const params: DraftParams = {
+      category,
+      title: title.trim() || labelOf(DRAFT_CATEGORIES, category),
+      // The backend requires a governing law for US drafts. JURISDICTIONS
+      // values are US state codes (or "" for general); "" maps to the
+      // "federal" sentinel (multi-state / federal). Omitting it 422s.
+      governingLawState: jurisdiction || "federal",
+      tone,
+      specialInstructions: instructions,
+    };
+
     try {
-      const r = await generateDraft({
-        category,
-        title: title.trim() || labelOf(DRAFT_CATEGORIES, category),
-        // The backend requires a governing law for US drafts. JURISDICTIONS
-        // values are US state codes (or "" for general); "" maps to the
-        // "federal" sentinel (multi-state / federal). Omitting it 422s.
-        governingLawState: jurisdiction || "federal",
-        tone,
-        specialInstructions: instructions,
+      const r = await generateDraftQueued(params, {
+        signal: controller.signal,
+        onStart: (id) => {
+          draftIdRef.current = id;
+        },
+        onProgress: ({ progress: p }) => setProgress(p),
       });
       setResult(r);
       setStatus("done");
     } catch (e) {
+      // User pressed Stop (local abort or backend-tagged cancellation).
+      if (isGenerationCancelled(e)) {
+        setStatus("idle");
+        return;
+      }
+      // Older backends without the durable queue: fall back to the synchronous
+      // endpoint, but only if the job never started (so we never double-charge).
+      if (!draftIdRef.current && e instanceof ApiError && (e.status === 404 || e.status === 405)) {
+        try {
+          const r = await generateDraft(params);
+          setResult(r);
+          setStatus("done");
+          return;
+        } catch (e2) {
+          setError(e2 instanceof ApiError ? friendlyMessage(e2) : (e2 as Error).message);
+          setStatus("error");
+          return;
+        }
+      }
       setError(e instanceof ApiError ? friendlyMessage(e) : (e as Error).message);
       setStatus("error");
+    } finally {
+      abortRef.current = null;
     }
+  }
+
+  function cancelGeneration() {
+    const id = draftIdRef.current;
+    abortRef.current?.abort();
+    if (id) void cancelDraftGeneration(id);
   }
 
   async function insert() {
@@ -103,6 +154,7 @@ export function DraftView() {
     setError(null);
     setInserted(false);
     setCopyNote(null);
+    setProgress(null);
   }
 
   if (status === "done" && result) {
@@ -286,9 +338,49 @@ export function DraftView() {
       </Button>
 
       {status === "generating" && (
-        <div className="row draft-loading">
-          <Spinner />
-          <span className="small muted">Drafting your agreement. This can take up to a minute.</span>
+        <div className="stack draft-loading">
+          <div className="row" style={{ gap: 8, alignItems: "center" }}>
+            <Spinner />
+            <span className="small muted">
+              {progress?.label || "Drafting your agreement. This can take up to a minute."}
+            </span>
+          </div>
+
+          {(() => {
+            const step = progress?.stepIndex;
+            const total = progress?.totalSteps;
+            if (typeof step === "number" && typeof total === "number" && total > 0) {
+              return (
+                <span className="small muted">
+                  Step {Math.min(step + 1, total)} of {total}
+                </span>
+              );
+            }
+            return null;
+          })()}
+
+          {(() => {
+            const sections = progress?.sections;
+            if (!Array.isArray(sections) || sections.length === 0) return null;
+            return (
+              <ul className="draft-outline small" style={{ listStyle: "none", paddingLeft: 0 }}>
+                {sections.map((s, i) => (
+                  <li key={`${s.title ?? "section"}-${i}`}>
+                    <span className="row" style={{ gap: 4, alignItems: "center" }}>
+                      {s.status === "completed" && <CheckIcon size={12} />}
+                      <span className={s.status === "completed" ? undefined : "muted"}>
+                        {s.title || "Section"}
+                      </span>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            );
+          })()}
+
+          <Button variant="ghost" size="sm" onClick={cancelGeneration}>
+            Cancel
+          </Button>
         </div>
       )}
 

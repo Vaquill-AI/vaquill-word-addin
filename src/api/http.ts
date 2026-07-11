@@ -14,6 +14,61 @@ export interface RequestOptions {
   /** Extra headers, e.g. X-Organization-ID for org selection. */
   headers?: Record<string, string>;
   signal?: AbortSignal;
+  /**
+   * Abort the request if it runs longer than this many milliseconds. Defaults
+   * to {@link DEFAULT_TIMEOUT_MS}. Pass 0 to disable the timeout entirely (e.g.
+   * a long-running upload). Composed with any caller-supplied `signal`, so
+   * either the caller aborting or the deadline elapsing cancels the fetch.
+   */
+  timeoutMs?: number;
+}
+
+/** Default per-request wall-clock budget. Generous enough for the multi-LLM
+ *  synchronous draft/review endpoints, short enough to fail fast when the
+ *  network stalls. Callers can override per request via `timeoutMs`. */
+export const DEFAULT_TIMEOUT_MS = 120_000;
+
+interface ComposedAbort {
+  signal: AbortSignal;
+  cleanup: () => void;
+  /** True once the internal deadline fired (vs a caller-initiated abort). */
+  timedOut: () => boolean;
+}
+
+/**
+ * Merge a caller signal with an internal timeout into a single AbortSignal.
+ * Aborting either source aborts the returned signal. `cleanup()` must be called
+ * once the request settles so the timer and listener never leak.
+ */
+function composeAbort(caller: AbortSignal | undefined, timeoutMs: number): ComposedAbort {
+  const controller = new AbortController();
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  let didTimeout = false;
+
+  const onCallerAbort = () => controller.abort();
+
+  if (caller) {
+    if (caller.aborted) {
+      controller.abort();
+    } else {
+      caller.addEventListener("abort", onCallerAbort, { once: true });
+    }
+  }
+  if (timeoutMs > 0 && !controller.signal.aborted) {
+    timer = setTimeout(() => {
+      didTimeout = true;
+      controller.abort();
+    }, timeoutMs);
+  }
+
+  return {
+    signal: controller.signal,
+    cleanup: () => {
+      if (timer !== undefined) clearTimeout(timer);
+      caller?.removeEventListener("abort", onCallerAbort);
+    },
+    timedOut: () => didTimeout,
+  };
 }
 
 async function buildHeaders(token: string, extra?: Record<string, string>): Promise<HeadersInit> {
@@ -34,13 +89,16 @@ export async function request<T>(path: string, opts: RequestOptions = {}): Promi
   const token = await getAccessToken();
   if (!token) throw new ApiError("unauthorized", 401, "Not signed in.");
 
+  // One deadline spans the whole call, including a possible refresh-and-retry.
+  const abort = composeAbort(opts.signal, opts.timeoutMs ?? DEFAULT_TIMEOUT_MS);
+
   const doFetch = async (bearer: string): Promise<Response> => {
     try {
       return await fetch(`${config.apiBase}${path}`, {
         method: opts.method ?? "GET",
         headers: await buildHeaders(bearer, opts.headers),
         body: opts.body !== undefined ? JSON.stringify(opts.body) : undefined,
-        signal: opts.signal,
+        signal: abort.signal,
       });
     } catch (e) {
       if ((e as Error).name === "AbortError") throw e;
@@ -48,16 +106,28 @@ export async function request<T>(path: string, opts: RequestOptions = {}): Promi
     }
   };
 
-  let res = await doFetch(token);
-  if (res.status === 401) {
-    const fresh = await refresh();
-    if (!fresh) throw new ApiError("unauthorized", 401, "Session expired.");
-    res = await doFetch(fresh);
-  }
+  try {
+    let res = await doFetch(token);
+    if (res.status === 401) {
+      const fresh = await refresh();
+      if (!fresh) throw new ApiError("unauthorized", 401, "Session expired.");
+      res = await doFetch(fresh);
+    }
 
-  if (!res.ok) throw await errorFromResponse(res);
-  if (res.status === 204) return undefined as T;
-  return (await res.json()) as T;
+    if (!res.ok) throw await errorFromResponse(res);
+    if (res.status === 204) return undefined as T;
+    return (await res.json()) as T;
+  } catch (e) {
+    // A deadline abort surfaces as an AbortError; translate it into a clear,
+    // pass-through message. A caller-initiated abort keeps its AbortError so
+    // callers can still detect their own cancellation.
+    if ((e as Error).name === "AbortError" && abort.timedOut()) {
+      throw new ApiError("unknown", 0, "The request timed out. Please try again.", "TIMEOUT");
+    }
+    throw e;
+  } finally {
+    abort.cleanup();
+  }
 }
 
 /**

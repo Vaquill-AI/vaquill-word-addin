@@ -1,4 +1,5 @@
 import { request } from "./http";
+import { ApiError } from "./errors";
 
 /**
  * Draft generation. POST /api/v1/drafting/generate produces a full,
@@ -212,17 +213,265 @@ export interface DraftParams {
 }
 
 const GENERATE = "/api/v1/drafting/generate";
+const GENERATE_QUEUE = "/api/v1/drafting/generate/queue";
+const draftPath = (id: string) => `/api/v1/drafting/drafts/${encodeURIComponent(id)}`;
+const cancelPath = (id: string) => `${draftPath(id)}/cancel`;
 
+/** Shared request body for both the synchronous and queued generate paths. */
+function generateBody(p: DraftParams): Record<string, unknown> {
+  return {
+    category: p.category,
+    title: p.title,
+    jurisdiction: "US",
+    tone: p.tone || "balanced",
+    special_instructions: p.specialInstructions || undefined,
+    governing_law_state: p.governingLawState || undefined,
+  };
+}
+
+/**
+ * Synchronous generation (legacy / fallback). One request that blocks until the
+ * multi-LLM pipeline finishes and returns the full DraftResult (including
+ * `authorities`, which the durable path does not persist). Bound to the request
+ * lifecycle, so a nav-away or a stalled tab loses the result. Prefer
+ * {@link generateDraftQueued}; this remains as a fallback for older backends.
+ */
 export async function generateDraft(p: DraftParams): Promise<DraftResult> {
-  return request(GENERATE, {
-    method: "POST",
-    body: {
-      category: p.category,
-      title: p.title,
-      jurisdiction: "US",
-      tone: p.tone || "balanced",
-      special_instructions: p.specialInstructions || undefined,
-      governing_law_state: p.governingLawState || undefined,
-    },
+  return request(GENERATE, { method: "POST", body: generateBody(p) });
+}
+
+// ------------------------------------------------------------------
+// Durable queued generation (start -> poll -> reconstruct DraftResult)
+// ------------------------------------------------------------------
+
+/** Live progress event from the polled draft row (already camelCase on the
+ *  wire; the backend writes these keys verbatim into `generation_progress`). */
+export interface GenerationProgress {
+  stepIndex?: number;
+  label?: string;
+  status?: string;
+  totalSteps?: number;
+  sections?: { title?: string; status?: string }[];
+  /** Set to "CANCELLED" when the user stopped the run. */
+  errorCode?: string;
+}
+
+export interface GenerateQueuedOptions {
+  /** Aborts both the start request and the poll loop. */
+  signal?: AbortSignal;
+  /** Fires once the placeholder draft row exists, before any polling. Lets the
+   *  caller keep the draftId so it can call {@link cancelDraftGeneration}. */
+  onStart?: (draftId: string) => void;
+  /** Fires on every poll tick with the latest lifecycle status + progress. */
+  onProgress?: (update: { status: string; progress: GenerationProgress }) => void;
+  /** Delay between poll ticks. Default 2000ms. */
+  pollIntervalMs?: number;
+  /** Overall wall-clock budget for the whole poll loop. Default 5 minutes. */
+  pollTimeoutMs?: number;
+}
+
+interface TiptapNode {
+  type?: string;
+  text?: string;
+  attrs?: Record<string, unknown>;
+  content?: TiptapNode[];
+}
+
+/** Subset of DraftResponse (camelCase) the poll loop reads. All optional so an
+ *  absent field never crashes the reconstruction. */
+interface DraftRow {
+  id?: string;
+  title?: string;
+  category?: string;
+  content?: { type?: string; content?: TiptapNode[] } | null;
+  metadata?: Record<string, unknown> | null;
+  generationStatus?: string | null;
+  generationProgress?: GenerationProgress | null;
+  generationError?: string | null;
+}
+
+function isAbort(e: unknown): boolean {
+  return e instanceof Error && e.name === "AbortError";
+}
+
+function abortError(): Error {
+  return new DOMException("Generation cancelled.", "AbortError");
+}
+
+function delay(ms: number, signal?: AbortSignal): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (signal?.aborted) {
+      reject(abortError());
+      return;
+    }
+    let timer: ReturnType<typeof setTimeout>;
+    const onAbort = () => {
+      clearTimeout(timer);
+      reject(abortError());
+    };
+    timer = setTimeout(() => {
+      signal?.removeEventListener("abort", onAbort);
+      resolve();
+    }, ms);
+    signal?.addEventListener("abort", onAbort, { once: true });
   });
+}
+
+/** Flatten a TipTap node subtree to its plain text. */
+function nodeText(node?: TiptapNode): string {
+  if (!node) return "";
+  if (typeof node.text === "string") return node.text;
+  if (Array.isArray(node.content)) return node.content.map(nodeText).join("");
+  return "";
+}
+
+/**
+ * Reconstruct the section outline from the stored TipTap document. Level-2
+ * headings start a new section; level-1 headings are the reserved document
+ * title (skipped); everything else is body text folded into the current
+ * section. Mirrors how the backend builds the document from its skeleton.
+ */
+function sectionsFromDoc(blocks: TiptapNode[]): GeneratedSection[] {
+  const sections: GeneratedSection[] = [];
+  let current: { id: string; title: string; body: string[] } | null = null;
+  let idx = 0;
+
+  const flush = () => {
+    if (current && (current.title || current.body.length > 0)) {
+      sections.push({ id: current.id, title: current.title, content: current.body.join("\n\n") });
+    }
+    current = null;
+  };
+
+  for (const block of blocks) {
+    const text = nodeText(block).trim();
+    if (!text) continue;
+    const rawLevel = block.attrs?.level;
+    const level = typeof rawLevel === "number" ? rawLevel : undefined;
+    if (block.type === "heading" && level === 1) continue;
+    if (block.type === "heading" && level === 2) {
+      flush();
+      current = { id: `s-${idx++}`, title: text, body: [] };
+      continue;
+    }
+    if (!current) current = { id: `s-${idx++}`, title: "", body: [] };
+    current.body.push(text);
+  }
+  flush();
+  return sections;
+}
+
+/** Rebuild the plain-text draft the way the backend does (uppercased title,
+ *  blank-line-delimited sections) so the preview + Word insert match the
+ *  synchronous path. */
+function buildFullText(title: string, sections: GeneratedSection[]): string {
+  const parts: string[] = [title.toUpperCase(), "", ""];
+  for (const s of sections) {
+    parts.push(s.title, "", s.content, "");
+  }
+  return parts.join("\n");
+}
+
+/** Map a completed draft row into the DraftResult shape the UI already renders.
+ *  `authorities` is intentionally absent: the durable row does not persist it. */
+function draftResultFromRow(row: DraftRow): DraftResult {
+  const title = (row.title || "Untitled draft").toString();
+  const doc = row.content ?? undefined;
+  const blocks = Array.isArray(doc?.content) ? (doc?.content as TiptapNode[]) : [];
+  const sections = sectionsFromDoc(blocks);
+  const meta = row.metadata ?? {};
+  const quality = (meta as { quality_score?: unknown }).quality_score;
+  const issues = (meta as { issues?: unknown }).issues;
+  return {
+    draftId: row.id || "",
+    title,
+    category: row.category || "",
+    fullText: buildFullText(title, sections),
+    sections,
+    qualityScore: typeof quality === "number" ? quality : undefined,
+    issues: Array.isArray(issues) ? (issues as DraftIssue[]) : undefined,
+  };
+}
+
+/**
+ * Durable draft generation. POSTs to /generate/queue (which enqueues a Celery
+ * job and returns immediately), then polls the draft row until it leaves the
+ * in-flight state. Survives tab reload on the backend; the poll here just
+ * reconnects the UI to progress. Resolves with the reconstructed DraftResult on
+ * completion; rejects with an AbortError if the caller aborts or the run is
+ * cancelled, or an ApiError on failure / timeout.
+ */
+export async function generateDraftQueued(
+  p: DraftParams,
+  opts: GenerateQueuedOptions = {},
+): Promise<DraftResult> {
+  const start = await request<{ draftId?: string; status?: string }>(GENERATE_QUEUE, {
+    method: "POST",
+    body: generateBody(p),
+    signal: opts.signal,
+  });
+  const draftId = start?.draftId;
+  if (!draftId) throw new Error("Draft generation could not be started.");
+  opts.onStart?.(draftId);
+
+  const interval = opts.pollIntervalMs ?? 2000;
+  const deadline = Date.now() + (opts.pollTimeoutMs ?? 300_000);
+
+  for (;;) {
+    if (opts.signal?.aborted) throw abortError();
+    if (Date.now() > deadline) {
+      throw new ApiError(
+        "unknown",
+        0,
+        "Draft generation is taking longer than expected. Open Vaquill to find it in your drafts.",
+        "POLL_TIMEOUT",
+      );
+    }
+
+    const row = await request<DraftRow>(draftPath(draftId), {
+      method: "GET",
+      signal: opts.signal,
+      timeoutMs: 30_000,
+    });
+
+    // NULL generation_status means a legacy row that pre-dates the durable-job
+    // migration; treat it as already completed.
+    const gstatus = row?.generationStatus ?? "completed";
+    const progress = (row?.generationProgress ?? {}) as GenerationProgress;
+    opts.onProgress?.({ status: gstatus, progress });
+
+    if (gstatus === "completed") return draftResultFromRow(row);
+    if (gstatus === "failed") {
+      // Cancellation reuses the `failed` status (no `cancelled` enum), tagged
+      // via errorCode. Surface it as an abort, not a scary error.
+      if (progress?.errorCode === "CANCELLED") throw abortError();
+      throw new ApiError("unknown", 0, row?.generationError || "Draft generation failed. Please try again.");
+    }
+
+    await delay(interval, opts.signal);
+  }
+}
+
+/**
+ * Ask the backend to stop an in-flight generation. Idempotent and best-effort:
+ * cancelling an already-finished (or foreign) draft returns `{cancelled:false}`.
+ * Call this alongside aborting the local poll so the worker actually stops.
+ */
+export async function cancelDraftGeneration(draftId: string): Promise<boolean> {
+  try {
+    const res = await request<{ cancelled?: boolean }>(cancelPath(draftId), {
+      method: "POST",
+      timeoutMs: 15_000,
+    });
+    return res?.cancelled === true;
+  } catch {
+    // A failed cancel must never surface as a generation error; the local
+    // abort already stopped the UI from waiting.
+    return false;
+  }
+}
+
+/** True when a caught error is a caller/user cancellation (vs a real failure). */
+export function isGenerationCancelled(e: unknown): boolean {
+  return isAbort(e);
 }
