@@ -1,12 +1,15 @@
+import { config } from "@/config";
 import { request } from "./http";
 import { ApiError } from "./errors";
+import { isStatuteCitation, type CitationKind } from "@/features/authority/extract";
 
 /**
- * Authority verification against Vaquill AI's US case-law corpus.
- * Endpoint: GET /api/v1/us/citation-lookup?citation=... (JWT, 30-day cached).
- * Returns an array (one entry per detected citation); status 200 + a matched
- * cluster means a real case, while an unmatched one is a possible hallucination
- * to verify before relying on it.
+ * Authority verification against Vaquill AI's US corpus.
+ * Case citations: GET /api/v1/us/citation-lookup?citation=... (JWT, cached).
+ * Statute citations: GET /api/v1/us-statutes/resolve?q=... (federal U.S.C. /
+ * C.F.R. + state code cites). A matched cluster (cases) or a resolved section
+ * (statutes) means the authority is real; an unmatched one is a possible
+ * hallucination to verify before relying on it.
  */
 
 export type Verdict = "verified" | "no_match" | "unrecognized" | "error";
@@ -15,6 +18,8 @@ export interface AuthorityResult {
   raw: string;
   count: number;
   verdict: Verdict;
+  /** Which corpus this was checked against. Absent is treated as a case. */
+  kind?: CitationKind;
   caseName?: string;
   court?: string;
   year?: string;
@@ -24,6 +29,12 @@ export interface AuthorityResult {
   caseUrl?: string;
   /** Cases that cite this opinion (forward citations / treatment signal). */
   citedByCount?: number;
+  /** Statute-only: resolved section label, e.g. "18 U.S.C. § 1030". */
+  label?: string;
+  /** Statute-only: corpus the section lives in ("usc" | "cfr" | "state"). */
+  corpusType?: string;
+  /** Statute-only: clickable in-app URL to the resolved section. */
+  sectionUrl?: string;
 }
 
 interface Cluster {
@@ -51,8 +62,28 @@ interface CitationsResponse {
   cited_by_count?: number;
 }
 
+/**
+ * Statute resolve payload. This endpoint DOES camelCase its fields
+ * (response_model_by_alias=True on ResolveResponse), so they arrive camelCase.
+ */
+interface ResolveResponse {
+  found?: boolean;
+  actId?: string;
+  corpusType?: string;
+  displayLabel?: string;
+  sectionNumber?: string;
+  url?: string;
+}
+
 /** Public host that renders a the case-law source opinion page. */
 const CASE_HOST = "https://example.com";
+
+/** Turn a (relative) in-app path into an absolute link to the Vaquill web app. */
+function buildAppUrl(url?: string): string | undefined {
+  if (!url) return undefined;
+  if (url.startsWith("http")) return url;
+  return `${config.appBase}${url.startsWith("/") ? "" : "/"}${url}`;
+}
 
 function cleanCourt(court?: string): string | undefined {
   if (!court || court.startsWith("http")) return undefined;
@@ -85,11 +116,50 @@ async function fetchCitedByCount(
   }
 }
 
+/**
+ * Verify a statute / regulation citation ("18 U.S.C. § 1030", "Cal. Civ. Code
+ * § 1950.5") against the US statutes corpus. `found` means the citation parsed
+ * and resolved to a real section; a false / absent `found` is a possible
+ * hallucination or mis-cite for the reviewer to confirm manually.
+ */
+async function verifyStatute(
+  raw: string,
+  count: number,
+  signal?: AbortSignal,
+): Promise<AuthorityResult> {
+  try {
+    const res = await request<ResolveResponse>(
+      `/api/v1/us-statutes/resolve?q=${encodeURIComponent(raw)}`,
+      { signal },
+    );
+    if (res?.found) {
+      return {
+        raw,
+        count,
+        kind: "statute",
+        verdict: "verified",
+        label: res.displayLabel ?? undefined,
+        corpusType: res.corpusType ?? undefined,
+        sectionUrl: buildAppUrl(res.url),
+      };
+    }
+    return { raw, count, kind: "statute", verdict: "no_match" };
+  } catch (e) {
+    if (e instanceof ApiError && e.kind === "rate_limited") throw e; // bubble to stop the scan
+    if (e instanceof ApiError && e.kind === "not_found")
+      return { raw, count, kind: "statute", verdict: "no_match" };
+    return { raw, count, kind: "statute", verdict: "error" };
+  }
+}
+
 export async function verifyCitation(
   raw: string,
   count: number,
   signal?: AbortSignal,
 ): Promise<AuthorityResult> {
+  // Route statute / regulation cites to the statutes corpus; everything else
+  // is a case reporter and goes to the case-law lookup.
+  if (isStatuteCitation(raw)) return verifyStatute(raw, count, signal);
   try {
     const res = await request<LookupEntry[]>(
       `/api/v1/us/citation-lookup?citation=${encodeURIComponent(raw)}`,

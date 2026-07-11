@@ -21,7 +21,28 @@ function verdictBadge(verdict: Verdict) {
   }
 }
 
+/** Human label for the statute corpus a resolved section lives in. */
+function corpusLabel(corpusType?: string): string | undefined {
+  switch (corpusType) {
+    case "usc":
+      return "US Code";
+    case "cfr":
+      return "Code of Federal Regulations";
+    case "state":
+      return "State code";
+    default:
+      return undefined;
+  }
+}
+
 function commentText(r: AuthorityResult): string {
+  if (r.kind === "statute") {
+    if (r.verdict === "verified") {
+      const label = r.label ?? r.raw;
+      return `${label}: resolved in Vaquill AI's US statutes corpus. Confirm it is current (not amended or repealed) before relying on it.`;
+    }
+    return `Could not resolve ${r.raw} in Vaquill AI's US statutes corpus. Verify this citation manually before relying on it.`;
+  }
   if (r.verdict === "verified") {
     const name = r.caseName ?? "This citation";
     const yr = r.year ? ` (${r.year})` : "";
@@ -64,19 +85,43 @@ export function AuthorityItem({ result }: { result: AuthorityResult }) {
     }
   }
 
-  const meta = [result.court, result.year].filter(Boolean).join(" · ");
+  const isStatute = result.kind === "statute";
+  const meta = isStatute
+    ? corpusLabel(result.corpusType)
+    : [result.court, result.year].filter(Boolean).join(" · ");
 
   return (
     <div className="card authority">
       <div className="authority__top">
         <span className="authority__cite">{result.raw}</span>
         <div className="row" style={{ gap: 4 }}>
+          {isStatute && <span className="authority__count small muted">statute</span>}
           {result.count > 1 && <span className="authority__count small muted">x{result.count}</span>}
           {verdictBadge(result.verdict)}
         </div>
       </div>
 
-      {result.verdict === "verified" && (
+      {result.verdict === "verified" && isStatute && (
+        <div className="stack" style={{ gap: 1 }}>
+          {result.label && <span className="authority__name">{result.label}</span>}
+          {meta && <span className="small muted">{meta}</span>}
+          <span className="small muted">
+            Resolved in the US statutes corpus. Confirm it is current (not amended or repealed)
+            before relying on it.
+          </span>
+          {result.sectionUrl && (
+            <a
+              className="authority__link"
+              href={result.sectionUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              View statute
+            </a>
+          )}
+        </div>
+      )}
+      {result.verdict === "verified" && !isStatute && (
         <div className="stack" style={{ gap: 1 }}>
           {result.caseName && <span className="authority__name">{result.caseName}</span>}
           {meta && <span className="small muted">{meta}</span>}
@@ -98,7 +143,11 @@ export function AuthorityItem({ result }: { result: AuthorityResult }) {
         </div>
       )}
       {result.verdict === "no_match" && (
-        <span className="small muted">Parsed as a citation but not found in the corpus. Verify manually.</span>
+        <span className="small muted">
+          {isStatute
+            ? "Parsed as a statute citation but not resolved in the corpus. Verify manually."
+            : "Parsed as a citation but not found in the corpus. Verify manually."}
+        </span>
       )}
       {result.verdict === "unrecognized" && (
         <span className="small muted">Could not resolve this citation. Verify manually before relying on it.</span>

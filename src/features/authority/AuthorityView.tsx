@@ -3,6 +3,7 @@ import { Button, Banner, Spinner, Badge, LiveRegion } from "@/ui/primitives";
 import { InfoTip } from "@/ui/InfoTip";
 import { CheckIcon } from "@/ui/icons";
 import { useAuthorityScan } from "./useAuthorityScan";
+import { getExtractCoverage } from "./extract";
 import { AuthorityItem } from "./AuthorityItem";
 import { insertTableOfAuthorities } from "@/office/citations";
 import "./authority.css";
@@ -14,6 +15,12 @@ export function AuthorityView() {
   const [toaError, setToaError] = useState<string | null>(null);
 
   const busy = state.status === "reading" || state.status === "scanning";
+  // Coverage of the last extraction, so the cap never overstates what we
+  // checked. Only trustworthy once extraction has run (scanning / done); during
+  // "reading" it still holds the previous scan's numbers.
+  const coverage = getExtractCoverage();
+  const extracted = state.status === "scanning" || state.status === "done";
+  const capped = extracted && coverage.detected > coverage.checked;
   const verified = state.results.filter((r) => r.verdict === "verified");
   const verifiedWithNames = verified.filter((r) => r.caseName);
   const noMatch = state.results.filter((r) => r.verdict === "no_match").length;
@@ -41,11 +48,11 @@ export function AuthorityView() {
         <div className="stack" style={{ gap: 4 }}>
           <div className="row" style={{ justifyContent: "space-between", alignItems: "flex-start" }}>
             <h1 className="view-title">Authority check</h1>
-            <InfoTip text="Checks every case citation in the document against Vaquill AI's US case-law corpus. Found means a real matching case exists, not that it is still good law, so confirm its current treatment before relying on it. No match can mean a hallucinated, mis-typed, or unreported citation, so confirm it yourself before you rely on it or file." />
+            <InfoTip text="Checks every case and statute citation in the document against Vaquill AI's US corpus. Found means a real matching authority exists, not that it is still good law, so confirm its current treatment before relying on it. No match can mean a hallucinated, mis-typed, or unreported citation, so confirm it yourself before you rely on it or file." />
           </div>
           <p className="small muted" style={{ margin: 0 }}>
-            Verify every case citation in this document against Vaquill AI's US case-law corpus.
-            Catch citations that do not resolve to a real case before you file or send.
+            Verify every case and statute citation in this document against Vaquill AI's US corpus.
+            Catch citations that do not resolve to a real authority before you file or send.
           </p>
         </div>
         <Button variant="primary" block onClick={run}>
@@ -73,7 +80,7 @@ export function AuthorityView() {
             <span className="small muted">
               {state.status === "reading"
                 ? "Reading the document..."
-                : `Checking ${state.results.length} of ${state.total} citations...`}
+                : `Checking ${state.results.length} of ${state.total} citation${state.total === 1 ? "" : "s"}...`}
             </span>
           </LiveRegion>
         </div>
@@ -83,7 +90,14 @@ export function AuthorityView() {
       {state.status === "done" && state.error && <Banner tone="warn">{state.error}</Banner>}
 
       {state.status === "done" && state.total === 0 && (
-        <Banner tone="info">No case citations were found in this document.</Banner>
+        <Banner tone="info">No case or statute citations were found in this document.</Banner>
+      )}
+
+      {capped && (
+        <Banner tone="warn">
+          Showing the first {coverage.checked} of {coverage.detected} citations detected. The
+          remaining {coverage.detected - coverage.checked} were not checked to stay within limits.
+        </Banner>
       )}
 
       {state.results.length > 0 && (
