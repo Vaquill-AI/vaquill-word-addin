@@ -89,31 +89,6 @@ export async function createPlaybookFromTemplate(
   });
 }
 
-/**
- * The snake_case shape the PUT /playbooks/{id} endpoint expects for a position.
- * The read side is camelCase (serialization_alias); the write side accepts field
- * names, which are snake_case, so we convert on the way back.
- */
-interface SnakePosition {
-  standard_position: string;
-  acceptable_range: string;
-  fallback_ladder: string[];
-  escalation_triggers?: string[];
-  deal_breaker?: string | null;
-  priority?: string | null;
-}
-
-function toSnake(p: PlaybookPosition): SnakePosition {
-  return {
-    standard_position: (p.standardPosition ?? "").slice(0, 8000),
-    acceptable_range: (p.acceptableRange ?? "Negotiable; see fallback ladder.").slice(0, 4000),
-    fallback_ladder: p.fallbackLadder ?? [],
-    escalation_triggers: p.escalationTriggers,
-    deal_breaker: p.dealBreaker ?? null,
-    priority: p.priority ?? null,
-  };
-}
-
 /** A safe clause key derived from a clause name. */
 export function clauseKey(clauseName: string): string {
   return (
@@ -126,10 +101,17 @@ export function clauseKey(clauseName: string): string {
 }
 
 /**
- * Add a proposed clause into a playbook, NON-DESTRUCTIVELY: if the clause key
- * already exists, the language is appended to that clause's fallback ladder; if
- * not, a new position is created. Reuses the existing GET (already loaded) + PUT
- * /playbooks/{id}; no new backend endpoint. Returns the key used.
+ * Add a proposed clause into a playbook NON-DESTRUCTIVELY via the backend
+ * learning endpoint (POST /playbooks/{id}/learning/apply): it appends the text
+ * as a new fallback rung on the target clause only (seeding the clause if it
+ * doesn't exist yet) and snapshots a version, so it is undoable. Returns the
+ * clause key used.
+ *
+ * The previous implementation re-serialized the ENTIRE positions map through a
+ * 6-field shape and PUT it wholesale, which silently dropped rationale,
+ * risk_weight, structured constraints, library_clause_id, and approval_level on
+ * every clause and re-enabled disabled ones. This touches a single clause and
+ * leaves the rest of the playbook (which drives review + drafting) intact.
  */
 export async function addToPlaybook(
   playbook: PlaybookDetail,
@@ -141,24 +123,15 @@ export async function addToPlaybook(
   },
 ): Promise<string> {
   const key = clauseKey(input.clauseName);
-  const positions: Record<string, SnakePosition> = {};
-  for (const [k, v] of Object.entries(playbook.positions)) positions[k] = toSnake(v);
+  const apply = (text: string) =>
+    request(`${PLAYBOOKS}/${playbook.id}/learning/apply`, {
+      method: "POST",
+      body: { clauseType: key, text: text.slice(0, 8000), mode: "add_fallback" },
+    });
 
-  const clause = (input.proposedLanguage ?? "").trim();
+  const clause = (input.proposedLanguage ?? "").trim() || input.clauseName;
+  await apply(clause);
   const extra = input.fallback?.trim();
-  if (positions[key]) {
-    const ladder = [...positions[key].fallback_ladder, clause, ...(extra ? [extra] : [])];
-    positions[key] = { ...positions[key], fallback_ladder: ladder.filter(Boolean) };
-  } else {
-    positions[key] = {
-      standard_position: clause.slice(0, 8000) || input.clauseName,
-      acceptable_range: "Negotiable; see fallback ladder.",
-      fallback_ladder: extra ? [extra] : [],
-      deal_breaker: input.isDealBreaker ? "Flagged as a deal-breaker during review." : null,
-      priority: null,
-    };
-  }
-
-  await request(`${PLAYBOOKS}/${playbook.id}`, { method: "PUT", body: { positions } });
+  if (extra && extra !== clause) await apply(extra);
   return key;
 }

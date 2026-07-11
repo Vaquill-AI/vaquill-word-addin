@@ -67,17 +67,33 @@ export function ReviewActionBar({
 
   async function download() {
     setError(null);
+    // Honor the reviewer's decisions: exclude REJECTED redlines (previously
+    // every non-insertion redline baked in regardless, silently disagreeing
+    // with the "Apply all open" button). Inserted (missing-clause) redlines
+    // have no currentLanguage to replace, so they can't go in a corrected
+    // export -- excluding them also avoids sending an empty list, which the
+    // backend rejects with a 422 (min_length=1).
+    const accepted: AcceptedRedline[] = redlines
+      .map((r, i) => ({ r, i }))
+      .filter(
+        ({ r, i }) =>
+          r.grounding !== "insertion" && r.currentLanguage.trim() && decisionOf(i) !== "rejected",
+      )
+      .map(({ r }) => ({
+        clauseName: r.clauseName,
+        currentLanguage: r.currentLanguage,
+        replacementLanguage: r.proposedLanguage,
+        comment: r.rationale,
+      }));
+    if (accepted.length === 0) {
+      setError(
+        "No replaceable redlines to export. Inserted (missing-clause) suggestions apply in the pane only, and rejected redlines are excluded.",
+      );
+      return;
+    }
     setDownloading(true);
     try {
       const documentText = await readDocumentText();
-      const accepted: AcceptedRedline[] = redlines
-        .filter((r) => r.grounding !== "insertion" && r.currentLanguage.trim())
-        .map((r) => ({
-          clauseName: r.clauseName,
-          currentLanguage: r.currentLanguage,
-          replacementLanguage: r.proposedLanguage,
-          comment: r.rationale,
-        }));
       const { base64, filename } = await exportCorrectedDocx({
         documentText,
         acceptedRedlines: accepted,
