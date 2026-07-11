@@ -6,16 +6,49 @@ import { getSupabase } from "./supabase";
  * life of the task pane. Refreshes the access token before it expires so every
  * backend request carries a fresh bearer.
  *
- * Deliberately no persistence: tokens never touch localStorage or Office
- * Settings. On add-in reload the user re-authenticates via the dialog, which is
- * near-instant when the Supabase refresh cookie in the dialog webview is valid.
+ * Persistence (U5): we persist ONLY the refresh token, in add-in-origin
+ * localStorage. Access tokens stay in memory and are NEVER written anywhere.
+ * localStorage is sandboxed to the add-in's own origin and does NOT serialize
+ * into the .docx, so the token never travels with the file (unlike Office
+ * Settings, which we deliberately never use for auth). On a pane reload we
+ * rehydrate the session from that one refresh token (see rehydrateSession),
+ * exchanging it for a fresh access token silently, so the user does not have to
+ * re-authenticate through the dialog every time. The refresh token is rotated
+ * by Supabase on each use, so we rewrite storage on every successful refresh
+ * and clear it on sign-out. All localStorage access is guarded (it can throw
+ * under private-mode / policy restrictions), matching lib/org.ts + lib/prefs.ts.
  */
 type Listener = (user: User | null) => void;
 
 const REFRESH_SKEW_SECONDS = 60;
+const REFRESH_TOKEN_STORAGE_KEY = "vaquill.refreshToken";
 
 let session: Session | null = null;
 const listeners = new Set<Listener>();
+
+// Kick off startup rehydration exactly once, on the first subscribe (the pane's
+// mount signal). Guarded so React StrictMode's double-mount cannot fire it twice.
+let rehydrateStarted = false;
+
+/** Read the persisted refresh token. Guarded: localStorage can throw. */
+function readStoredRefreshToken(): string | null {
+  try {
+    return localStorage.getItem(REFRESH_TOKEN_STORAGE_KEY);
+  } catch {
+    return null;
+  }
+}
+
+/** Persist (or clear) the refresh token. Guarded: localStorage can throw. */
+function writeStoredRefreshToken(token: string | null): void {
+  try {
+    if (token) localStorage.setItem(REFRESH_TOKEN_STORAGE_KEY, token);
+    else localStorage.removeItem(REFRESH_TOKEN_STORAGE_KEY);
+  } catch {
+    // localStorage unavailable (private mode / policy) -- session stays in
+    // memory only, exactly as before this change.
+  }
+}
 
 // Single-flight guard for refresh(). Supabase rotates the refresh token on each
 // use, so two concurrent refreshes would send the same (now consumed) token and
@@ -32,6 +65,13 @@ function notify(): void {
 export function subscribe(listener: Listener): () => void {
   listeners.add(listener);
   listener(session?.user ?? null);
+  // main.tsx (not editable here) owns the other startup inits; the first
+  // subscribe is our only in-file hook that fires on pane mount but never in the
+  // auth-callback relay path (App, the sole subscriber, is not rendered there).
+  if (!rehydrateStarted) {
+    rehydrateStarted = true;
+    void rehydrateSession();
+  }
   return () => listeners.delete(listener);
 }
 
@@ -54,11 +94,13 @@ export async function setSessionFromTokens(
   });
   if (error) throw error;
   session = data.session;
+  writeStoredRefreshToken(session?.refresh_token ?? null);
   notify();
 }
 
 export function clearSession(): void {
   session = null;
+  writeStoredRefreshToken(null);
   void getSupabase().auth.signOut({ scope: "local" });
   notify();
 }
@@ -95,6 +137,9 @@ async function doRefresh(): Promise<string | null> {
     return null;
   }
   session = data.session;
+  // Supabase rotates the refresh token on every use, so persist the new one or
+  // the stored copy would be stale (already consumed) on the next reload.
+  writeStoredRefreshToken(session.refresh_token ?? null);
   notify();
   return session.access_token;
 }
@@ -114,4 +159,36 @@ export async function refresh(): Promise<string | null> {
     }
   })();
   return inFlightRefresh;
+}
+
+/**
+ * Restore the session on pane startup from the persisted refresh token, without
+ * the interactive dialog. No-op when a session already exists (e.g. a login
+ * completed first) or nothing was persisted. On a terminal auth error the stale
+ * token is cleared; on a transient (network) error it is kept so a later reload
+ * can retry. Never throws -- a failed rehydrate simply leaves the pane signed
+ * out, exactly as before persistence existed.
+ */
+export async function rehydrateSession(): Promise<void> {
+  if (session) return;
+  const refreshToken = readStoredRefreshToken();
+  if (!refreshToken) return;
+  try {
+    const { data, error } = await getSupabase().auth.refreshSession({
+      refresh_token: refreshToken,
+    });
+    if (error || !data.session) {
+      // Genuine terminal auth error: the token is dead, drop it.
+      writeStoredRefreshToken(null);
+      return;
+    }
+    // A login may have completed while this request was in flight; do not
+    // clobber a fresher, already-persisted session.
+    if (session) return;
+    session = data.session;
+    writeStoredRefreshToken(session.refresh_token ?? null);
+    notify();
+  } catch {
+    // Transient failure (offline, etc.): keep the token for a later retry.
+  }
 }

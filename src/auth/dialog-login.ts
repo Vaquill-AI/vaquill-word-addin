@@ -15,6 +15,12 @@ export type DialogPayload =
   | { ok: true; code: string }
   | { ok: false; error: string };
 
+// Hard ceiling on how long the sign-in dialog may stay open with no message or
+// close event. Without it, a misconfigured redirect allowlist (the dialog never
+// posts a code and the user never closes it) would hang the pane spinner
+// forever. Three minutes is generous for a real Google sign-in yet bounded.
+const DIALOG_TIMEOUT_MS = 3 * 60 * 1000;
+
 export async function login(): Promise<void> {
   const supabase = getSupabase();
 
@@ -61,7 +67,29 @@ function openDialog(startUrl: string): Promise<DialogPayload> {
         }
         const dialog = result.value;
 
+        // If neither a message nor a close event arrives (e.g. the redirect URL
+        // is not allow-listed, so the dialog can never post its code back), give
+        // up rather than spin forever. Cleared by whichever handler fires first.
+        let settled = false;
+        const timer = setTimeout(() => {
+          if (settled) return;
+          settled = true;
+          try {
+            dialog.close();
+          } catch {
+            // Dialog may already be gone; closing is best-effort.
+          }
+          reject(
+            new Error(
+              "Sign-in timed out. Please try again. If it keeps timing out, the sign-in redirect URL may not be allow-listed.",
+            ),
+          );
+        }, DIALOG_TIMEOUT_MS);
+
         dialog.addEventHandler(Office.EventType.DialogMessageReceived, (arg) => {
+          clearTimeout(timer);
+          if (settled) return;
+          settled = true;
           dialog.close();
           try {
             const message = (arg as { message: string }).message;
@@ -72,6 +100,9 @@ function openDialog(startUrl: string): Promise<DialogPayload> {
         });
 
         dialog.addEventHandler(Office.EventType.DialogEventReceived, () => {
+          clearTimeout(timer);
+          if (settled) return;
+          settled = true;
           // Fires when the user closes the dialog manually (code 12006).
           resolve({ ok: false, error: "Sign-in was cancelled." });
         });
