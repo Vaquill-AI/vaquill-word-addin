@@ -3,7 +3,7 @@ import type { User } from "@supabase/supabase-js";
 import type { ReactNode } from "react";
 import { Header } from "@/ui/Header";
 import { Button, SegmentedControl } from "@/ui/primitives";
-import { ReviewIcon, DraftIcon, AssistantIcon, PlaybookIcon } from "@/ui/icons";
+import { ReviewIcon, DraftIcon, AssistantIcon, PlaybookIcon, SettingsIcon } from "@/ui/icons";
 import { subscribe, clearSession } from "@/auth/session";
 import { LoginView } from "@/features/auth/LoginView";
 import { ReviewView } from "@/features/review/ReviewView";
@@ -15,6 +15,7 @@ import { DraftView } from "@/features/draft/DraftView";
 import { PlaybookView } from "@/features/playbook/PlaybookView";
 import { ReviewProvider } from "@/features/review/ReviewProvider";
 import { OrgSwitcher } from "@/features/org/OrgSwitcher";
+import { SettingsView } from "@/features/settings/SettingsView";
 import { subscribeActiveOrg } from "@/lib/org";
 import "./styles/app.css";
 
@@ -40,6 +41,7 @@ export function App() {
   // Bumped whenever the active organization changes, to remount the data views
   // (matters/drafts/playbooks/clients) so they refetch under the new org.
   const [orgVersion, setOrgVersion] = useState(0);
+  const [showSettings, setShowSettings] = useState(false);
 
   useEffect(() => subscribe(setUser), []);
   useEffect(() => subscribeActiveOrg(() => setOrgVersion((v) => v + 1)), []);
@@ -52,6 +54,16 @@ export function App() {
           user ? (
             <div className="row" style={{ gap: 8 }}>
               <OrgSwitcher />
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowSettings((v) => !v)}
+                aria-pressed={showSettings}
+                title="Settings"
+                aria-label="Settings"
+              >
+                <SettingsIcon size={15} />
+              </Button>
               <Button variant="ghost" size="sm" onClick={clearSession}>
                 Sign out
               </Button>
@@ -60,7 +72,7 @@ export function App() {
         }
       />
 
-      {user && (
+      {user && !showSettings && (
         <nav
           className="tabnav"
           role="tablist"
@@ -98,7 +110,7 @@ export function App() {
         </nav>
       )}
 
-      {user && tab === "review" && (
+      {user && !showSettings && tab === "review" && (
         <div className="subnav">
           <SegmentedControl<ReviewSub>
             label="Review section"
@@ -123,6 +135,18 @@ export function App() {
       >
         {!user ? (
           <LoginView />
+        ) : showSettings ? (
+          <div className="stack" style={{ gap: 8 }}>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowSettings(false)}
+              style={{ alignSelf: "flex-start" }}
+            >
+              Back
+            </Button>
+            <SettingsView />
+          </div>
         ) : tab === "review" ? (
           reviewSub === "redlines" ? (
             <ReviewView />

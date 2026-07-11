@@ -12,6 +12,7 @@ import {
 } from "@/api/drafting";
 import { insertDraftFormatted } from "@/office/richInsert";
 import { JURISDICTIONS, labelOf } from "@/features/review/constants";
+import { getReviewPrefs } from "@/lib/prefs";
 import { SaveToVaquill } from "@/features/integration/SaveToVaquill";
 import { ApiError, friendlyMessage } from "@/api/errors";
 import "./draft.css";
@@ -28,7 +29,7 @@ function severityBadge(severity: DraftIssue["severity"]): { tone: "red" | "yello
 export function DraftView() {
   const [category, setCategory] = useState("nda");
   const [title, setTitle] = useState("");
-  const [jurisdiction, setJurisdiction] = useState("");
+  const [jurisdiction, setJurisdiction] = useState(getReviewPrefs().jurisdiction || "");
   const [tone, setTone] = useState("balanced");
   const [instructions, setInstructions] = useState("");
 

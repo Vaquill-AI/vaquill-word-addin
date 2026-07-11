@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 import { App } from "./App";
 import { isAuthCallback, relayAuthCallback } from "./auth/relay";
 import { initActiveOrg } from "./lib/org";
+import { initReviewPrefs } from "./lib/prefs";
 import { assertConfigured } from "./config";
 import { isWordHost } from "./office/run";
 import "./styles/global.css";
@@ -24,9 +25,9 @@ Office.onReady(() => {
     return;
   }
 
-  // Restore the persisted active organization before any API call so requests
-  // are scoped correctly from the first fetch.
+  // Restore persisted active org + review defaults before first render/fetch.
   initActiveOrg();
+  initReviewPrefs();
 
   const root = createRoot(document.getElementById("root")!);
   if (!isWordHost()) {

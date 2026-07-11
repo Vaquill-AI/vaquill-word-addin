@@ -1,0 +1,65 @@
+.settings {
+  padding: var(--space-l);
+  gap: var(--space-l);
+}
+
+.settings-card {
+  padding: var(--space-m);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-s);
+}
+
+.settings-heading {
+  font-size: var(--fs-body);
+  font-weight: var(--fw-semibold);
+  margin: 0;
+}
+.settings-heading__hint {
+  margin: 0;
+}
+
+.settings-account {
+  gap: var(--space-xs);
+}
+.settings-account__name {
+  font-size: var(--fs-body-lg);
+  font-weight: var(--fw-semibold);
+}
+.settings-account__org {
+  justify-content: space-between;
+  margin-top: var(--space-xs);
+}
+
+.settings-usage {
+  gap: var(--space-s);
+}
+.settings-usage__tier {
+  justify-content: space-between;
+}
+
+.settings-meter {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+.settings-meter__head {
+  justify-content: space-between;
+  font-size: var(--fs-body);
+}
+.settings-meter__track {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--surface-muted);
+  overflow: hidden;
+}
+.settings-meter__fill {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--brand);
+  transition: width 0.2s ease;
+}
+.settings-meter__fill--high {
+  background: var(--warning);
+}
