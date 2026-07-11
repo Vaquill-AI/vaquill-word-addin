@@ -257,6 +257,29 @@
   padding-left: 18px;
 }
 
+/* ---- Liability & cap panel ---- */
+.liability {
+  padding: 10px 12px;
+  gap: 8px;
+}
+.liability__quote {
+  margin: 0;
+  padding: 6px 9px;
+  border-left: 2px solid var(--border);
+  background: var(--surface-muted);
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  font-style: italic;
+  color: var(--text-muted);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.liability__carveouts {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 12px;
+}
+
 /* ---- Counterparty changes triage ---- */
 .changes-view {
   gap: 12px;

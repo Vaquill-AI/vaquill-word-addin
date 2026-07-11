@@ -7,6 +7,8 @@
 export type Grounding = "verified" | "unverified" | "insertion";
 export type ApprovalLevel = "none" | "manager" | "partner" | "gc";
 export type OverallRisk = "green" | "yellow" | "red" | string;
+/** Backend DeviationSeverity enum, serialized as its lowercase value. */
+export type Severity = "green" | "yellow" | "red" | string;
 
 /** One grounded, gated redline suggestion. */
 export interface RedlineSuggestion {
@@ -49,6 +51,65 @@ export interface NegotiationPriority {
   items: string[];
 }
 
+/** Analysis of a single contract clause (loosely rendered by the MVP). */
+export interface ClauseAnalysis {
+  clauseName: string;
+  clauseType?: string;
+  sectionReference?: string | null;
+  currentLanguage?: string;
+  severity?: Severity;
+  analysis?: string;
+  riskDescription?: string | null;
+  playbookPosition?: string | null;
+  approvalLevel?: ApprovalLevel | null;
+  isDealBreaker?: boolean;
+}
+
+/**
+ * Lightweight fingerprint of a known counterparty paper (AWS Customer
+ * Agreement, Salesforce MSA, etc.) detected in the reviewed contract. Present
+ * only when the AI layered counterparty-specific redlines on the findings.
+ */
+export interface CounterpartyMatch {
+  slug: string;
+  name: string;
+  vendor: string;
+  /** rigid | limited | standard - how negotiable this paper is. */
+  flexibility?: string;
+  negotiationStrategyNote?: string;
+  matchedPhrases?: string[];
+  counterpartyRedlinesCount?: number;
+}
+
+/**
+ * The reviewer's liability exposure at a glance, computed from their side:
+ * cap status + amount + grounded quote, uncapped carve-outs, mutuality,
+ * consequential-damages waiver, indemnity. Null when the contract has no
+ * liability/indemnity terms. Every field is null-guarded (dirty LLM data).
+ */
+export interface LiabilityExposure {
+  exposureLevel?: Severity;
+  verdict?: string;
+  /** capped | uncapped | partial | not_addressed */
+  capStatus?: string | null;
+  capAmount?: string | null;
+  /** Verbatim contract sentence the cap claim is drawn from. */
+  capQuote?: string | null;
+  /** 'verified' when capQuote is a literal span of the contract. */
+  grounding?: string | null;
+  /** per_claim | aggregate | both | unclear */
+  capScope?: string | null;
+  capAdequate?: boolean | null;
+  mutualCap?: boolean | null;
+  consequentialDamagesExcluded?: boolean | null;
+  /** Obligations that escape the cap (unlimited-liability exposure). */
+  uncappedCarveouts?: string[];
+  supercap?: string | null;
+  indemnityExposure?: string | null;
+  insuranceRequired?: string | null;
+  claimTimeBar?: string | null;
+}
+
 export interface ContractReviewResponse {
   id: string;
   summary: string;
@@ -62,10 +123,9 @@ export interface ContractReviewResponse {
   approvalGate?: ReviewApprovalGate | null;
   modelUsed?: string;
   processingTimeMs?: number;
-  /** Loosely typed structures the MVP does not render deeply. */
-  clauses?: unknown[];
-  liabilityExposure?: unknown;
-  counterpartyMatch?: unknown;
+  clauses?: ClauseAnalysis[];
+  liabilityExposure?: LiabilityExposure | null;
+  counterpartyMatch?: CounterpartyMatch | null;
 }
 
 export interface ContractReviewRequest {
