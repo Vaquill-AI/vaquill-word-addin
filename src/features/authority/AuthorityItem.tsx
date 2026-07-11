@@ -8,11 +8,14 @@ import type { AuthorityResult, Verdict } from "@/api/authority";
 function verdictBadge(verdict: Verdict) {
   switch (verdict) {
     case "verified":
-      return <Badge tone="green">Verified</Badge>;
+      // A corpus match confirms the case exists, not that it is still good
+      // law, so this reads "Found" (not "Verified") with a caution tone.
+      return <Badge tone="yellow">Found</Badge>;
     case "no_match":
       return <Badge tone="red">No match</Badge>;
     case "unrecognized":
-      return <Badge tone="neutral">Unrecognized</Badge>;
+      // U3: an unmatched / empty result is a warning, not a benign neutral.
+      return <Badge tone="yellow">Unresolved</Badge>;
     default:
       return <Badge tone="neutral">Not checked</Badge>;
   }
@@ -22,7 +25,7 @@ function commentText(r: AuthorityResult): string {
   if (r.verdict === "verified") {
     const name = r.caseName ?? "This citation";
     const yr = r.year ? ` (${r.year})` : "";
-    return `${name}${yr}: verified against Vaquill AI's US case-law corpus.`;
+    return `${name}${yr}: found in Vaquill AI's US case-law corpus. Confirm current treatment (not overruled or superseded) before relying on it.`;
   }
   return `No matching case found in the corpus for ${r.raw}. Verify this citation manually before relying on it.`;
 }
@@ -73,14 +76,32 @@ export function AuthorityItem({ result }: { result: AuthorityResult }) {
         </div>
       </div>
 
-      {result.verdict === "verified" && result.caseName && (
+      {result.verdict === "verified" && (
         <div className="stack" style={{ gap: 1 }}>
-          <span className="authority__name">{result.caseName}</span>
+          {result.caseName && <span className="authority__name">{result.caseName}</span>}
           {meta && <span className="small muted">{meta}</span>}
+          <span className="small muted">
+            Found in the corpus. Confirm current treatment before relying on it.
+            {typeof result.citedByCount === "number" &&
+              ` Cited by ${result.citedByCount} case${result.citedByCount === 1 ? "" : "s"}.`}
+          </span>
+          {result.caseUrl && (
+            <a
+              className="authority__link"
+              href={result.caseUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              View case
+            </a>
+          )}
         </div>
       )}
       {result.verdict === "no_match" && (
         <span className="small muted">Parsed as a citation but not found in the corpus. Verify manually.</span>
+      )}
+      {result.verdict === "unrecognized" && (
+        <span className="small muted">Could not resolve this citation. Verify manually before relying on it.</span>
       )}
 
       <div className="authority__actions">

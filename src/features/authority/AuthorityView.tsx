@@ -41,7 +41,7 @@ export function AuthorityView() {
         <div className="stack" style={{ gap: 4 }}>
           <div className="row" style={{ justifyContent: "space-between", alignItems: "flex-start" }}>
             <h1 className="view-title">Authority check</h1>
-            <InfoTip text="Checks every case citation in the document against Vaquill AI's US case-law corpus. Verified means a real matching case was found. No match can mean a hallucinated, mis-typed, or unreported citation, so confirm it yourself before you rely on it or file." />
+            <InfoTip text="Checks every case citation in the document against Vaquill AI's US case-law corpus. Found means a real matching case exists, not that it is still good law, so confirm its current treatment before relying on it. No match can mean a hallucinated, mis-typed, or unreported citation, so confirm it yourself before you rely on it or file." />
           </div>
           <p className="small muted" style={{ margin: 0 }}>
             Verify every case citation in this document against Vaquill AI's US case-law corpus.
@@ -88,7 +88,7 @@ export function AuthorityView() {
 
       {state.results.length > 0 && (
         <div className="authority-summary">
-          <Badge tone="green">{verified.length} verified</Badge>
+          <Badge tone="yellow">{verified.length} found</Badge>
           {noMatch > 0 && <Badge tone="red">{noMatch} no match</Badge>}
           {other > 0 && <Badge tone="neutral">{other} unresolved</Badge>}
         </div>
