@@ -1,5 +1,6 @@
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { Button } from "@/ui/primitives";
+import type { AppIntent } from "@/app/nav";
 import { ArrowLeftIcon, ShieldCheckIcon, RedactIcon, FillIcon, EditIcon, CopyIcon } from "@/ui/icons";
 import { ToolCard, ToolCardList } from "@/ui/ToolCard";
 import { ComplianceView } from "@/features/compliance/ComplianceView";
@@ -61,9 +62,23 @@ const TOOLS: ToolDef[] = [
  * Launcher for the document-level tools, so they share one top-level tab instead
  * of one tab each. Pick a tool to open it; a back control returns to the grid.
  */
-export function ToolsHub() {
+export function ToolsHub({
+  intent,
+  onIntentDone,
+}: {
+  /** A shell handoff can open a specific tool directly. */
+  intent?: AppIntent | null;
+  onIntentDone?: () => void;
+} = {}) {
   const [selected, setSelected] = useState<ToolKey | null>(null);
   const active = TOOLS.find((t) => t.key === selected);
+
+  useEffect(() => {
+    if (intent?.kind === "openTool") {
+      setSelected(intent.tool);
+      onIntentDone?.();
+    }
+  }, [intent, onIntentDone]);
 
   if (active) {
     return (

@@ -24,22 +24,41 @@ export interface AuthorityEntry {
   raw: string;
 }
 
-/** Insert a simple Table of Authorities (verified cases) at the end of the document. */
+/**
+ * Insert a Table of Authorities (verified cases) at the user's cursor rather than
+ * forcing it to the document end, so the user controls placement (e.g. front
+ * matter). Inserts after the paragraph the cursor sits in; falls back to the
+ * document end when there is no usable selection. Selects the inserted heading so
+ * Word scrolls it into view, so the user sees it appear.
+ */
 export async function insertTableOfAuthorities(cases: AuthorityEntry[]): Promise<void> {
   return runWord(async (context) => {
-    const body = context.document.body;
-    body.insertParagraph("", Word.InsertLocation.end);
+    const doc = context.document;
+    const paras = doc.getSelection().paragraphs;
+    paras.load("items");
+    await context.sync();
 
-    const heading = body.insertParagraph("Table of Authorities", Word.InsertLocation.end);
-    heading.styleBuiltIn = Word.BuiltInStyleName.heading1;
+    const items = paras.items;
+    let cursor: Word.Paragraph | null = items.length > 0 ? items[items.length - 1] ?? null : null;
 
-    const sub = body.insertParagraph("Cases", Word.InsertLocation.end);
-    sub.styleBuiltIn = Word.BuiltInStyleName.heading2;
+    const add = (text: string, style?: Word.BuiltInStyleName): Word.Paragraph => {
+      const p = cursor
+        ? cursor.insertParagraph(text, Word.InsertLocation.after)
+        : doc.body.insertParagraph(text, Word.InsertLocation.end);
+      if (style) p.styleBuiltIn = style;
+      cursor = p;
+      return p;
+    };
+
+    add(""); // spacer above the table
+    const heading = add("Table of Authorities", Word.BuiltInStyleName.heading1);
+    add("Cases", Word.BuiltInStyleName.heading2);
 
     const sorted = [...cases].sort((a, b) => a.caseName.localeCompare(b.caseName));
-    for (const c of sorted) {
-      body.insertParagraph(`${c.caseName}, ${c.raw}`, Word.InsertLocation.end);
-    }
+    for (const c of sorted) add(`${c.caseName}, ${c.raw}`);
+
+    // Bring the inserted table into view so the user sees it was placed.
+    heading.select();
     await context.sync();
   });
 }

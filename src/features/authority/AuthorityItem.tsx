@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { Badge, IconButton } from "@/ui/primitives";
-import { OverflowMenu } from "@/ui/OverflowMenu";
+import { OverflowMenu, type OverflowMenuItem } from "@/ui/OverflowMenu";
 import { LocateIcon } from "@/ui/icons";
 import { selectClauseInDocument } from "@/office/navigate";
 import { commentOnCitation } from "@/office/citations";
+import { useAppNav } from "@/app/nav";
 import { config } from "@/config";
 import type { AuthorityResult, GoodLaw, Verdict } from "@/api/authority";
 
@@ -97,9 +98,11 @@ function commentText(r: AuthorityResult): string {
 }
 
 export function AuthorityItem({ result }: { result: AuthorityResult }) {
+  const { navigate } = useAppNav();
   const [note, setNote] = useState<string | null>(null);
   const [commented, setCommented] = useState(false);
   const [busy, setBusy] = useState(false);
+  const unresolved = result.verdict === "no_match" || result.verdict === "unrecognized";
 
   async function locate() {
     setNote(null);
@@ -214,14 +217,28 @@ export function AuthorityItem({ result }: { result: AuthorityResult }) {
         </IconButton>
         <OverflowMenu
           label="More citation actions"
-          items={[
-            {
-              label: commented ? "Commented" : "Comment in document",
-              onSelect: () => {
-                if (!busy) void comment();
+          items={((): OverflowMenuItem[] => {
+            const items: OverflowMenuItem[] = [
+              {
+                label: commented ? "Commented" : "Comment in document",
+                onSelect: () => {
+                  if (!busy) void comment();
+                },
               },
-            },
-          ]}
+            ];
+            if (unresolved) {
+              items.push({
+                label: "Ask the assistant to find it",
+                onSelect: () =>
+                  navigate("assistant", {
+                    kind: "assistantAsk",
+                    prompt: `The citation "${result.raw}" did not resolve in Vaquill AI's US corpus. Help me find the correct authority, or tell me whether it looks misstated or nonexistent.`,
+                    autoSend: true,
+                  }),
+              });
+            }
+            return items;
+          })()}
         />
         {note && <span className="small muted">{note}</span>}
       </div>

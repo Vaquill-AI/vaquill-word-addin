@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Badge, Button, IconButton } from "@/ui/primitives";
 import { OverflowMenu, type OverflowMenuItem } from "@/ui/OverflowMenu";
 import { SplitButton } from "@/ui/SplitButton";
-import { LocateIcon, CheckIcon, XIcon, UndoIcon, CopyIcon, EditIcon, WandIcon, ChevronIcon } from "@/ui/icons";
+import { LocateIcon, CheckIcon, XIcon, UndoIcon, CopyIcon, EditIcon, WandIcon, ChevronIcon, AssistantIcon } from "@/ui/icons";
 import { GroundingBadge } from "./GroundingBadge";
 import { InlineDiff } from "./InlineDiff";
 import { SeverityBadge } from "./SeverityBadge";
@@ -15,6 +15,7 @@ import { rewriteClause } from "@/api/clause-tools";
 import { recordRedlineFeedback } from "@/api/feedback";
 import { ApiError, friendlyMessage } from "@/api/errors";
 import { AddToPlaybook } from "@/features/integration/AddToPlaybook";
+import { useAppNav } from "@/app/nav";
 import { CommentAction } from "./CommentAction";
 import type { RedlineSuggestion } from "@/api/types";
 import type { Decision } from "./decisions";
@@ -188,6 +189,7 @@ export function RedlineCard({
   decision: Decision;
   onDecision: (index: number, decision: Decision) => void;
 }) {
+  const { navigate } = useAppNav();
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -416,6 +418,16 @@ export function RedlineCard({
     label: "Regenerate suggestion",
     icon: <WandIcon size={14} />,
     onSelect: regenerate,
+  });
+  overflowItems.push({
+    label: "Ask the assistant about this",
+    icon: <AssistantIcon size={14} />,
+    onSelect: () =>
+      navigate("assistant", {
+        kind: "assistantAsk",
+        prompt: `Should I accept the proposed change to the "${redline.clauseName}" clause? Briefly explain the risk it addresses and the tradeoff of accepting versus rejecting it.`,
+        autoSend: true,
+      }),
   });
   overflowItems.push({
     label: feedback === "up" ? "Good suggestion (selected)" : "Good suggestion",

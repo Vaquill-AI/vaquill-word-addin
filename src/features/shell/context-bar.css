@@ -1,0 +1,65 @@
+/* Slim persistent shell strip: standing context on the left, selection verbs on
+   the right. One line, quiet, sits under the tab/sub nav. */
+.context-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 5px 12px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.context-bar__ctx {
+  border: none;
+  background: none;
+  padding: 2px 4px;
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--fs-caption);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+}
+.context-bar__ctx:hover {
+  background: var(--fill-subtle);
+  color: var(--text);
+}
+
+.context-bar__sel {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-left: auto;
+}
+.context-bar__sel-count {
+  color: var(--brand);
+  font-size: var(--fs-caption);
+  font-weight: 600;
+}
+.context-bar__actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-wrap: wrap;
+}
+.context-bar__verb {
+  border: none;
+  background: none;
+  padding: 3px 7px;
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+.context-bar__verb:hover {
+  background: var(--brand-tint);
+  color: var(--brand);
+}
+.context-bar__verb:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 1px;
+}

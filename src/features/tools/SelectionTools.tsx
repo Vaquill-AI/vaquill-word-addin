@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useSelection } from "./useSelection";
 import { SelectionPreview } from "./SelectionPreview";
 import { RewriteTool } from "./RewriteTool";
@@ -25,9 +25,14 @@ const TOOLS: { key: Tool; label: string }[] = [
  * dedicated structured endpoints and render scored / checklist output, rather
  * than routing to free-text chat.
  */
-export function SelectionTools() {
+export function SelectionTools({ initialTool }: { initialTool?: Tool } = {}) {
   const sel = useSelection();
-  const [tool, setTool] = useState<Tool>("rewrite");
+  const [tool, setTool] = useState<Tool>(initialTool ?? "rewrite");
+
+  // A shell handoff ("Explain this selection") can preselect a tool.
+  useEffect(() => {
+    if (initialTool) setTool(initialTool);
+  }, [initialTool]);
 
   if (!sel.hasSelection) return null;
 

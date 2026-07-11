@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Banner, Button, LiveRegion, Spinner } from "@/ui/primitives";
 import type { ComplianceRequirement } from "@/api/clause-tools";
+import { useAppNav } from "@/app/nav";
 import { useDraftFix } from "./useDraftFix";
 
 /**
@@ -14,6 +15,7 @@ import { useDraftFix } from "./useDraftFix";
  * dense until the reviewer asks for a draft.
  */
 export function DraftFix({ req }: { req: ComplianceRequirement }) {
+  const { navigate } = useAppNav();
   const { state, draft, insert, reset } = useDraftFix(req);
   const [copied, setCopied] = useState(false);
 
@@ -90,7 +92,14 @@ export function DraftFix({ req }: { req: ComplianceRequirement }) {
       {state.inserted ? (
         <LiveRegion>
           <p className="draft-fix__hint small draft-fix__inserted">
-            Inserted as a tracked change. Review and accept it in the document.
+            Inserted as a tracked change. Review and accept it in the document.{" "}
+            <button
+              type="button"
+              className="linkaction"
+              onClick={() => navigate("review", { kind: "reviewContract" })}
+            >
+              Review the updated contract
+            </button>
           </p>
         </LiveRegion>
       ) : (

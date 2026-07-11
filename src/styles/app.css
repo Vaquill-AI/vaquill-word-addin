@@ -36,20 +36,45 @@
   border-radius: var(--radius-sm, 6px);
 }
 
-.tabnav {
+/* Combined top bar for the logged-in app: logo + tab nav + account controls in
+   one row (replaces the old header row + separate tab row). align-items: stretch
+   lets the tabs fill the bar height so the active-tab underline lands on the bar's
+   bottom border; the logo and right controls re-center themselves. */
+.appbar {
   display: flex;
-  gap: 2px;
-  padding: 0 6px;
+  align-items: stretch;
+  gap: 4px;
+  padding: 0 8px;
   border-bottom: 1px solid var(--border);
   background: var(--surface);
   position: sticky;
   top: 0;
-  z-index: 4;
+  z-index: 5;
+}
+.appbar__mark {
+  align-self: center;
+  flex: 0 0 auto;
+  border-radius: 5px;
+  display: block;
+  margin-right: 2px;
+}
+.appbar__tabs {
+  display: flex;
+  gap: 2px;
+  flex: 1 1 auto;
+  min-width: 0; /* allow the strip to shrink below content width so it can scroll */
   overflow-x: auto;
   scrollbar-width: none; /* Firefox */
 }
-.tabnav::-webkit-scrollbar {
+.appbar__tabs::-webkit-scrollbar {
   display: none;
+}
+.appbar__right {
+  align-self: center;
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 .tabnav__tab {
   position: relative;

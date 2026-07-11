@@ -73,7 +73,7 @@ export function Badge({ tone = "neutral", children }: { tone?: Tone; children: R
   return <span className={`badge badge--${tone}`}>{children}</span>;
 }
 
-type BannerTone = "info" | "warn" | "danger";
+type BannerTone = "info" | "success" | "warn" | "danger";
 
 export function Banner({ tone = "info", children }: { tone?: BannerTone; children: ReactNode }) {
   // Errors must reach assistive tech the moment they appear after an async action.

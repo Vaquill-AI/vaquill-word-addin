@@ -1,0 +1,108 @@
+.home {
+  padding: 14px;
+  gap: 14px;
+}
+
+.home__greeting {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.home__title {
+  margin: 0;
+  font-size: var(--fs-body-lg);
+  font-weight: 600;
+  color: var(--text);
+}
+.home__sub {
+  margin: 0;
+}
+
+/* ---- Document state ---- */
+.home__state {
+  gap: 10px;
+}
+.home__signals {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+.home__signal {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-muted);
+  border: 1px solid var(--border);
+  text-align: left;
+}
+.home__signal--btn {
+  cursor: pointer;
+  transition: background 0.12s ease, border-color 0.12s ease;
+}
+.home__signal--btn:hover {
+  background: var(--fill-subtle-hover);
+  border-color: var(--border-strong);
+}
+.home__signal--btn:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 1px;
+}
+.home__signal-val {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.1;
+}
+
+/* ---- Next-best-actions ---- */
+.home__actions {
+  gap: 8px;
+}
+.home__action {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  width: 100%;
+  text-align: left;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  cursor: pointer;
+  transition: background 0.12s ease, border-color 0.12s ease;
+}
+.home__action:hover {
+  background: var(--surface-muted);
+  border-color: var(--border-strong);
+}
+.home__action:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 1px;
+}
+.home__action-icon {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  color: var(--text-muted);
+  margin-top: 1px;
+}
+.home__action-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.home__action-title {
+  font-weight: 600;
+  font-size: var(--fs-body);
+  color: var(--text);
+}
+.home__action-desc {
+  margin: 0;
+}

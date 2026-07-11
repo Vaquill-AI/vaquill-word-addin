@@ -22,6 +22,10 @@ export function AuthorityView() {
   const { state, run, reset } = useAuthorityScan();
   const [toaBusy, setToaBusy] = useState(false);
   const [toaDone, setToaDone] = useState(false);
+  // Persistent confirmation after insertion (the table lands at the cursor, which
+  // may be off-screen, so a 1.5s button flash is not enough to tell the user it
+  // happened). Cleared when a fresh insert starts.
+  const [toaNote, setToaNote] = useState<string | null>(null);
   const [toaError, setToaError] = useState<string | null>(null);
   // Active verdict filters. Empty = show everything; otherwise show the union of
   // the selected buckets. The caller owns the set (FilterChips is presentational).
@@ -50,12 +54,17 @@ export function AuthorityView() {
   async function insertToA() {
     setToaBusy(true);
     setToaError(null);
+    setToaNote(null);
+    const n = verifiedWithNames.length;
     try {
       await insertTableOfAuthorities(
         verifiedWithNames.map((r) => ({ caseName: r.caseName!, raw: r.raw })),
       );
       setToaDone(true);
       setTimeout(() => setToaDone(false), 1500);
+      setToaNote(
+        `Inserted a Table of Authorities with ${n} case${n === 1 ? "" : "s"} at your cursor. Word scrolled to it. Reposition it (e.g. to the front) if you need it elsewhere.`,
+      );
     } catch (e) {
       setToaError((e as Error).message);
     } finally {
@@ -178,6 +187,17 @@ export function AuthorityView() {
             )}
             <CitationStyle citations={state.results.map((r) => r.raw)} />
           </div>
+          {verifiedWithNames.length > 0 && !toaNote && (
+            <span className="small muted">
+              Inserts at your cursor. Place the cursor where you want the table (e.g. front matter)
+              before inserting.
+            </span>
+          )}
+          {toaNote && (
+            <LiveRegion>
+              <Banner tone="success">{toaNote}</Banner>
+            </LiveRegion>
+          )}
           {toaError && <Banner tone="danger">{toaError}</Banner>}
         </div>
       )}

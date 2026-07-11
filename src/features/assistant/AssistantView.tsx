@@ -13,6 +13,7 @@ import { uuid } from "@/api/ids";
 import { SelectionTools } from "@/features/tools/SelectionTools";
 import { QuotaBanner } from "@/features/usage/QuotaBanner";
 import { getReviewPrefs, subscribeReviewPrefs } from "@/lib/prefs";
+import type { AppIntent, SelectionToolKey } from "@/app/nav";
 import "./assistant.css";
 
 function ClockGlyph() {
@@ -31,9 +32,18 @@ function PlusGlyph() {
   );
 }
 
-export function AssistantView() {
+export function AssistantView({
+  intent,
+  onIntentDone,
+}: {
+  /** A cross-feature handoff (ask this, or open a selection tool). */
+  intent?: AppIntent | null;
+  onIntentDone?: () => void;
+} = {}) {
   const { state, send, stop, reset, truncateBefore, loadMessages, regenerate } = useAssistant();
   const [scope, setScope] = useState<Scope>("document");
+  // A selection tool the shell asked us to open (Explain / Risk / Rewrite ...).
+  const [selTool, setSelTool] = useState<SelectionToolKey | undefined>(undefined);
   // Composer draft is owned here so the prompt library and edit-and-re-run can
   // write into it.
   const [draft, setDraft] = useState("");
@@ -130,6 +140,27 @@ export function AssistantView() {
     [prefs.matterId, prefs.jurisdiction, context],
   );
 
+  // Consume a cross-feature handoff exactly once.
+  useEffect(() => {
+    if (!intent) return;
+    if (intent.kind === "assistantAsk") {
+      if (intent.scope) setScope(intent.scope);
+      if (intent.prompt) setDraft(intent.prompt);
+      if (intent.autoSend && intent.prompt.trim()) {
+        send(intent.prompt, intent.scope ?? scope, grounding);
+        setDraft("");
+      } else {
+        requestAnimationFrame(() => composerRef.current?.focus());
+      }
+      onIntentDone?.();
+    } else if (intent.kind === "selectionTool") {
+      setSelTool(intent.tool);
+      onIntentDone?.();
+    }
+    // grounding/scope are read at fire time; we intentionally key only on intent.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [intent]);
+
   const empty = state.messages.length === 0;
 
   const canNewChat = !empty || convIdRef.current !== null;
@@ -162,7 +193,7 @@ export function AssistantView() {
       </div>
       <div className="assistant__messages" ref={scrollRef} onScroll={onMessagesScroll}>
         <QuotaBanner />
-        <SelectionTools />
+        <SelectionTools initialTool={selTool} />
         {empty ? (
           <div className="assistant__intro">
             <div className="assistant__greeting">

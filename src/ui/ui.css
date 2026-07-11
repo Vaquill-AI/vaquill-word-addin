@@ -127,6 +127,11 @@
   background: var(--brand-tint);
   border-color: var(--brand-border);
 }
+.banner--success {
+  background: var(--success-tint);
+  border-color: var(--success-border);
+  color: var(--success);
+}
 
 /* Clean, flat content card: solid white, hairline border, a whisper of shadow
    for depth (replaces the old frosted-glass Mica look). Feature cards set their
