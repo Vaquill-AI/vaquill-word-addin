@@ -63,6 +63,14 @@ export function ChevronIcon({ size = 15 }: P) {
   );
 }
 
+export function ArrowLeftIcon({ size = 15 }: P) {
+  return (
+    <svg {...base(size)} aria-hidden>
+      <path d="M19 12H5M12 19l-7-7 7-7" />
+    </svg>
+  );
+}
+
 export function StopIcon({ size = 15 }: P) {
   return (
     <svg {...base(size)} aria-hidden>

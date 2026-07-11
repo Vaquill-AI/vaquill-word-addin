@@ -58,13 +58,21 @@ export async function getPlaybooksWithPositions(): Promise<PlaybookDetail[]> {
   return (res.playbooks ?? []).map((p) => ({ ...p, positions: p.positions ?? {} }));
 }
 
-/** A starter playbook template a user can adopt in one click. */
+/**
+ * A starter playbook template a user can adopt in one click.
+ *
+ * The templates endpoint returns a RAW dict (no Pydantic serialization_alias),
+ * and the add-in does not camelCase responses, so this field arrives snake_case
+ * as `contract_type` -- unlike the Pydantic-backed Playbook/PlaybookPosition
+ * models above, which alias to camelCase. Reading `contractType` here would be
+ * silently `undefined`.
+ */
 export interface PlaybookTemplate {
   slug: string;
   name: string;
   description?: string;
   category?: string;
-  contractType?: string;
+  contract_type?: string;
   featured?: boolean;
 }
 

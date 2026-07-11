@@ -3,8 +3,15 @@ import type { User } from "@supabase/supabase-js";
 import type { ReactNode } from "react";
 import { Header } from "@/ui/Header";
 import { Button, SegmentedControl } from "@/ui/primitives";
-import { ReviewIcon, DraftIcon, AssistantIcon, PlaybookIcon, SettingsIcon } from "@/ui/icons";
-import { subscribe, clearSession } from "@/auth/session";
+import {
+  ReviewIcon,
+  DraftIcon,
+  AssistantIcon,
+  PlaybookIcon,
+  SettingsIcon,
+  ArrowLeftIcon,
+} from "@/ui/icons";
+import { subscribe } from "@/auth/session";
 import { LoginView } from "@/features/auth/LoginView";
 import { ReviewView } from "@/features/review/ReviewView";
 import { ChangesView } from "@/features/review/ChangesView";
@@ -63,9 +70,6 @@ export function App() {
                 aria-label="Settings"
               >
                 <SettingsIcon size={15} />
-              </Button>
-              <Button variant="ghost" size="sm" onClick={clearSession}>
-                Sign out
               </Button>
             </div>
           ) : undefined
@@ -138,12 +142,13 @@ export function App() {
         ) : showSettings ? (
           <div className="stack" style={{ gap: 8 }}>
             <Button
-              variant="ghost"
+              variant="default"
               size="sm"
               onClick={() => setShowSettings(false)}
               style={{ alignSelf: "flex-start" }}
+              aria-label="Back to app"
             >
-              Back
+              <ArrowLeftIcon size={14} /> Back
             </Button>
             <SettingsView />
           </div>

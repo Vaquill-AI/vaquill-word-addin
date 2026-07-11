@@ -90,7 +90,11 @@ export function AuthorityView() {
       {state.status === "done" && state.error && <Banner tone="warn">{state.error}</Banner>}
 
       {state.status === "done" && state.total === 0 && (
-        <Banner tone="info">No case or statute citations were found in this document.</Banner>
+        <Banner tone="info">
+          No case or statute citations were found. This looks for US authority cites such as
+          "347 U.S. 483", "18 U.S.C. § 1030", or "Cal. Civ. Code § 1950.5". Contracts and NDAs
+          usually have none, so run it on a brief, memo, or opinion that cites case law.
+        </Banner>
       )}
 
       {capped && (
