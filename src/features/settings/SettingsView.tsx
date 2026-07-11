@@ -4,6 +4,7 @@ import { clearSession, getUser } from "@/auth/session";
 import { getActiveOrgId } from "@/lib/org";
 import { listMyOrganizations } from "@/api/organizations";
 import { fetchUsageSnapshot, type QuotaSnapshot, type UsageMetric } from "@/api/usage";
+import { Combobox } from "@/ui/Combobox";
 import { MatterPicker } from "@/features/integration/MatterPicker";
 import {
   getReviewPrefs,
@@ -213,17 +214,12 @@ export function SettingsView() {
             </select>
           </Field>
           <Field label="Default contract type">
-            <select
+            <Combobox
               value={prefs.contractType}
-              onChange={(e) => setReviewPrefs({ contractType: e.target.value })}
-            >
-              <option value="">No default</option>
-              {CONTRACT_TYPES.map((o) => (
-                <option key={o.value} value={o.value}>
-                  {o.label}
-                </option>
-              ))}
-            </select>
+              onChange={(v) => setReviewPrefs({ contractType: v })}
+              options={[{ value: "", label: "No default" }, ...CONTRACT_TYPES]}
+              ariaLabel="Default contract type"
+            />
           </Field>
         </div>
       </div>

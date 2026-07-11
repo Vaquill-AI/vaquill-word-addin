@@ -1,0 +1,112 @@
+.combobox {
+  position: relative;
+}
+
+/* Trigger matches the flat filled-field look of .field select. */
+.combobox__trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  padding: 9px 11px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: var(--fill-subtle);
+  color: var(--text);
+  font-family: inherit;
+  font-size: var(--fs-body);
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.12s ease, border-color 0.12s ease, box-shadow 0.12s ease;
+}
+.combobox__trigger:hover {
+  background: var(--fill-subtle-hover);
+}
+.combobox__trigger:focus-visible {
+  outline: none;
+  background: var(--surface);
+  border-color: var(--brand);
+  box-shadow: 0 0 0 2px var(--brand-tint);
+}
+.combobox__trigger > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.combobox__trigger svg {
+  flex: none;
+  color: var(--text-muted);
+}
+.combobox__placeholder {
+  color: var(--text-muted);
+}
+
+/* Floating popover: a true overlay, so a shadow is allowed. */
+.combobox__popover {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  max-height: 280px;
+  background: var(--surface);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-16);
+  overflow: hidden;
+}
+.combobox__search {
+  margin: 6px;
+  padding: 7px 10px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: var(--fill-subtle);
+  color: var(--text);
+  font-family: inherit;
+  font-size: var(--fs-body);
+}
+.combobox__search:focus {
+  outline: none;
+  background: var(--surface);
+  border-color: var(--brand);
+  box-shadow: 0 0 0 2px var(--brand-tint);
+}
+.combobox__list {
+  list-style: none;
+  margin: 0;
+  padding: 0 4px 4px;
+  overflow-y: auto;
+}
+.combobox__option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 7px 8px;
+  border-radius: var(--radius-sm);
+  font-size: var(--fs-body);
+  color: var(--text);
+  cursor: pointer;
+}
+.combobox__option-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.combobox__option svg {
+  flex: none;
+  color: var(--brand);
+}
+.combobox__option--active {
+  background: var(--fill-subtle);
+}
+.combobox__option--selected {
+  font-weight: 600;
+}
+.combobox__empty {
+  padding: 10px 8px;
+  color: var(--text-muted);
+  font-size: var(--fs-body);
+}

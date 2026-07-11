@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Button, Field, SegmentedControl, Toggle } from "@/ui/primitives";
+import { Combobox } from "@/ui/Combobox";
 import { PlaybookPicker } from "./PlaybookPicker";
 import {
   CONTRACT_TYPES,
@@ -89,28 +90,27 @@ export function ReviewForm({
         });
       }}
     >
-      {/* Contract type is the document's identity: full-width, top slot. */}
+      {/* Contract type is the document's identity: full-width, top slot. A
+          searchable combobox since the list is long (37 types). */}
       <Field label="Contract type">
-        <select value={contractType} onChange={(e) => setContractType(e.target.value)}>
-          {CONTRACT_TYPES.map((o) => (
-            <option key={o.value} value={o.value}>
-              {o.label}
-            </option>
-          ))}
-        </select>
+        <Combobox
+          value={contractType}
+          onChange={setContractType}
+          options={CONTRACT_TYPES}
+          ariaLabel="Contract type"
+        />
       </Field>
 
       {/* Two genuinely long lists, paired 2-col; they flow to one column when
           the pane is narrow. */}
       <div className="form-grid">
         <Field label="I represent the">
-          <select value={userSide} onChange={(e) => setUserSide(e.target.value)}>
-            {USER_SIDES.map((o) => (
-              <option key={o.value} value={o.value}>
-                {o.label}
-              </option>
-            ))}
-          </select>
+          <Combobox
+            value={userSide}
+            onChange={setUserSide}
+            options={USER_SIDES}
+            ariaLabel="I represent the"
+          />
         </Field>
 
         <PlaybookPicker contractType={contractType} value={playbookId} onChange={setPlaybookId} />

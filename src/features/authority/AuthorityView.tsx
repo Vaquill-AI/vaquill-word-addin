@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Button, Banner, Spinner, Badge, LiveRegion } from "@/ui/primitives";
+import { Button, Banner, Spinner, LiveRegion } from "@/ui/primitives";
+import { FilterChips, type FilterChipOption } from "@/ui/FilterChips";
 import { InfoTip } from "@/ui/InfoTip";
 import { CheckIcon } from "@/ui/icons";
 import { useAuthorityScan } from "./useAuthorityScan";
@@ -7,13 +8,32 @@ import { getExtractCoverage } from "./extract";
 import { AuthorityItem } from "./AuthorityItem";
 import { CitationStyle } from "./CitationStyle";
 import { insertTableOfAuthorities } from "@/office/citations";
+import type { AuthorityResult } from "@/api/authority";
 import "./authority.css";
+
+/** Which summary bucket a citation result falls in (drives the filter chips). */
+function groupOf(r: AuthorityResult): "verified" | "no_match" | "other" {
+  if (r.verdict === "verified") return "verified";
+  if (r.verdict === "no_match") return "no_match";
+  return "other";
+}
 
 export function AuthorityView() {
   const { state, run, reset } = useAuthorityScan();
   const [toaBusy, setToaBusy] = useState(false);
   const [toaDone, setToaDone] = useState(false);
   const [toaError, setToaError] = useState<string | null>(null);
+  // Active verdict filters. Empty = show everything; otherwise show the union of
+  // the selected buckets. The caller owns the set (FilterChips is presentational).
+  const [filter, setFilter] = useState<ReadonlySet<string>>(new Set());
+  function toggleFilter(key: string) {
+    setFilter((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  }
 
   const busy = state.status === "reading" || state.status === "scanning";
   // Coverage of the last extraction, so the cap never overstates what we
@@ -105,19 +125,34 @@ export function AuthorityView() {
         </Banner>
       )}
 
-      {state.results.length > 0 && (
-        <div className="authority-summary">
-          <Badge tone="yellow">{verified.length} found</Badge>
-          {noMatch > 0 && <Badge tone="red">{noMatch} no match</Badge>}
-          {other > 0 && <Badge tone="neutral">{other} unresolved</Badge>}
-        </div>
-      )}
-
-      <div className="stack">
-        {state.results.map((r) => (
-          <AuthorityItem key={r.raw} result={r} />
-        ))}
-      </div>
+      {state.results.length > 0 &&
+        (() => {
+          // Clickable filter chips replace the static count badges: tap a bucket
+          // to narrow the list to those verdicts (empty selection shows all).
+          const chips: FilterChipOption[] = [];
+          if (verified.length) chips.push({ key: "verified", label: "Found", count: verified.length, tone: "yellow" });
+          if (noMatch) chips.push({ key: "no_match", label: "No match", count: noMatch, tone: "red" });
+          if (other) chips.push({ key: "other", label: "Unresolved", count: other, tone: "neutral" });
+          const shown =
+            filter.size === 0 ? state.results : state.results.filter((r) => filter.has(groupOf(r)));
+          return (
+            <>
+              {chips.length > 1 && (
+                <FilterChips
+                  options={chips}
+                  active={filter}
+                  onToggle={toggleFilter}
+                  ariaLabel="Filter citations by result"
+                />
+              )}
+              <div className="stack">
+                {shown.map((r) => (
+                  <AuthorityItem key={r.raw} result={r} />
+                ))}
+              </div>
+            </>
+          );
+        })()}
 
       {/* One grouped footer action row: Insert ToA is the single prominent
           action; Check citation style sits beside it as a ghost trigger (and

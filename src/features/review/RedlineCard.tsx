@@ -398,11 +398,17 @@ export function RedlineCard({
   const collapseRationale = (rationale?.length ?? 0) > RATIONALE_INLINE_MAX;
   const intent = distillIntent(rationale ?? "", redline.clauseName);
 
-  // Secondary actions live behind the kebab so the primary row stays scannable.
+  // Secondary actions live behind the kebab so the primary row stays scannable
+  // (Accept + Dismiss + kebab). Edit and Revert moved in here too, since the
+  // visible row was crowding.
+  const overflowItems: OverflowMenuItem[] = [];
+  overflowItems.push({ label: "Edit language", icon: <EditIcon size={14} />, onSelect: startEdit });
+  if (isEdited) {
+    overflowItems.push({ label: "Revert to original", icon: <UndoIcon size={14} />, onSelect: revertEdit });
+  }
   // "Copy proposed" is redundant when the card already shows it as the
   // non-applicable fallback button, so only offer it in the menu when the
   // primary action is Accept/Insert.
-  const overflowItems: OverflowMenuItem[] = [];
   if (applicable) {
     overflowItems.push({ label: "Copy proposed", icon: <CopyIcon size={14} />, onSelect: copyProposed });
   }
@@ -552,14 +558,6 @@ export function RedlineCard({
                   <CopyIcon size={14} /> Copy proposed
                 </>
               )}
-            </Button>
-          )}
-          <Button variant="ghost" size="sm" onClick={startEdit}>
-            <EditIcon size={13} /> Edit
-          </Button>
-          {isEdited && (
-            <Button variant="ghost" size="sm" onClick={revertEdit}>
-              <UndoIcon size={13} /> Revert
             </Button>
           )}
           <IconButton label="Dismiss" tone="red" onClick={() => decide("rejected")}>

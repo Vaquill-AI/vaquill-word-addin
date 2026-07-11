@@ -69,7 +69,7 @@ export function ToolsHub() {
     return (
       <div className="stack toolshub-tool">
         <Button
-          variant="default"
+          variant="ghost"
           size="sm"
           onClick={() => setSelected(null)}
           style={{ alignSelf: "flex-start" }}
