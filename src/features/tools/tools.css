@@ -58,6 +58,34 @@
   color: var(--brand);
   border-color: var(--brand);
 }
+.chip--on {
+  background: var(--brand-tint);
+  color: var(--brand);
+  border-color: var(--brand);
+  font-weight: 600;
+}
+
+/* Selection-tool selector: wraps to fit a narrow task pane. */
+.tool-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+/* Compliance requirement checklist: status badge beside each requirement. */
+.checklist {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.checklist__item {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+}
 
 .tool-result {
   padding: 10px 12px;

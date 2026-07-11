@@ -1,5 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { streamAssistant, type ChatMessage, type ChatSource } from "@/api/chat";
+import {
+  streamAssistant,
+  type ChatMessage,
+  type ChatSource,
+  type AssistantGrounding,
+} from "@/api/chat";
 import { readDocumentText, readSelectionText } from "@/office/document";
 import { uuid } from "@/api/ids";
 import { ApiError, friendlyMessage } from "@/api/errors";
@@ -49,7 +54,7 @@ export function useAssistant() {
   }, []);
 
   const send = useCallback(
-    async (text: string, scope: Scope) => {
+    async (text: string, scope: Scope, grounding?: AssistantGrounding) => {
       const trimmed = text.trim();
       if (!trimmed) return;
 
@@ -96,23 +101,28 @@ export function useAssistant() {
           return;
         }
 
-        await streamAssistant(history, context, {
-          signal: controller.signal,
-          onThinking: (label) => setState((s) => ({ ...s, thinking: label })),
-          onSources: (sources) => patchAssistant((m) => ({ ...m, sources })),
-          onDelta: (delta) =>
-            setState((s) => ({
-              ...s,
-              thinking: null,
-              messages: s.messages.map((m) =>
-                m.id === assistantId ? { ...m, content: m.content + delta } : m,
-              ),
-            })),
-          onFinal: (corrected) => {
-            finalized = true;
-            patchAssistant((m) => ({ ...m, content: corrected ?? m.content, pending: false }));
+        await streamAssistant(
+          history,
+          context,
+          {
+            signal: controller.signal,
+            onThinking: (label) => setState((s) => ({ ...s, thinking: label })),
+            onSources: (sources) => patchAssistant((m) => ({ ...m, sources })),
+            onDelta: (delta) =>
+              setState((s) => ({
+                ...s,
+                thinking: null,
+                messages: s.messages.map((m) =>
+                  m.id === assistantId ? { ...m, content: m.content + delta } : m,
+                ),
+              })),
+            onFinal: (corrected) => {
+              finalized = true;
+              patchAssistant((m) => ({ ...m, content: corrected ?? m.content, pending: false }));
+            },
           },
-        });
+          grounding,
+        );
         patchAssistant((m) => ({ ...m, pending: false }));
         setState((s) => ({ ...s, streaming: false, thinking: null }));
       } catch (e) {

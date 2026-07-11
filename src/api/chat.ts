@@ -30,6 +30,18 @@ export interface AssistantHandlers {
   signal?: AbortSignal;
 }
 
+/** Optional grounding/scoping for a chat request. */
+export interface AssistantGrounding {
+  /** Ground answers in a matter's workspace. */
+  matterId?: string | null;
+  /** Search the matter's uploaded documents (only meaningful with matterId). */
+  enableMatterDocsSearch?: boolean;
+  /** US jurisdiction scope: state codes and/or 'federal' (e.g. ['ca','federal']). */
+  usStates?: string[];
+}
+
+export type AssistantOptions = { useRag?: boolean } & AssistantGrounding;
+
 const CHAT = "/api/v1/stream/chat";
 const CONTEXT_CAP = 50_000;
 
@@ -58,15 +70,22 @@ export async function streamAssistant(
   messages: ChatMessage[],
   documentContext: string,
   handlers: AssistantHandlers,
-  opts?: { useRag?: boolean },
+  opts?: AssistantOptions,
 ): Promise<void> {
-  const body = {
+  // The StreamChatRequest reads camelCase (validation_alias). Only include the
+  // optional scoping fields when set so defaults are left to the backend.
+  const body: Record<string, unknown> = {
     messages,
     context: documentContext ? documentContext.slice(0, CONTEXT_CAP) : undefined,
     useRag: opts?.useRag ?? true,
     countryCode: "US",
     clientMessageId: uuid(),
   };
+  if (opts?.matterId) body.matterId = opts.matterId;
+  if (typeof opts?.enableMatterDocsSearch === "boolean") {
+    body.enableMatterDocsSearch = opts.enableMatterDocsSearch;
+  }
+  if (opts?.usStates && opts.usStates.length > 0) body.usStates = opts.usStates;
 
   await postStream(CHAT, body, {
     signal: handlers.signal,

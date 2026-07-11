@@ -1,39 +1,61 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Banner, LiveRegion, Spinner } from "@/ui/primitives";
 import { InfoTip } from "@/ui/InfoTip";
 import { MessageBubble } from "./MessageBubble";
 import { Composer } from "./Composer";
 import { SuggestedPrompts } from "./SuggestedPrompts";
+import { ScopeControls } from "./ScopeControls";
 import { useAssistant, type Scope } from "./useAssistant";
+import type { AssistantGrounding } from "@/api/chat";
 import { SelectionTools } from "@/features/tools/SelectionTools";
 import "./assistant.css";
 
 export function AssistantView() {
   const { state, send, stop } = useAssistant();
   const [scope, setScope] = useState<Scope>("document");
+  const [matterId, setMatterId] = useState("");
+  const [matterDocs, setMatterDocs] = useState(true);
+  const [usState, setUsState] = useState("");
   const endRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [state.messages, state.thinking]);
 
+  const grounding = useMemo<AssistantGrounding>(
+    () => ({
+      matterId: matterId || null,
+      enableMatterDocsSearch: matterId ? matterDocs : undefined,
+      usStates: usState ? [usState] : undefined,
+    }),
+    [matterId, matterDocs, usState],
+  );
+
   const empty = state.messages.length === 0;
 
   return (
     <div className="assistant">
       <div className="assistant__messages">
+        <ScopeControls
+          matterId={matterId}
+          onMatterId={setMatterId}
+          matterDocs={matterDocs}
+          onMatterDocs={setMatterDocs}
+          usState={usState}
+          onUsState={setUsState}
+        />
         <SelectionTools />
         {empty ? (
           <div className="assistant__intro">
             <div className="row" style={{ justifyContent: "space-between", alignItems: "flex-start" }}>
               <h1 className="view-title">Assistant</h1>
-              <InfoTip text="Ask anything about the open contract; answers are grounded in the document and US law, with sources you can check. Select text in the document first to rewrite or explain just that clause. It answers questions, it does not edit the file on its own." />
+              <InfoTip text="Ask anything about the open contract; answers are grounded in the document and US law, with sources you can check. Select text in the document first to rewrite, explain, or run a risk / compliance check on just that clause. It answers questions, it does not edit the file on its own." />
             </div>
             <p className="small muted" style={{ margin: 0 }}>
               Ask anything about the contract you have open. Answers are grounded in the document and
               US law.
             </p>
-            <SuggestedPrompts onPick={(p) => send(p, scope)} />
+            <SuggestedPrompts onPick={(p) => send(p, scope, grounding)} />
           </div>
         ) : (
           <>
@@ -52,7 +74,7 @@ export function AssistantView() {
         )}
       </div>
       <Composer
-        onSend={(t) => send(t, scope)}
+        onSend={(t) => send(t, scope, grounding)}
         onStop={stop}
         disabled={state.streaming}
         scope={scope}

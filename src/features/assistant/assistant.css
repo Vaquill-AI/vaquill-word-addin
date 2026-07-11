@@ -142,12 +142,24 @@
   margin-top: 6px;
 }
 
+/* ---- Scope controls (matter + jurisdiction grounding) ---- */
+.scope-bar {
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-muted);
+}
+
 /* ---- Suggested prompts ---- */
 .prompts {
   display: flex;
   flex-direction: column;
   gap: 6px;
   align-items: stretch;
+}
+.prompts__hint {
+  margin: 0 0 2px;
 }
 .prompt {
   text-align: left;

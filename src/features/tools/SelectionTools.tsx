@@ -1,18 +1,29 @@
 import { useState } from "react";
-import { SegmentedControl } from "@/ui/primitives";
 import { useSelection } from "./useSelection";
 import { SelectionPreview } from "./SelectionPreview";
 import { RewriteTool } from "./RewriteTool";
 import { ExplainTool } from "./ExplainTool";
+import { PlainEnglishTool } from "./PlainEnglishTool";
+import { RiskTool } from "./RiskTool";
+import { ComplianceTool } from "./ComplianceTool";
 import "./tools.css";
 
-type Tool = "rewrite" | "explain";
+type Tool = "rewrite" | "explain" | "plain" | "risk" | "compliance";
+
+const TOOLS: { key: Tool; label: string }[] = [
+  { key: "rewrite", label: "Rewrite" },
+  { key: "explain", label: "Explain" },
+  { key: "plain", label: "Plain English" },
+  { key: "risk", label: "Legal risks" },
+  { key: "compliance", label: "Compliance" },
+];
 
 /**
  * Selection-aware clause tools, embedded contextually (in the Assistant).
- * Renders nothing until the user selects text in the document, then offers
- * Rewrite / Explain on that selection. This replaces the old standalone Tools
- * tab: clause tools are a selection action, not a top-level mode.
+ * Renders nothing until the user selects text in the document. The one-shot
+ * analysis tools (Plain English, Legal risks, Compliance) are backed by the
+ * dedicated structured endpoints and render scored / checklist output, rather
+ * than routing to free-text chat.
  */
 export function SelectionTools() {
   const sel = useSelection();
@@ -23,19 +34,30 @@ export function SelectionTools() {
   return (
     <div className="selection-tools">
       <SelectionPreview text={sel.text} words={sel.words} hasSelection loading={false} />
-      <SegmentedControl<Tool>
-        value={tool}
-        onChange={setTool}
-        options={[
-          { value: "rewrite", label: "Rewrite" },
-          { value: "explain", label: "Explain" },
-        ]}
-      />
-      {tool === "rewrite" ? (
-        <RewriteTool key={sel.text} clauseText={sel.text} />
-      ) : (
-        <ExplainTool key={sel.text} clauseText={sel.text} />
-      )}
+
+      <div className="tool-tabs" role="tablist" aria-label="Selection tools">
+        {TOOLS.map((t) => {
+          const on = t.key === tool;
+          return (
+            <button
+              key={t.key}
+              type="button"
+              role="tab"
+              aria-selected={on}
+              className={`chip ${on ? "chip--on" : ""}`}
+              onClick={() => setTool(t.key)}
+            >
+              {t.label}
+            </button>
+          );
+        })}
+      </div>
+
+      {tool === "rewrite" && <RewriteTool key={sel.text} clauseText={sel.text} />}
+      {tool === "explain" && <ExplainTool key={sel.text} clauseText={sel.text} />}
+      {tool === "plain" && <PlainEnglishTool key={sel.text} clauseText={sel.text} />}
+      {tool === "risk" && <RiskTool key={sel.text} clauseText={sel.text} />}
+      {tool === "compliance" && <ComplianceTool key={sel.text} clauseText={sel.text} />}
     </div>
   );
 }

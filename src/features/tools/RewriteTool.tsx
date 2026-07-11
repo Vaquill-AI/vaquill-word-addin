@@ -1,28 +1,54 @@
 import { useState } from "react";
-import { Button, Banner } from "@/ui/primitives";
+import { Button, Banner, Badge, SegmentedControl } from "@/ui/primitives";
 import { CheckIcon, CopyIcon } from "@/ui/icons";
 import { InlineDiff } from "@/features/review/InlineDiff";
-import { rewriteClause, type RewriteResult } from "@/api/clause-tools";
+import {
+  rewriteClause,
+  type RewriteResult,
+  type RewriteMode,
+  type RewriteTone,
+} from "@/api/clause-tools";
 import { replaceSelectionTracked } from "@/office/selection";
 import { ApiError, friendlyMessage } from "@/api/errors";
 
-const PRESETS = [
-  "Make it mutual",
-  "Soften for the counterparty",
-  "Tighten and simplify",
-  "Favor our side",
-  "Add a materiality qualifier",
+const MODE_OPTIONS: { value: RewriteMode; label: string }[] = [
+  { value: "rewrite", label: "Rewrite" },
+  { value: "simplify", label: "Simplify" },
+  { value: "formalize", label: "Formalize" },
 ];
 
-/** Rewrite the selected clause to an instruction, then apply as a tracked change. */
+const TONE_OPTIONS: { value: RewriteTone; label: string }[] = [
+  { value: "protective", label: "Protective" },
+  { value: "balanced", label: "Balanced" },
+  { value: "permissive", label: "Permissive" },
+];
+
+/**
+ * Rewrite the selected clause, then apply as a tracked change.
+ *
+ * The intent (rewrite / simplify / formalize) and stance (protective /
+ * balanced / permissive) are sent as structured `mode` + `tone` fields rather
+ * than folded into free text. The optional note only adds extra guidance.
+ *
+ * When the server flags the result as AI-generated (source=generated or
+ * reviewRequired), Apply is gated behind an explicit review acknowledgement.
+ */
 export function RewriteTool({ clauseText }: { clauseText: string }) {
+  const [mode, setMode] = useState<RewriteMode>("rewrite");
+  const [tone, setTone] = useState<RewriteTone>("balanced");
   const [instruction, setInstruction] = useState("");
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<RewriteResult | null>(null);
   const [applied, setApplied] = useState(false);
   const [copied, setCopied] = useState(false);
   const [copyNote, setCopyNote] = useState<string | null>(null);
+  const [reviewed, setReviewed] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const prov = result?.provenance;
+  const needsReview = prov
+    ? prov.reviewRequired === true || prov.source === "generated" || prov.source === "tier_b_rewrite"
+    : false;
 
   async function copy() {
     setCopyNote(null);
@@ -41,8 +67,9 @@ export function RewriteTool({ clauseText }: { clauseText: string }) {
     setResult(null);
     setApplied(false);
     setCopied(false);
+    setReviewed(false);
     try {
-      const r = await rewriteClause(clauseText, instruction || "Rewrite for clarity and legal precision");
+      const r = await rewriteClause(clauseText, { mode, tone, instruction: instruction || undefined });
       setResult(r);
     } catch (e) {
       setError(e instanceof ApiError ? friendlyMessage(e) : (e as Error).message);
@@ -53,6 +80,7 @@ export function RewriteTool({ clauseText }: { clauseText: string }) {
 
   async function apply() {
     if (!result) return;
+    if (needsReview && !reviewed) return;
     setBusy(true);
     setError(null);
     try {
@@ -67,19 +95,31 @@ export function RewriteTool({ clauseText }: { clauseText: string }) {
 
   return (
     <div className="stack">
-      <div className="row" style={{ flexWrap: "wrap", gap: 6 }}>
-        {PRESETS.map((p) => (
-          <button key={p} className="chip" onClick={() => setInstruction(p)} type="button">
-            {p}
-          </button>
-        ))}
+      <div className="field">
+        <label>How should it change?</label>
+        <SegmentedControl<RewriteMode>
+          options={MODE_OPTIONS}
+          value={mode}
+          onChange={setMode}
+          label="Rewrite mode"
+        />
       </div>
 
       <div className="field">
-        <label>How should it change?</label>
+        <label>Stance</label>
+        <SegmentedControl<RewriteTone>
+          options={TONE_OPTIONS}
+          value={tone}
+          onChange={setTone}
+          label="Rewrite tone"
+        />
+      </div>
+
+      <div className="field">
+        <label>Extra guidance (optional)</label>
         <textarea
           value={instruction}
-          placeholder="e.g. Make liability mutual and cap it at fees paid."
+          placeholder="e.g. Cap liability at fees paid in the prior 12 months."
           onChange={(e) => setInstruction(e.target.value)}
         />
       </div>
@@ -92,10 +132,38 @@ export function RewriteTool({ clauseText }: { clauseText: string }) {
 
       {result && (
         <div className="card tool-result stack">
-          {result.changesSummary && <p className="small muted" style={{ margin: 0 }}>{result.changesSummary}</p>}
+          {needsReview && (
+            <div className="row" style={{ gap: 6, alignItems: "center" }}>
+              <Badge tone="yellow">AI-generated - review before applying</Badge>
+            </div>
+          )}
+          {result.changesSummary && (
+            <p className="small muted" style={{ margin: 0 }}>
+              {result.changesSummary}
+            </p>
+          )}
           <InlineDiff before={result.original} after={result.rewritten} />
+
+          {needsReview && (
+            <label className="small" style={{ display: "flex", gap: 6, alignItems: "flex-start" }}>
+              <input
+                type="checkbox"
+                checked={reviewed}
+                onChange={(e) => setReviewed(e.target.checked)}
+                style={{ marginTop: 2 }}
+              />
+              <span>I have reviewed this AI-generated text and it is accurate.</span>
+            </label>
+          )}
+
           <div className="row" style={{ gap: 8 }}>
-            <Button variant="primary" size="sm" onClick={apply} loading={busy} disabled={applied}>
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={apply}
+              loading={busy}
+              disabled={applied || (needsReview && !reviewed)}
+            >
               <CheckIcon size={14} /> {applied ? "Applied" : "Apply as tracked change"}
             </Button>
             <Button variant="ghost" size="sm" onClick={copy}>
