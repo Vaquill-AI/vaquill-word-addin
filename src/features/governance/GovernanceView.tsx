@@ -3,6 +3,7 @@ import { Badge, Banner, Button, Spinner } from "@/ui/primitives";
 import { InfoTip } from "@/ui/InfoTip";
 import { CheckIcon } from "@/ui/icons";
 import { lockVaquillControls } from "@/office/contentControls";
+import { stampVaquillReview } from "@/office/properties";
 import { useGovernance } from "./useGovernance";
 import type { GovernanceLedger } from "@/lib/governance";
 import "./governance.css";
@@ -145,6 +146,65 @@ function LockControl() {
   );
 }
 
+function StampPropertiesControl({ ledger }: { ledger: GovernanceLedger }) {
+  const [busy, setBusy] = useState(false);
+  const [done, setDone] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const status =
+    ledger.status === "signed_off"
+      ? "Signed off"
+      : ledger.status === "pending_signoff"
+        ? "Pending sign-off"
+        : "Reviewed - clear to send";
+
+  async function stamp() {
+    setBusy(true);
+    setError(null);
+    try {
+      await stampVaquillReview({
+        status,
+        by: ledger.signedOffBy || ledger.reviewedBy || undefined,
+        at: ledger.signedOffAt || ledger.reviewedAt || undefined,
+        contractType: ledger.contractType || undefined,
+      });
+      setDone(true);
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="gov-action stack">
+      <span className="small" style={{ fontWeight: 600 }}>
+        Stamp status in file properties
+      </span>
+      <p className="small muted" style={{ margin: 0 }}>
+        Writes the review status into the document's standard properties, so it shows in Word's File
+        &gt; Info and is read by a document-management system, without opening this pane.
+      </p>
+      <Button
+        variant={done ? "default" : "primary"}
+        className="btn--cta"
+        loading={busy}
+        onClick={stamp}
+        disabled={done}
+      >
+        {done ? (
+          <>
+            <CheckIcon size={14} /> Stamped in properties
+          </>
+        ) : (
+          "Stamp status"
+        )}
+      </Button>
+      {error && <Banner tone="danger">{error}</Banner>}
+    </div>
+  );
+}
+
 export function GovernanceView() {
   const { state, signOff } = useGovernance();
 
@@ -209,6 +269,8 @@ export function GovernanceView() {
       <StatusBanner ledger={ledger} />
 
       {ledger.status === "signed_off" && <LockControl />}
+
+      <StampPropertiesControl ledger={ledger} />
 
       {integrity === "modified" && (
         <p className="small muted" style={{ margin: 0 }}>

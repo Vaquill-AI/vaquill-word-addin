@@ -26,6 +26,23 @@ export async function commentOnCitation(raw: string, comment: string): Promise<b
   });
 }
 
+/**
+ * Insert a citation as a real Word footnote at the cursor. This is Microsoft's
+ * recommended cross-platform citation pattern (`Range.insertFootnote`, WordApi
+ * 1.5), and unlike an inline bracket it renumbers and repaginates natively. Used
+ * for brief/memo writing where an authority belongs in a footnote, not the body.
+ */
+export async function insertCitationFootnote(citation: string): Promise<void> {
+  const text = citation.trim();
+  if (!text) return;
+  return runWord(async (context) => {
+    // insertFootnote places the reference mark at the (collapsed) selection and
+    // puts `text` in the footnote body at the bottom of the page.
+    context.document.getSelection().insertFootnote(text);
+    await context.sync();
+  });
+}
+
 export interface AuthorityEntry {
   caseName: string;
   raw: string;

@@ -5,6 +5,7 @@ import { InfoTip } from "@/ui/InfoTip";
 import { CheckIcon, CopyIcon, ArrowLeftIcon } from "@/ui/icons";
 import { ApiError, friendlyMessage } from "@/api/errors";
 import { insertPassageAtCursor } from "@/office/richInsert";
+import { insertCitationFootnote } from "@/office/citations";
 import { CaseBrief } from "./CaseBrief";
 import {
   searchStatutes,
@@ -261,6 +262,8 @@ function StatuteReader({ result, onBack }: { result: StatuteResult; onBack: () =
   const [state, setState] = useState<BodyState>({ status: "loading" });
   const [inserted, setInserted] = useState(false);
   const [inserting, setInserting] = useState(false);
+  const [footnoted, setFootnoted] = useState(false);
+  const [footnoting, setFootnoting] = useState(false);
   const [copied, setCopied] = useState(false);
   const [note, setNote] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
@@ -297,6 +300,20 @@ function StatuteReader({ result, onBack }: { result: StatuteResult; onBack: () =
       setNote((e as Error).message);
     } finally {
       setInserting(false);
+    }
+  }
+
+  async function footnote() {
+    if (footnoting) return;
+    setFootnoting(true);
+    setNote(null);
+    try {
+      await insertCitationFootnote(label);
+      setFootnoted(true);
+    } catch (e) {
+      setNote((e as Error).message);
+    } finally {
+      setFootnoting(false);
     }
   }
 
@@ -346,6 +363,21 @@ function StatuteReader({ result, onBack }: { result: StatuteResult; onBack: () =
                 </>
               ) : (
                 "Insert into document"
+              )}
+            </Button>
+            <Button
+              variant="default"
+              onClick={footnote}
+              loading={footnoting}
+              disabled={footnoted}
+              title="Insert the citation as a Word footnote at your cursor"
+            >
+              {footnoted ? (
+                <>
+                  <CheckIcon size={14} /> Footnote added
+                </>
+              ) : (
+                "As footnote"
               )}
             </Button>
             <Button variant="default" onClick={copy}>
