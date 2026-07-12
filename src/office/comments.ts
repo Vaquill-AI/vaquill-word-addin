@@ -56,6 +56,34 @@ export async function insertRationaleComments(
 }
 
 /**
+ * Anchor a comment on the best match of `anchorText` (disambiguating duplicated
+ * text via findBestRange) and insert it. Used to attach a negotiation reply to
+ * the counterparty's tracked change. Returns a precise outcome so the caller can
+ * message it: "not_found" (the change text could not be located) vs
+ * "unsupported_region" (located, but Word forbids comments there, e.g. a
+ * footnote).
+ */
+export async function insertCommentAnchored(
+  anchorText: string,
+  comment: string,
+): Promise<"inserted" | "not_found" | "unsupported_region"> {
+  const anchor = anchorText.trim();
+  const body = comment.trim();
+  if (!anchor || !body) return "not_found";
+  return runWord(async (context) => {
+    const range = await findBestRange(context, anchor);
+    if (!range) return "not_found";
+    try {
+      range.insertComment(body);
+      await context.sync();
+      return "inserted";
+    } catch {
+      return "unsupported_region";
+    }
+  });
+}
+
+/**
  * Locate a comment by its stable id in the document's comment collection. Ids
  * (not list indices) survive comments being added/resolved between a read and an
  * action, so they are the safe handle for resolve/reply. Comments are WordApi

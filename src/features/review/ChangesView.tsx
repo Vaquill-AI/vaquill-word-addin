@@ -9,9 +9,10 @@ import {
   acceptTrackedChanges,
   type DocChanges,
 } from "@/office/changes";
-import { resolveComment, replyToComment } from "@/office/comments";
+import { resolveComment, replyToComment, insertCommentAnchored } from "@/office/comments";
 import { selectClauseInDocument } from "@/office/navigate";
 import { triageChanges, positionsSummary, type Verdict, type VerdictMap } from "./triage";
+import { draftCounterReply } from "./counter";
 import { usePlaybookDetails } from "@/features/playbook/usePlaybookDetails";
 import { ApiError, friendlyMessage } from "@/api/errors";
 
@@ -56,7 +57,16 @@ export function ChangesView() {
   const [replyText, setReplyText] = useState("");
   const [commentBusy, setCommentBusy] = useState<string | null>(null);
 
+  // Draft-a-reply (the "respond" half of negotiation): one change's reply panel
+  // is open at a time. `draftText` is editable before it is inserted as a comment.
+  const [draftFor, setDraftFor] = useState<number | null>(null);
+  const [draftText, setDraftText] = useState("");
+  const [drafting, setDrafting] = useState(false);
+  const [insertingReply, setInsertingReply] = useState(false);
+  const [draftError, setDraftError] = useState<string | null>(null);
+
   const abortRef = useRef<AbortController | null>(null);
+  const draftAbortRef = useRef<AbortController | null>(null);
 
   // Focus management: after a single Accept/Reject, the resolved card leaves the
   // list; move focus to the change that slid into its slot (or the container)
@@ -114,8 +124,75 @@ export function ChangesView() {
 
   useEffect(() => {
     void reload();
-    return () => abortRef.current?.abort();
+    return () => {
+      abortRef.current?.abort();
+      draftAbortRef.current?.abort();
+    };
   }, [reload]);
+
+  // Compact playbook context for the drafter (same source triage uses).
+  const currentPositions = useCallback(() => {
+    const selected = pb.playbooks.find((p) => p.id === pbId);
+    return selected ? positionsSummary(selected.positions) : null;
+  }, [pb.playbooks, pbId]);
+
+  async function startDraft(index: number, changeText: string) {
+    draftAbortRef.current?.abort();
+    const controller = new AbortController();
+    draftAbortRef.current = controller;
+    setDraftFor(index);
+    setDraftText("");
+    setDraftError(null);
+    setDrafting(true);
+    try {
+      const reply = await draftCounterReply(changeText, currentPositions(), controller.signal);
+      setDraftText(reply);
+    } catch (e) {
+      if ((e as Error).name === "AbortError") return;
+      setDraftError(e instanceof ApiError ? friendlyMessage(e) : (e as Error).message);
+    } finally {
+      setDrafting(false);
+    }
+  }
+
+  function closeDraft() {
+    draftAbortRef.current?.abort();
+    setDraftFor(null);
+    setDraftText("");
+    setDraftError(null);
+  }
+
+  async function insertReply(changeText: string) {
+    const body = draftText.trim();
+    if (!body) return;
+    setInsertingReply(true);
+    setDraftError(null);
+    try {
+      const outcome = await insertCommentAnchored(changeText, body);
+      if (outcome === "inserted") {
+        closeDraft();
+        setActionNote("Reply added as a comment on the change.");
+        await reload();
+      } else if (outcome === "not_found") {
+        setDraftError("Could not locate that change to attach the comment. Use Copy and paste it manually.");
+      } else {
+        setDraftError("Word does not allow comments in that region. Use Copy and paste it manually.");
+      }
+    } catch (e) {
+      setDraftError((e as Error).message);
+    } finally {
+      setInsertingReply(false);
+    }
+  }
+
+  async function copyReply() {
+    try {
+      await navigator.clipboard.writeText(draftText);
+      setActionNote("Reply copied.");
+    } catch {
+      setDraftError("Could not copy.");
+    }
+  }
 
   // After a resolve reloads the list, land focus on the next actionable change.
   useEffect(() => {
@@ -260,7 +337,7 @@ export function ChangesView() {
           <InfoTip text="Shows the other side's tracked changes and comments. AI triage classifies each change against your playbook as Accept, Review, or Reject with a reason, so you can auto-accept the safe ones and focus on the rest. Every action here edits Word's real tracked changes, so review before you accept in bulk." />
         </div>
         <p className="small muted" style={{ margin: 0 }}>
-          Triage the other side's tracked changes: accept the acceptable ones, reject the rest.
+          Triage the other side's tracked changes: accept the acceptable ones, reject the rest, and draft a grounded reply to the ones you want to push back on.
         </p>
       </div>
 
@@ -370,6 +447,60 @@ export function ChangesView() {
                         <XIcon size={13} /> Reject
                       </Button>
                     </div>
+                  )}
+                  {canResolve && (
+                    draftFor === i ? (
+                      <div className="stack" style={{ gap: 6 }}>
+                        {drafting ? (
+                          <div className="row" style={{ gap: 8, alignItems: "center" }}>
+                            <Spinner />
+                            <span className="small muted">Drafting a reply...</span>
+                          </div>
+                        ) : (
+                          <>
+                            <textarea
+                              value={draftText}
+                              aria-label="Draft reply to the counterparty"
+                              rows={3}
+                              onChange={(e) => setDraftText(e.target.value)}
+                              style={{ width: "100%", resize: "vertical", font: "inherit" }}
+                            />
+                            <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+                              <Button
+                                size="sm"
+                                onClick={() => void insertReply(c.text)}
+                                loading={insertingReply}
+                                disabled={!draftText.trim()}
+                              >
+                                <CheckIcon size={13} /> Insert as comment
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => void copyReply()}
+                                disabled={!draftText.trim()}
+                              >
+                                Copy
+                              </Button>
+                              <Button variant="ghost" size="sm" onClick={closeDraft}>
+                                Close
+                              </Button>
+                            </div>
+                          </>
+                        )}
+                        {draftError && <Banner tone="warn">{draftError}</Banner>}
+                      </div>
+                    ) : (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => void startDraft(i, c.text)}
+                        disabled={anyBusy || drafting}
+                        style={{ alignSelf: "flex-start" }}
+                      >
+                        Draft reply
+                      </Button>
+                    )
                   )}
                 </div>
               );
