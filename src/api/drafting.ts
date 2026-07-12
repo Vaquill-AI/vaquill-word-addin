@@ -1,4 +1,4 @@
-import { request } from "./http";
+import { request, requestForm } from "./http";
 import { ApiError } from "./errors";
 
 /**
@@ -210,6 +210,34 @@ export interface DraftParams {
   governingLawState?: string;
   specialInstructions?: string;
   tone?: string;
+  /**
+   * Ids of uploaded reference documents (from uploadDraftReference) to ground the
+   * generated draft in. The backend injects their extracted text into every
+   * section prompt, so terms/party names/definitions can be carried across.
+   */
+  referenceDocumentIds?: string[];
+}
+
+/** One uploaded reference document, returned by uploadDraftReference. */
+export interface DraftReference {
+  id: string;
+  fileName: string;
+  wordCount: number;
+}
+
+/**
+ * Upload a reference document to ground a draft. The backend extracts + stores
+ * its text and returns an id to pass as `referenceDocumentIds` on generate.
+ * Backend: POST /api/v1/drafting/upload-reference (multipart).
+ */
+export async function uploadDraftReference(file: File): Promise<DraftReference> {
+  const form = new FormData();
+  form.append("file", file);
+  const res = await requestForm<{ id: string; fileName?: string; wordCount?: number }>(
+    "/api/v1/drafting/upload-reference",
+    form,
+  );
+  return { id: res.id, fileName: res.fileName ?? file.name, wordCount: res.wordCount ?? 0 };
 }
 
 const GENERATE = "/api/v1/drafting/generate";
@@ -226,6 +254,10 @@ function generateBody(p: DraftParams): Record<string, unknown> {
     tone: p.tone || "balanced",
     special_instructions: p.specialInstructions || undefined,
     governing_law_state: p.governingLawState || undefined,
+    reference_document_ids:
+      p.referenceDocumentIds && p.referenceDocumentIds.length > 0
+        ? p.referenceDocumentIds
+        : undefined,
   };
 }
 

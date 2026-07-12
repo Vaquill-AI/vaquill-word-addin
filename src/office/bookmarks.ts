@@ -1,5 +1,5 @@
 import { runWord } from "./run";
-import { findRanges } from "./search";
+import { findBestRange } from "./search";
 
 /**
  * Bookmark clauses so the reviewer can jump between them from the pane. Bookmarks
@@ -22,10 +22,11 @@ export async function bookmarkClauses(
     for (const item of items) {
       const query = item.query.trim();
       if (!query) continue;
-      const ranges = await findRanges(context, query);
-      // Anchor on the first match; any match is enough to place the bookmark.
-      if (ranges.length === 0) continue;
-      ranges[0].insertBookmark(item.name);
+      // Disambiguate duplicated clause text so the bookmark lands on the operative
+      // occurrence, not a coincidental phrase match in the Definitions section.
+      const range = await findBestRange(context, query);
+      if (!range) continue;
+      range.insertBookmark(item.name);
       created += 1;
     }
     await context.sync();

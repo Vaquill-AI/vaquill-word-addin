@@ -5,7 +5,7 @@ import {
   type ReviewProgress,
 } from "@/api/contract-review";
 import type { ContractReviewResponse } from "@/api/types";
-import { readDocumentText, readFullDocumentText, readSelectionText } from "@/office/document";
+import { readSelectionText, readStructuredDocumentText } from "@/office/document";
 import { ApiError, friendlyMessage } from "@/api/errors";
 import { sha256Hex } from "@/lib/hash";
 import { splitIntoSections, mergeReviews } from "@/lib/sections";
@@ -96,9 +96,7 @@ export function useReview() {
       const documentText =
         params.scope === "selection"
           ? await readSelectionText()
-          : params.includeExtras
-            ? await readFullDocumentText()
-            : await readDocumentText();
+          : await readStructuredDocumentText({ extras: params.includeExtras });
 
       if (!documentText.trim()) {
         setState({

@@ -85,7 +85,7 @@ export function RedactView() {
 
         <Button
           variant="primary"
-          block
+          className="btn--cta"
           onClick={() => void scan(categories, scope)}
           disabled={categories.size === 0}
         >

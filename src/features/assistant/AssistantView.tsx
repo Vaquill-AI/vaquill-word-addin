@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Banner, LiveRegion, Spinner } from "@/ui/primitives";
 import { ChevronIcon } from "@/ui/icons";
 import { MessageBubble } from "./MessageBubble";
@@ -7,6 +7,8 @@ import { SuggestedPrompts } from "./SuggestedPrompts";
 import { ChatHistory } from "./ChatHistory";
 import { deriveTitle, getConversation, saveConversation } from "./chatHistoryStore";
 import { useAssistant, type AssistantMessage, type Scope } from "./useAssistant";
+import { useAttachments } from "./useAttachments";
+import { extractFileText } from "@/api/context";
 import type { ContextConfig } from "./ContextMenu";
 import type { AssistantOptions } from "@/api/chat";
 import { uuid } from "@/api/ids";
@@ -41,6 +43,14 @@ export function AssistantView({
   onIntentDone?: () => void;
 } = {}) {
   const { state, send, stop, reset, truncateBefore, loadMessages, regenerate } = useAssistant();
+  // Chat attaches files as inline context: extract the text server-side and fold
+  // it into the request context at send time.
+  const attach = useAttachments(
+    useCallback(async (file) => {
+      const r = await extractFileText(file);
+      return { text: r.text, chars: r.chars, truncated: r.truncated };
+    }, []),
+  );
   const [scope, setScope] = useState<Scope>("document");
   // A selection tool the shell asked us to open (Explain / Risk / Rewrite ...).
   const [selTool, setSelTool] = useState<SelectionToolKey | undefined>(undefined);
@@ -78,11 +88,12 @@ export function AssistantView({
   }
 
   function handleRegenerate(message: AssistantMessage) {
-    regenerate(message.id, scope, grounding);
+    regenerate(message.id, scope, grounding, attach.contextFiles());
   }
 
   function newChat() {
     reset();
+    attach.clear();
     convIdRef.current = null;
     setDraft("");
     setHistoryOpen(false);
@@ -93,6 +104,7 @@ export function AssistantView({
     if (!conv) return;
     convIdRef.current = id;
     loadMessages(conv.messages);
+    attach.clear();
     setDraft("");
     setHistoryOpen(false);
   }
@@ -129,16 +141,21 @@ export function AssistantView({
     endRef.current?.scrollIntoView({ behavior: "smooth" });
   }
 
-  const grounding = useMemo<AssistantOptions>(
-    () => ({
+  const grounding = useMemo<AssistantOptions>(() => {
+    const wantMatterDocs = !!prefs.matterId && context.matterDocs;
+    // useRag is the backend master gate for ALL retrieval; turn it on if ANY
+    // source is selected, then let the per-source levers decide what's used.
+    // (Overloading useRag as the corpus toggle silently disabled matter-docs and
+    // web retrieval whenever "US case law" was unticked.)
+    return {
       matterId: prefs.matterId || null,
+      useRag: context.corpus || wantMatterDocs || context.web,
+      enableVaquillDbSearch: context.corpus,
       enableMatterDocsSearch: prefs.matterId ? context.matterDocs : undefined,
       enableWebSearch: context.web,
-      useRag: context.corpus,
       usStates: prefs.jurisdiction ? [prefs.jurisdiction] : undefined,
-    }),
-    [prefs.matterId, prefs.jurisdiction, context],
-  );
+    };
+  }, [prefs.matterId, prefs.jurisdiction, context]);
 
   // Consume a cross-feature handoff exactly once.
   useEffect(() => {
@@ -147,7 +164,7 @@ export function AssistantView({
       if (intent.scope) setScope(intent.scope);
       if (intent.prompt) setDraft(intent.prompt);
       if (intent.autoSend && intent.prompt.trim()) {
-        send(intent.prompt, intent.scope ?? scope, grounding);
+        send(intent.prompt, intent.scope ?? scope, grounding, attach.contextFiles());
         setDraft("");
       } else {
         requestAnimationFrame(() => composerRef.current?.focus());
@@ -208,7 +225,7 @@ export function AssistantView({
                 </p>
               )}
             </div>
-            <SuggestedPrompts onPick={(p) => send(p, scope, grounding)} />
+            <SuggestedPrompts onPick={(p) => send(p, scope, grounding, attach.contextFiles())} />
           </div>
         ) : (
           <>
@@ -248,7 +265,7 @@ export function AssistantView({
         ref={composerRef}
         value={draft}
         onChange={setDraft}
-        onSend={(t) => send(t, scope, grounding)}
+        onSend={(t) => send(t, scope, grounding, attach.contextFiles())}
         onStop={stop}
         disabled={state.streaming}
         scope={scope}
@@ -256,6 +273,10 @@ export function AssistantView({
         context={context}
         onContextChange={setContext}
         hasMatter={!!prefs.matterId}
+        attachments={attach.files}
+        onAttach={attach.add}
+        onRemoveAttachment={attach.remove}
+        atCap={attach.atCap}
       />
     </div>
   );

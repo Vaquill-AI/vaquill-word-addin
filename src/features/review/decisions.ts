@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { RedlineSuggestion } from "@/api/types";
 
 /** A reviewer's decision on one redline. */
@@ -65,7 +65,16 @@ export function useDecisions(
   );
 
   const decisionOf = useCallback((index: number): Decision => map[index] ?? "pending", [map]);
+
+  // A stable, always-current reader. `decisionOf` closes over `map`, so a
+  // long-running async loop (e.g. "Apply all") captured at click time goes stale
+  // and would re-apply a redline the reviewer dismissed mid-loop. Reading through
+  // this ref instead sees dismissals that land during the loop.
+  const mapRef = useRef(map);
+  mapRef.current = map;
+  const decisionOfLive = useCallback((index: number): Decision => mapRef.current[index] ?? "pending", []);
+
   const addressed = useMemo(() => Object.values(map).filter((d) => d !== "pending").length, [map]);
 
-  return { decisionOf, setDecision, addressed };
+  return { decisionOf, decisionOfLive, setDecision, addressed };
 }

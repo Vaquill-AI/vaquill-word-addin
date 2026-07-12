@@ -85,7 +85,7 @@ export function AuthorityView() {
             Catch citations that do not resolve to a real authority before you file or send.
           </p>
         </div>
-        <Button variant="primary" block onClick={run}>
+        <Button variant="primary" className="btn--cta" onClick={run}>
           Check citations
         </Button>
       </div>

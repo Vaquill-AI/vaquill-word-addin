@@ -1,5 +1,5 @@
 import { runWord } from "./run";
-import { findRanges } from "./search";
+import { findBestRange } from "./search";
 
 /**
  * Scroll the document to a clause and select it. This is the bidirectional link
@@ -10,12 +10,11 @@ import { findRanges } from "./search";
 export async function selectClauseInDocument(text: string): Promise<boolean> {
   const q = text.trim();
   if (!q) return false;
-  // body.search caps at 255 chars; a prefix is enough to locate the start.
-  const query = q.length > 255 ? q.slice(0, 255) : q;
 
   return runWord(async (context) => {
-    const items = await findRanges(context, query);
-    const range = items[0];
+    // Pass the full clause: findBestRange windows the search internally and uses
+    // the full text to land on the right occurrence of duplicated boilerplate.
+    const range = await findBestRange(context, q);
     if (!range) return false;
 
     // Selecting a range scrolls it into view and highlights it in Word.

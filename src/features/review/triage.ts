@@ -65,23 +65,35 @@ export async function triageChanges(
     (positions ? `OUR PLAYBOOK POSITIONS:\n${positions}\n\n` : "") + `COUNTERPARTY CHANGES:\n${numbered}`;
 
   let acc = "";
-  await streamAssistant(
-    [{ role: "user", content: PROMPT }],
-    context,
-    {
-      signal,
-      onDelta: (d) => {
-        acc += d;
+  let streamError: unknown = null;
+  try {
+    await streamAssistant(
+      [{ role: "user", content: PROMPT }],
+      context,
+      {
+        signal,
+        onDelta: (d) => {
+          acc += d;
+        },
+        onFinal: (corrected) => {
+          if (corrected) acc = corrected;
+        },
       },
-      onFinal: (corrected) => {
-        if (corrected) acc = corrected;
-      },
-    },
-    { useRag: false },
-  );
+      { useRag: false },
+    );
+  } catch (e) {
+    // A dropped trailing `done` frame throws even when the full JSON verdict
+    // already arrived. Defer to the parse below: if `acc` is complete we salvage
+    // the finished (already-billed) answer instead of forcing a re-run; only a
+    // genuinely incomplete response rethrows. Mirrors useReview's `delivered`.
+    streamError = e;
+  }
 
   const parsed = parseVerdicts(acc);
-  if (!parsed) throw new Error("The AI triage response could not be read. Please try again.");
+  if (!parsed) {
+    if (streamError) throw streamError;
+    throw new Error("The AI triage response could not be read. Please try again.");
+  }
 
   const map: VerdictMap = {};
   for (const v of parsed) {

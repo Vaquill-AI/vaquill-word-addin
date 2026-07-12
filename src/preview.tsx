@@ -322,6 +322,10 @@ function AssistantPreview() {
             context={{ web: false, matterDocs: true, corpus: true }}
             onContextChange={() => {}}
             hasMatter={false}
+            attachments={[]}
+            onAttach={() => {}}
+            onRemoveAttachment={() => {}}
+            atCap={false}
           />
         </div>
       </div>

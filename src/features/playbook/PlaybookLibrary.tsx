@@ -3,11 +3,10 @@ import { useState } from "react";
 import { Badge, Banner, Button, ConfirmDialog, Field, Modal } from "@/ui/primitives";
 import { ScopedSearchList } from "@/ui/ScopedSearchList";
 import { OverflowMenu, type OverflowMenuItem } from "@/ui/OverflowMenu";
-import { CheckIcon, CopyIcon, EditIcon, PlaybookIcon, XIcon } from "@/ui/icons";
+import { CheckIcon, EditIcon, PlaybookIcon, XIcon } from "@/ui/icons";
 import { ApiError, friendlyMessage } from "@/api/errors";
 import {
   deletePlaybook,
-  duplicatePlaybook,
   renamePlaybook,
   setPlaybookDefault,
   type PlaybookDetail,
@@ -89,11 +88,12 @@ function PlaybookRow({
  * solo user, so a "Shared" tab would usually render blank and read as broken. A
  * "Shared" badge conveys the same real distinction without that failure mode.
  *
- * Per-row secondary actions (open, rename, duplicate, set default, delete) live
- * behind a single kebab `OverflowMenu` so the row stays a calm list, not an
- * action bar. Delete routes through a danger `ConfirmDialog`; rename opens a
- * small modal. Every mutation reloads the list on success. (Org-share is
- * intentionally omitted until the backend accepts organization_id on update.)
+ * Per-row secondary actions (open, rename, set default, delete) live behind a
+ * single kebab `OverflowMenu` so the row stays a calm list, not an action bar.
+ * Delete routes through a danger `ConfirmDialog`; rename opens a small modal.
+ * Every mutation reloads the list on success. (Duplicate and org-share are
+ * intentionally omitted: both need backend routes - a server-side /duplicate
+ * that copies ALL position fields losslessly, and organization_id on update.)
  */
 export function PlaybookLibrary({
   playbooks,
@@ -172,11 +172,6 @@ export function PlaybookLibrary({
     const items: OverflowMenuItem[] = [
       { label: "Open", onSelect: () => onOpen(p.id) },
       { label: "Rename", icon: <EditIcon size={14} />, onSelect: () => openRename(p) },
-      {
-        label: "Duplicate",
-        icon: <CopyIcon size={14} />,
-        onSelect: () => void runMutation(() => duplicatePlaybook(p)),
-      },
     ];
     if (!p.isDefault) {
       items.push({

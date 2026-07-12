@@ -1,6 +1,6 @@
 import { useCallback, useState } from "react";
 import { checkCompliance, type ComplianceResult } from "@/api/clause-tools";
-import { readDocumentText } from "@/office/document";
+import { readStructuredDocumentText } from "@/office/document";
 import { ApiError, friendlyMessage } from "@/api/errors";
 
 /** Backend requires documentText >= 100 chars; guard before the network call. */
@@ -24,7 +24,7 @@ export function useCompliance() {
   const run = useCallback(async (regulation: string) => {
     setState({ status: "running", regulation });
     try {
-      const text = await readDocumentText();
+      const text = await readStructuredDocumentText();
       if (text.trim().length < MIN_CHARS) {
         setState({
           status: "error",

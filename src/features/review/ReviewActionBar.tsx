@@ -19,12 +19,22 @@ export function ReviewActionBar({
   redlines,
   contractType,
   decisionOf,
+  decisionOfLive,
   setDecision,
+  applyBusy,
+  setApplyBusy,
 }: {
   redlines: RedlineSuggestion[];
   contractType: string;
   decisionOf: (i: number) => Decision;
+  /** Always-current decision reader (see useDecisions) - use inside the async
+   *  loop so a dismissal that lands mid-run is honored. */
+  decisionOfLive: (i: number) => Decision;
   setDecision: (i: number, d: Decision) => void;
+  /** Shared apply lock (see ReviewView) so this and a per-card Accept cannot run
+   *  concurrently. */
+  applyBusy: boolean;
+  setApplyBusy: (b: boolean) => void;
 }) {
   const [applying, setApplying] = useState<{ done: number; total: number } | null>(null);
   const [downloading, setDownloading] = useState(false);
@@ -36,32 +46,54 @@ export function ReviewActionBar({
     .filter(({ r, i }) => decisionOf(i) === "pending" && (r.grounding === "insertion" || canApplyInPane(r)));
 
   async function applyAll() {
+    // Never run concurrently with a per-card Accept (a double insertion-redline
+    // would append the clause to the document twice).
+    if (applyBusy) return;
     setError(null);
     setNote(null);
     const total = openApplicable.length;
+    setApplyBusy(true);
     setApplying({ done: 0, total });
     let done = 0;
     let failed = 0;
-    for (const { r, i } of openApplicable) {
-      try {
-        if (r.grounding === "insertion") await insertClauseFormatted(r.clauseName, r.proposedLanguage);
-        else await applyVerifiedRedline(r);
-        setDecision(i, "accepted");
-      } catch {
-        // Leave this one open; the reviewer handles it individually. This is the
-        // ambiguous-anchor / not-found path, so it must be surfaced, not silent.
-        failed += 1;
+    let skipped = 0;
+    try {
+      for (const { r, i } of openApplicable) {
+        // Re-read the LIVE decision: the snapshot was captured at click time, so a
+        // redline the reviewer dismissed (or accepted) during this loop must not
+        // be written with the stale proposal.
+        if (decisionOfLive(i) !== "pending") {
+          skipped += 1;
+          done += 1;
+          setApplying({ done, total });
+          continue;
+        }
+        try {
+          if (r.grounding === "insertion") await insertClauseFormatted(r.clauseName, r.proposedLanguage);
+          else await applyVerifiedRedline(r);
+          setDecision(i, "accepted");
+        } catch {
+          // Leave this one open; the reviewer handles it individually. This is the
+          // ambiguous-anchor / not-found path, so it must be surfaced, not silent.
+          failed += 1;
+        }
+        done += 1;
+        setApplying({ done, total });
       }
-      done += 1;
-      setApplying({ done, total });
+    } finally {
+      setApplying(null);
+      setApplyBusy(false);
     }
-    setApplying(null);
+    const applied = total - failed - skipped;
     if (failed > 0) {
       setError(
-        `Applied ${total - failed} of ${total}. ${failed} could not be placed automatically (the clause text was not found or appears more than once); apply those individually.`,
+        `Applied ${applied} of ${total}. ${failed} could not be placed automatically (the clause text was not found or appears more than once); apply those individually.`,
       );
     } else {
-      setNote(`Applied ${total} redline${total === 1 ? "" : "s"} as tracked changes.`);
+      setNote(
+        `Applied ${applied} redline${applied === 1 ? "" : "s"} as tracked changes.` +
+          (skipped > 0 ? ` ${skipped} skipped (resolved while applying).` : ""),
+      );
     }
   }
 
@@ -122,7 +154,7 @@ export function ReviewActionBar({
           block
           onClick={applyAll}
           loading={!!applying}
-          disabled={openApplicable.length === 0}
+          disabled={openApplicable.length === 0 || (applyBusy && !applying)}
         >
           {applying
             ? `Applying ${applying.done}/${applying.total}...`

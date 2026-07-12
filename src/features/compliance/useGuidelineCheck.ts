@@ -1,6 +1,6 @@
 import { useCallback, useState } from "react";
 import { checkGuidelines, type GuidelineResult } from "@/api/guidelines";
-import { readDocumentText } from "@/office/document";
+import { readStructuredDocumentText } from "@/office/document";
 import { ApiError, friendlyMessage } from "@/api/errors";
 
 /** Backend requires a non-trivial document; guard before the network call. */
@@ -41,7 +41,7 @@ export function useGuidelineCheck() {
     }
     setState({ status: "running" });
     try {
-      const text = await readDocumentText();
+      const text = await readStructuredDocumentText();
       if (text.trim().length < MIN_CHARS) {
         setState({
           status: "error",

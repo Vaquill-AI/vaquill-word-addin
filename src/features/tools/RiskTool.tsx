@@ -100,7 +100,7 @@ export function RiskTool({ clauseText }: { clauseText: string }) {
       {tooShort ? (
         <Banner tone="info">Select at least {MIN_CHARS} characters to assess legal risk.</Banner>
       ) : (
-        <Button variant="primary" block onClick={run} loading={busy}>
+        <Button variant="primary" className="btn--cta" onClick={run} loading={busy}>
           Assess legal risk
         </Button>
       )}

@@ -93,8 +93,12 @@ export function DocumentTools({ redlines }: { redlines: RedlineSuggestion[] }) {
       const items = anchorable
         .filter((r) => r.rationale?.trim())
         .map((r) => ({ currentLanguage: r.currentLanguage, rationale: r.rationale }));
-      const n = await insertRationaleComments(items);
-      return `Added ${n} rationale comment${n === 1 ? "" : "s"} to the document.`;
+      const { inserted, skipped } = await insertRationaleComments(items);
+      let msg = `Added ${inserted} rationale comment${inserted === 1 ? "" : "s"} to the document.`;
+      if (skipped > 0) {
+        msg += ` ${skipped} clause${skipped === 1 ? "" : "s"} could not be commented (in a footnote or header).`;
+      }
+      return msg;
     });
 
   const anchor = () =>

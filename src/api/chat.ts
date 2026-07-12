@@ -19,6 +19,8 @@ export interface ChatSource {
   caseName?: string;
   case_name?: string;
   citation?: string;
+  /** Matter-document and open-contract sources label themselves by filename. */
+  filename?: string;
   [k: string]: unknown;
 }
 
@@ -26,6 +28,13 @@ export interface AssistantHandlers {
   onThinking?: (label: string) => void;
   onSources?: (sources: ChatSource[]) => void;
   onDelta: (text: string) => void;
+  /**
+   * The backend signals a regeneration / citation-correction by telling the
+   * client to clear the answer streamed so far, before the corrected answer is
+   * re-streamed. Without this, the re-streamed chunks append to the old text and
+   * the answer shows twice.
+   */
+  onReplace?: () => void;
   onFinal?: (correctedContent: string | null) => void;
   signal?: AbortSignal;
 }
@@ -36,6 +45,13 @@ export interface AssistantGrounding {
   matterId?: string | null;
   /** Search the matter's uploaded documents (only meaningful with matterId). */
   enableMatterDocsSearch?: boolean;
+  /**
+   * Search the US case-law + statute corpus. This is the real corpus lever;
+   * `useRag` is the backend master gate for ALL retrieval, so this must be sent
+   * separately (overloading useRag as the corpus toggle disables matter-docs and
+   * web retrieval too).
+   */
+  enableVaquillDbSearch?: boolean;
   /** Bring in current information from the web (Exa deep search on the backend). */
   enableWebSearch?: boolean;
   /** US jurisdiction scope: state codes and/or 'federal' (e.g. ['ca','federal']). */
@@ -108,6 +124,9 @@ export async function streamAssistant(
   if (typeof opts?.enableMatterDocsSearch === "boolean") {
     body.enableMatterDocsSearch = opts.enableMatterDocsSearch;
   }
+  if (typeof opts?.enableVaquillDbSearch === "boolean") {
+    body.enableVaquillDbSearch = opts.enableVaquillDbSearch;
+  }
   if (typeof opts?.enableWebSearch === "boolean") body.enableWebSearch = opts.enableWebSearch;
   if (opts?.usStates && opts.usStates.length > 0) body.usStates = opts.usStates;
 
@@ -132,6 +151,12 @@ export async function streamAssistant(
         case "chunk": {
           const d = safeParse(data);
           if (typeof d?.content === "string") handlers.onDelta(d.content);
+          break;
+        }
+        case "response_replace": {
+          // Regeneration / citation-correction: clear what streamed so far so the
+          // corrected answer that follows replaces it instead of doubling up.
+          handlers.onReplace?.();
           break;
         }
         case "done": {

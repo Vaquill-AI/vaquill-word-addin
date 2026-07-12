@@ -4,6 +4,8 @@ import { StopIcon, WandIcon } from "@/ui/icons";
 import { FocusControl } from "./FocusControl";
 import { PromptLibrary } from "./PromptLibrary";
 import { ContextMenu, activeContextCount, type ContextConfig } from "./ContextMenu";
+import { AttachmentChips } from "./AttachmentChips";
+import type { AttachedFile } from "./useAttachments";
 import type { Scope } from "./useAssistant";
 
 export interface ComposerHandle {
@@ -39,6 +41,10 @@ interface ComposerProps {
   context: ContextConfig;
   onContextChange: (config: ContextConfig) => void;
   hasMatter: boolean;
+  attachments: AttachedFile[];
+  onAttach: (file: File) => void;
+  onRemoveAttachment: (id: string) => void;
+  atCap: boolean;
 }
 
 /**
@@ -47,13 +53,30 @@ interface ComposerProps {
  * `focus()` for callers that need to place the caret after setting the draft.
  */
 export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Composer(
-  { value, onChange, onSend, onStop, disabled, scope, onScope, context, onContextChange, hasMatter },
+  {
+    value,
+    onChange,
+    onSend,
+    onStop,
+    disabled,
+    scope,
+    onScope,
+    context,
+    onContextChange,
+    hasMatter,
+    attachments,
+    onAttach,
+    onRemoveAttachment,
+    atCap,
+  },
   ref,
 ) {
   const [libraryOpen, setLibraryOpen] = useState(false);
   const [contextOpen, setContextOpen] = useState(false);
   const taRef = useRef<HTMLTextAreaElement>(null);
-  const ctxCount = activeContextCount(context, hasMatter);
+  // Ready attachments count toward the "+" badge alongside the toggled sources.
+  const readyAttachments = attachments.filter((f) => f.status === "ready").length;
+  const ctxCount = activeContextCount(context, hasMatter) + readyAttachments;
 
   function focusEnd() {
     const ta = taRef.current;
@@ -87,11 +110,18 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
           config={context}
           onChange={onContextChange}
           hasMatter={hasMatter}
+          attachments={attachments}
+          onAttach={onAttach}
+          onRemoveAttachment={onRemoveAttachment}
+          atCap={atCap}
           onClose={() => setContextOpen(false)}
         />
       )}
       <div className="composer__box">
         <FocusControl scope={scope} onScope={onScope} />
+        {attachments.length > 0 && (
+          <AttachmentChips files={attachments} onRemove={onRemoveAttachment} compact />
+        )}
         <textarea
           ref={taRef}
           value={value}

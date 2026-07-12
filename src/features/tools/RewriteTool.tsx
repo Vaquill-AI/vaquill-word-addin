@@ -124,7 +124,7 @@ export function RewriteTool({ clauseText }: { clauseText: string }) {
         />
       </div>
 
-      <Button variant="primary" block onClick={run} loading={busy && !result}>
+      <Button variant="primary" className="btn--cta" onClick={run} loading={busy && !result}>
         Rewrite clause
       </Button>
 

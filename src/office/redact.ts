@@ -1,4 +1,5 @@
-import { runWord } from "./run";
+import { isProtectionError, OfficeError, runWord, serializeTrackChanges } from "./run";
+import { gatherExtraScopes } from "./search";
 
 /** Word's body.search caps the needle length; our redaction values are short. */
 const SEARCH_LIMIT = 255;
@@ -50,7 +51,7 @@ export async function redactValues(
   );
   if (unique.length === 0) return { redacted: 0, notFound: [] };
 
-  return runWord(async (context) => {
+  return serializeTrackChanges(() => runWord(async (context) => {
     const doc = context.document;
     doc.load("changeTrackingMode");
     await context.sync();
@@ -59,10 +60,34 @@ export async function redactValues(
     doc.changeTrackingMode = Word.ChangeTrackingMode.off;
     await context.sync();
 
-    // For selection scope, resolve the selected range once and search inside it
-    // (Range.search) so only occurrences within the highlighted text are hit.
-    // Whole-document scope keeps searching doc.body verbatim.
-    const searchRoot: Word.Body | Word.Range = scope === "selection" ? doc.getSelection() : doc.body;
+    // Regions to search. "selection" stays scoped to the highlighted range. For
+    // "document" scope we must cover EVERY region a value can hide in: the main
+    // body plus headers, footers, footnotes, and endnotes (doc.body excludes all
+    // of those). A body-only search would leave, e.g., an SSN repeated in the
+    // page footer sitting in the shipped .docx while the tool reports success.
+    // findRanges is deliberately NOT reused here: its "first non-empty scope
+    // wins" semantics would stop at the body and skip a footer copy, whereas
+    // redaction must replace every occurrence in every region.
+    let scopes: (Word.Body | Word.Range)[];
+    if (scope === "selection") {
+      // The selection is re-resolved live at apply time (it cannot survive from
+      // the earlier scan across Word.run boundaries). If the user collapsed or
+      // moved the caret since scanning, a body-less zero-width range would match
+      // nothing and every value would be mislabeled "not found" - a data-leak-
+      // grade wrong signal for a redaction tool. Require a real selection.
+      const sel = doc.getSelection();
+      sel.load("text");
+      await context.sync();
+      if (!sel.text || !sel.text.trim()) {
+        throw new OfficeError(
+          "Nothing is selected. Re-select the text to redact, or switch to whole-document scope.",
+          "no_selection",
+        );
+      }
+      scopes = [sel];
+    } else {
+      scopes = [doc.body, ...(await gatherExtraScopes(context))];
+    }
 
     let redacted = 0;
     const notFound: string[] = [];
@@ -70,10 +95,10 @@ export async function redactValues(
       let done = 0;
       for (const value of unique) {
         try {
-          const results = searchRoot.search(value, { matchCase: true });
-          results.load("items");
+          const resultSets = scopes.map((s) => s.search(value, { matchCase: true }));
+          for (const r of resultSets) r.load("items");
           await context.sync();
-          const items = results.items;
+          const items = resultSets.flatMap((r) => r.items);
           if (items.length === 0) {
             notFound.push(value);
           } else {
@@ -83,16 +108,28 @@ export async function redactValues(
             await context.sync();
             redacted += items.length;
           }
-        } catch {
+        } catch (err) {
+          // A protected/read-only document blocks the insert (AccessDenied).
+          // Swallowing it would report the still-present value as "not found" -
+          // the user would then ship the unredacted file. Re-throw so runWord
+          // surfaces the clean "Restrict Editing" message instead.
+          if (isProtectionError(err)) throw err;
           notFound.push(value);
         }
         done += 1;
         opts.onProgress?.(done, unique.length);
       }
     } finally {
-      doc.changeTrackingMode = priorMode;
-      await context.sync();
+      // Best-effort restore of the user's prior tracking mode. If the context is
+      // already broken (e.g. the protection re-throw above), swallow the restore
+      // failure so it never masks the original error.
+      try {
+        doc.changeTrackingMode = priorMode;
+        await context.sync();
+      } catch {
+        // original error (if any) propagates; nothing more we can do here
+      }
     }
     return { redacted, notFound };
-  });
+  }));
 }

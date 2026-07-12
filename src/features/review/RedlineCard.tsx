@@ -183,11 +183,17 @@ export function RedlineCard({
   index,
   decision,
   onDecision,
+  applyBusy,
+  setApplyBusy,
 }: {
   redline: RedlineSuggestion;
   index: number;
   decision: Decision;
   onDecision: (index: number, decision: Decision) => void;
+  /** Shared apply lock (see ReviewView) so this card and "Apply all" cannot run
+   *  concurrently. Defaults keep the card usable outside the review surface. */
+  applyBusy?: boolean;
+  setApplyBusy?: (b: boolean) => void;
 }) {
   const { navigate } = useAppNav();
   const [busy, setBusy] = useState(false);
@@ -256,7 +262,11 @@ export function RedlineCard({
   // reviewable tracked change; the split-button's "Apply clean" passes false to
   // apply it directly without tracking.
   async function applyWith(tracked: boolean) {
+    // Respect the shared apply lock so this can't race "Apply all" (which would
+    // double-append an insertion-type clause).
+    if (busy || applyBusy) return;
     setBusy(true);
+    setApplyBusy?.(true);
     setNote(null);
     try {
       if (isInsertion) await insertClauseFormatted(redline.clauseName, proposed, { tracked });
@@ -270,6 +280,7 @@ export function RedlineCard({
       );
     } finally {
       setBusy(false);
+      setApplyBusy?.(false);
     }
   }
   const accept = () => applyWith(true);
@@ -550,6 +561,7 @@ export function RedlineCard({
               icon={<CheckIcon size={14} />}
               onClick={accept}
               loading={busy}
+              disabled={applyBusy && !busy}
               menuLabel="More apply options"
               items={[
                 {

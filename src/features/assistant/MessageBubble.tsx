@@ -86,10 +86,11 @@ function AssistantActions({
 
 function sourceLabel(s: ChatSource): string {
   return (
-    (s.caseName as string) ??
-    (s.case_name as string) ??
-    (s.title as string) ??
-    (s.citation as string) ??
+    s.caseName ??
+    s.case_name ??
+    s.title ??
+    s.citation ??
+    s.filename ??
     "Source"
   );
 }

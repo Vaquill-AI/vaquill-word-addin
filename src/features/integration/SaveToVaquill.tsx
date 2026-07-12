@@ -11,7 +11,7 @@ import {
   type VendorExtraction,
 } from "@/api/platform";
 import { ApiError } from "@/api/errors";
-import { readDocumentText } from "@/office/document";
+import { readFullDocumentText } from "@/office/document";
 import { readDocumentBase64 } from "@/office/file";
 import { textToTiptap } from "@/lib/tiptap";
 import { config } from "@/config";
@@ -85,7 +85,7 @@ export function SaveToVaquill(props: Props) {
       }
       // Review mode: the reviewed contract is not yet a draft, so import it
       // (with redlines rendered as tracked changes).
-      const text = await readDocumentText();
+      const text = await readFullDocumentText();
       const content = textToTiptap(text, { title: props.title });
       const ref = await importDraft({
         title: props.title,

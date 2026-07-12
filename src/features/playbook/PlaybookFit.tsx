@@ -5,7 +5,7 @@ import { ArrowLeftIcon } from "@/ui/icons";
 import { DistributionBar, type DistributionSegment } from "@/ui/DistributionBar";
 import { FilterChips, type FilterChipOption } from "@/ui/FilterChips";
 import { StatusGroup } from "@/ui/StatusGroup";
-import { readDocumentText } from "@/office/document";
+import { readStructuredDocumentText } from "@/office/document";
 import { ApiError, friendlyMessage } from "@/api/errors";
 import {
   checkPlaybookFit,
@@ -67,7 +67,7 @@ export function PlaybookFit({
     setHidden(new Set());
     setState({ status: "running" });
     try {
-      const text = await readDocumentText();
+      const text = await readStructuredDocumentText();
       if (text.trim().length < MIN_CHARS) {
         setState({
           status: "error",

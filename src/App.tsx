@@ -8,6 +8,7 @@ import {
   ReviewIcon,
   DraftIcon,
   AssistantIcon,
+  ResearchIcon,
   PlaybookIcon,
   SettingsIcon,
   ArrowLeftIcon,
@@ -21,11 +22,11 @@ import { ChangesView } from "@/features/review/ChangesView";
 import { AuthorityView } from "@/features/authority/AuthorityView";
 import { GovernanceView } from "@/features/governance/GovernanceView";
 import { AssistantView } from "@/features/assistant/AssistantView";
+import { ResearchView } from "@/features/research/ResearchView";
 import { DraftView } from "@/features/draft/DraftView";
 import { PlaybookView } from "@/features/playbook/PlaybookView";
 import { ToolsHub } from "@/features/toolshub/ToolsHub";
 import { ReviewProvider } from "@/features/review/ReviewProvider";
-import { OrgSwitcher } from "@/features/org/OrgSwitcher";
 import { SettingsView } from "@/features/settings/SettingsView";
 import { ContextBar } from "@/features/shell/ContextBar";
 import { AppNavProvider, useAppNav, type AppTab, type ReviewSub } from "@/app/nav";
@@ -42,6 +43,7 @@ const TABS: { id: AppTab; label: string; icon: (p: { size?: number }) => ReactNo
   { id: "review", label: "Review", icon: ReviewIcon },
   { id: "draft", label: "Draft", icon: DraftIcon },
   { id: "assistant", label: "Assistant", icon: AssistantIcon },
+  { id: "research", label: "Research", icon: ResearchIcon },
   { id: "playbook", label: "Playbook", icon: PlaybookIcon },
   { id: "tools", label: "Tools", icon: ToolsIcon },
 ];
@@ -135,7 +137,6 @@ function AppShell() {
             })}
           </nav>
           <div className="appbar__right">
-            <OrgSwitcher />
             <Button
               variant="ghost"
               size="sm"
@@ -209,6 +210,8 @@ function AppShell() {
             intent={tab === "assistant" ? intent : null}
             onIntentDone={clearIntent}
           />
+        ) : tab === "research" ? (
+          <ResearchView />
         ) : tab === "playbook" ? (
           <PlaybookView
             onRunPlaybook={(pb) =>

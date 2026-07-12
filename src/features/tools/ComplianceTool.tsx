@@ -6,22 +6,10 @@ import {
   type ComplianceStatusValue,
 } from "@/api/clause-tools";
 import { ApiError, friendlyMessage } from "@/api/errors";
+// Single source of truth for the supported regulations (was re-declared here).
+import { REGULATIONS } from "@/features/compliance/regulations";
 
 const MIN_CHARS = 100; // Backend requires documentText >= 100 chars.
-
-// US-relevant supported regulations (subset of the backend SUPPORTED_REGULATIONS
-// with a full requirement checklist). Value = backend RegulationType enum value.
-const REGULATIONS: { value: string; label: string }[] = [
-  { value: "ccpa", label: "CCPA (California privacy)" },
-  { value: "hipaa", label: "HIPAA (health)" },
-  { value: "glba", label: "GLBA (financial)" },
-  { value: "ferpa", label: "FERPA (education records)" },
-  { value: "tcpa", label: "TCPA (telemarketing/SMS)" },
-  { value: "sox", label: "SOX (financial reporting)" },
-  { value: "pci_dss", label: "PCI DSS (payment cards)" },
-  { value: "soc2", label: "SOC 2 (security controls)" },
-  { value: "gdpr", label: "GDPR (EU data protection)" },
-];
 
 type BadgeTone = "green" | "yellow" | "red" | "neutral" | "brand";
 
@@ -93,7 +81,7 @@ export function ComplianceTool({ clauseText }: { clauseText: string }) {
       {tooShort ? (
         <Banner tone="info">Select at least {MIN_CHARS} characters to run a compliance check.</Banner>
       ) : (
-        <Button variant="primary" block onClick={run} loading={busy}>
+        <Button variant="primary" className="btn--cta" onClick={run} loading={busy}>
           Check compliance
         </Button>
       )}

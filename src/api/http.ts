@@ -28,6 +28,10 @@ export interface RequestOptions {
  *  network stalls. Callers can override per request via `timeoutMs`. */
 export const DEFAULT_TIMEOUT_MS = 120_000;
 
+/** Uploads (multipart / binary) get a longer budget than JSON calls, but still
+ *  fail a stalled connection instead of hanging the spinner forever. */
+export const UPLOAD_TIMEOUT_MS = 180_000;
+
 interface ComposedAbort {
   signal: AbortSignal;
   cleanup: () => void;
@@ -135,9 +139,15 @@ export async function request<T>(path: string, opts: RequestOptions = {}): Promi
  * The browser sets the multipart Content-Type + boundary, so we must NOT set it.
  * Same single 401 refresh-and-retry as request().
  */
-export async function requestForm<T>(path: string, form: FormData): Promise<T> {
+export async function requestForm<T>(
+  path: string,
+  form: FormData,
+  opts: { signal?: AbortSignal; timeoutMs?: number } = {},
+): Promise<T> {
   const token = await getAccessToken();
   if (!token) throw new ApiError("unauthorized", 401, "Not signed in.");
+
+  const abort = composeAbort(opts.signal, opts.timeoutMs ?? UPLOAD_TIMEOUT_MS);
 
   const doFetch = async (bearer: string): Promise<Response> => {
     try {
@@ -150,6 +160,7 @@ export async function requestForm<T>(path: string, form: FormData): Promise<T> {
           ...(orgId ? { "X-Organization-ID": orgId } : {}),
         },
         body: form,
+        signal: abort.signal,
       });
     } catch (e) {
       if ((e as Error).name === "AbortError") throw e;
@@ -157,15 +168,24 @@ export async function requestForm<T>(path: string, form: FormData): Promise<T> {
     }
   };
 
-  let res = await doFetch(token);
-  if (res.status === 401) {
-    const fresh = await refresh();
-    if (!fresh) throw new ApiError("unauthorized", 401, "Session expired.");
-    res = await doFetch(fresh);
+  try {
+    let res = await doFetch(token);
+    if (res.status === 401) {
+      const fresh = await refresh();
+      if (!fresh) throw new ApiError("unauthorized", 401, "Session expired.");
+      res = await doFetch(fresh);
+    }
+    if (!res.ok) throw await errorFromResponse(res);
+    if (res.status === 204) return undefined as T;
+    return (await res.json()) as T;
+  } catch (e) {
+    if ((e as Error).name === "AbortError" && abort.timedOut()) {
+      throw new ApiError("unknown", 0, "The upload timed out. Please try again.", "TIMEOUT");
+    }
+    throw e;
+  } finally {
+    abort.cleanup();
   }
-  if (!res.ok) throw await errorFromResponse(res);
-  if (res.status === 204) return undefined as T;
-  return (await res.json()) as T;
 }
 
 function arrayBufferToBase64(buf: ArrayBuffer): string {
@@ -195,13 +215,15 @@ export async function requestBinary(
   const token = await getAccessToken();
   if (!token) throw new ApiError("unauthorized", 401, "Not signed in.");
 
+  const abort = composeAbort(opts.signal, opts.timeoutMs ?? UPLOAD_TIMEOUT_MS);
+
   const doFetch = async (bearer: string): Promise<Response> => {
     try {
       return await fetch(`${config.apiBase}${path}`, {
         method: opts.method ?? "POST",
         headers: await buildHeaders(bearer, opts.headers),
         body: opts.body !== undefined ? JSON.stringify(opts.body) : undefined,
-        signal: opts.signal,
+        signal: abort.signal,
       });
     } catch (e) {
       if ((e as Error).name === "AbortError") throw e;
@@ -209,17 +231,26 @@ export async function requestBinary(
     }
   };
 
-  let res = await doFetch(token);
-  if (res.status === 401) {
-    const fresh = await refresh();
-    if (!fresh) throw new ApiError("unauthorized", 401, "Session expired.");
-    res = await doFetch(fresh);
-  }
-  if (!res.ok) throw await errorFromResponse(res);
+  try {
+    let res = await doFetch(token);
+    if (res.status === 401) {
+      const fresh = await refresh();
+      if (!fresh) throw new ApiError("unauthorized", 401, "Session expired.");
+      res = await doFetch(fresh);
+    }
+    if (!res.ok) throw await errorFromResponse(res);
 
-  const buf = await res.arrayBuffer();
-  return {
-    base64: arrayBufferToBase64(buf),
-    filename: filenameFromDisposition(res, "vaquill-redlined.docx"),
-  };
+    const buf = await res.arrayBuffer();
+    return {
+      base64: arrayBufferToBase64(buf),
+      filename: filenameFromDisposition(res, "vaquill-redlined.docx"),
+    };
+  } catch (e) {
+    if ((e as Error).name === "AbortError" && abort.timedOut()) {
+      throw new ApiError("unknown", 0, "The download timed out. Please try again.", "TIMEOUT");
+    }
+    throw e;
+  } finally {
+    abort.cleanup();
+  }
 }

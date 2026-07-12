@@ -50,18 +50,31 @@ export async function streamContractReview(
     );
   }
 
+  // The backend legal-tool stream carries the event name inside the JSON as
+  // `type`, so sse.ts surfaces it as `event`. Payload shapes (see
+  // legal_tools_streaming.py): init `{totalSteps}`, progress
+  // `{stepIndex,label,status}`, result `{data: <review>}`, error `{message}`.
+  let total: number | undefined;
   await postStream(REVIEW_STREAM, req, {
     signal: handlers.signal,
     onEvent: ({ event, data }) => {
       switch (event) {
+        case "init": {
+          const p = safeParse<{ totalSteps?: number }>(data);
+          if (typeof p?.totalSteps === "number") total = p.totalSteps;
+          break;
+        }
         case "progress": {
-          const p = safeParse<ReviewProgress>(data);
-          if (p && handlers.onProgress) handlers.onProgress(p);
+          const p = safeParse<{ stepIndex?: number; label?: string }>(data);
+          if (p && handlers.onProgress) {
+            handlers.onProgress({ step: p.stepIndex ?? 0, total, label: p.label });
+          }
           break;
         }
         case "result": {
-          const r = safeParse<ContractReviewResponse>(data);
-          if (r) handlers.onResult(r);
+          // The review is nested under `data` (event payload is {type,data}).
+          const r = safeParse<{ data?: ContractReviewResponse }>(data);
+          if (r?.data) handlers.onResult(r.data);
           break;
         }
         case "error": {
@@ -69,7 +82,7 @@ export async function streamContractReview(
           throw new ApiError("server", 0, e?.message ?? "The review failed.");
         }
         default:
-          break; // init, done, heartbeats
+          break; // done, heartbeats
       }
     },
   });

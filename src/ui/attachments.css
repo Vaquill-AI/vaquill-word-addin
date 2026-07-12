@@ -1,0 +1,139 @@
+/* Shared styles for attach-files context (assistant composer + drafting). Owns
+   both the chip list (via AttachmentChips) and the attach control container so
+   any surface can reuse the same look. */
+
+.attach {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.attach__head {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 0 2px;
+}
+
+.attach__list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.attach__chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-muted);
+}
+.attach__chip--error {
+  border-color: var(--danger-border);
+  background: var(--red-tint);
+}
+.attach__icon {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  color: var(--success);
+}
+.attach__chip--error .attach__icon {
+  color: var(--danger);
+  font-weight: 700;
+}
+.attach__text {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  min-width: 0;
+  flex: 1;
+}
+.attach__name {
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.attach__error {
+  color: var(--danger);
+}
+.attach__remove {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+.attach__remove:hover {
+  background: var(--fill-subtle);
+  color: var(--text);
+}
+
+/* Compact chip row (rendered above the composer textarea, always visible). */
+.attach__list--compact {
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 6px;
+}
+.attach__list--compact .attach__chip {
+  padding: 3px 6px;
+  max-width: 100%;
+}
+.attach__list--compact .attach__name {
+  font-weight: 500;
+  font-size: 12px;
+  max-width: 160px;
+}
+
+/* Attach trigger: a label wrapping a visually-hidden file input. */
+.attach__add {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  align-self: flex-start;
+  padding: 6px 10px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.attach__add:hover {
+  background: var(--surface-muted);
+}
+.attach__add--disabled {
+  opacity: 0.55;
+  cursor: default;
+  pointer-events: none;
+}
+.attach__input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+.attach__hint {
+  margin: 0 2px;
+}

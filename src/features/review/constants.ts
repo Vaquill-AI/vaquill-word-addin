@@ -74,16 +74,45 @@ export const USER_SIDES: Option[] = [
 // means "no specific state" (general US / federal). The top-level review
 // `jurisdiction` is always "US" -- state names must NOT go into that field
 // (backend pattern ^([A-Z]{2}|INTL)$ 422s on "Delaware").
+/**
+ * Supported US jurisdictions. Single source of truth is the backend
+ * `app/core/us_states.py::US_STATES` (which mirrors the web app's
+ * `frontend/src/lib/us-states.ts`): the curated set of states where we ship real
+ * depth (statutes corpus, templates, exemplars). Codes are lowercase to match
+ * the backend `state` payload; "" is general US / federal. Keep this in sync
+ * when the supported set changes.
+ */
 export const JURISDICTIONS: Option[] = [
   { value: "", label: "United States (general)" },
-  { value: "DE", label: "Delaware" },
-  { value: "CA", label: "California" },
-  { value: "NY", label: "New York" },
-  { value: "TX", label: "Texas" },
-  { value: "FL", label: "Florida" },
-  { value: "IL", label: "Illinois" },
-  { value: "MA", label: "Massachusetts" },
-  { value: "WA", label: "Washington" },
+  { value: "al", label: "Alabama" },
+  { value: "az", label: "Arizona" },
+  { value: "ca", label: "California" },
+  { value: "co", label: "Colorado" },
+  { value: "ct", label: "Connecticut" },
+  { value: "dc", label: "District of Columbia" },
+  { value: "fl", label: "Florida" },
+  { value: "ga", label: "Georgia" },
+  { value: "il", label: "Illinois" },
+  { value: "in", label: "Indiana" },
+  { value: "la", label: "Louisiana" },
+  { value: "md", label: "Maryland" },
+  { value: "ma", label: "Massachusetts" },
+  { value: "mi", label: "Michigan" },
+  { value: "mn", label: "Minnesota" },
+  { value: "mo", label: "Missouri" },
+  { value: "nv", label: "Nevada" },
+  { value: "nj", label: "New Jersey" },
+  { value: "ny", label: "New York" },
+  { value: "nc", label: "North Carolina" },
+  { value: "oh", label: "Ohio" },
+  { value: "or", label: "Oregon" },
+  { value: "pa", label: "Pennsylvania" },
+  { value: "sc", label: "South Carolina" },
+  { value: "tn", label: "Tennessee" },
+  { value: "tx", label: "Texas" },
+  { value: "va", label: "Virginia" },
+  { value: "wa", label: "Washington" },
+  { value: "wi", label: "Wisconsin" },
 ];
 
 export type ReviewScope = "document" | "selection";

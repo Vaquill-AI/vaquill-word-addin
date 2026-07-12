@@ -3,7 +3,8 @@
  * HTML into native headings, paragraphs, and bold runs, so generated drafts and
  * clauses look like authored Word content instead of flat pasted text.
  */
-import { runWord } from "./run";
+import { resolveAfterAnchor } from "./anchor";
+import { runWord, serializeTrackChanges } from "./run";
 
 /** Escape the five HTML-significant characters so text content is never markup. */
 function escapeHtml(s: string): string {
@@ -84,33 +85,116 @@ function clauseBlocks(text: string): string[] {
  */
 export async function insertClauseTracked(text: string): Promise<void> {
   const blocks = clauseBlocks(text);
-  return runWord(async (context) => {
+  return serializeTrackChanges(() => runWord(async (context) => {
     const doc = context.document;
     doc.load("changeTrackingMode");
-    const paras = doc.getSelection().paragraphs;
-    paras.load("items");
     await context.sync();
 
+    // Table-aware anchor (never inserts inside a table cell). Resolved BEFORE the
+    // mode flip since it is read-only.
+    const anchor = await resolveAfterAnchor(context);
+
     const priorMode = doc.changeTrackingMode;
-    doc.changeTrackingMode = Word.ChangeTrackingMode.trackAll;
     try {
-      const items = paras.items;
-      const anchor = items.length > 0 ? items[items.length - 1] : undefined;
+      // Commit the mode flip on its own sync BEFORE inserting, or Word may record
+      // the insert as an untracked edit (the "tracked insertion" never appears).
+      doc.changeTrackingMode = Word.ChangeTrackingMode.trackAll;
+      await context.sync();
       let cursor: Word.Paragraph | undefined;
       for (const block of blocks) {
         cursor = cursor
           ? cursor.insertParagraph(block, Word.InsertLocation.after)
-          : anchor
-            ? anchor.insertParagraph(block, Word.InsertLocation.after)
-            : doc.body.insertParagraph(block, Word.InsertLocation.end);
+          : anchor.insertParagraph(block, Word.InsertLocation.after);
       }
       cursor?.select();
       await context.sync();
     } finally {
-      doc.changeTrackingMode = priorMode;
-      await context.sync();
+      // Best-effort restore so a broken context can't mask the original error.
+      try {
+        doc.changeTrackingMode = priorMode;
+        await context.sync();
+      } catch {
+        // original error (if any) propagates
+      }
     }
-  });
+  }));
+}
+
+/**
+ * Insert a passage (a heading line plus the body split into paragraphs) at the
+ * user's cursor as a tracked change, and select it so Word scrolls it into view.
+ * Used by Research to drop a statute section / quote where the caret sits, rather
+ * than at the document end. Change-tracking mode is saved and restored.
+ */
+export async function insertPassageAtCursor(heading: string, text: string): Promise<void> {
+  const body = text
+    .split(/\n{2,}/)
+    .map((p) => p.trim())
+    .filter(Boolean);
+  return serializeTrackChanges(() =>
+    runWord(async (context) => {
+      const doc = context.document;
+      doc.load("changeTrackingMode");
+      await context.sync();
+
+      // Table-aware anchor (never inserts inside a table cell).
+      const anchor = await resolveAfterAnchor(context);
+
+      const priorMode = doc.changeTrackingMode;
+      try {
+        // Commit the mode flip before inserting so the insert is tracked.
+        doc.changeTrackingMode = Word.ChangeTrackingMode.trackAll;
+        await context.sync();
+        const head = anchor.insertParagraph(heading, Word.InsertLocation.after);
+        head.styleBuiltIn = Word.BuiltInStyleName.heading3;
+        let cursor: Word.Paragraph = head;
+        for (const block of body.length ? body : [text]) {
+          cursor = cursor.insertParagraph(block, Word.InsertLocation.after);
+        }
+        head.select();
+        await context.sync();
+      } finally {
+        try {
+          doc.changeTrackingMode = priorMode;
+          await context.sync();
+        } catch {
+          // original error (if any) propagates
+        }
+      }
+    }),
+  );
+}
+
+/**
+ * Insert pre-built, already-safe HTML at the user's cursor as a tracked change,
+ * and select it so Word scrolls it into view. The caller is responsible for
+ * escaping any text content in `html` (see markdownToSafeHtml in Research).
+ */
+export async function insertHtmlAtCursor(html: string): Promise<void> {
+  return serializeTrackChanges(() =>
+    runWord(async (context) => {
+      const doc = context.document;
+      doc.load("changeTrackingMode");
+      await context.sync();
+
+      const priorMode = doc.changeTrackingMode;
+      try {
+        // Commit the mode flip before inserting so the insert is tracked.
+        doc.changeTrackingMode = Word.ChangeTrackingMode.trackAll;
+        await context.sync();
+        const range = doc.getSelection().insertHtml(html, Word.InsertLocation.after);
+        range.select();
+        await context.sync();
+      } finally {
+        try {
+          doc.changeTrackingMode = priorMode;
+          await context.sync();
+        } catch {
+          // original error (if any) propagates
+        }
+      }
+    }),
+  );
 }
 
 /**
@@ -128,19 +212,26 @@ export async function insertClauseFormatted(
   // tracked:false for a clean insert (change tracking forced off for the edit).
   const tracked = opts.tracked ?? true;
   const html = `<h2>${escapeHtml(clauseName)}</h2><p>${escapeHtml(text)}</p>`;
-  return runWord(async (context) => {
+  return serializeTrackChanges(() => runWord(async (context) => {
     const doc = context.document;
     doc.load("changeTrackingMode");
     await context.sync();
 
     const priorMode = doc.changeTrackingMode;
-    doc.changeTrackingMode = tracked ? Word.ChangeTrackingMode.trackAll : Word.ChangeTrackingMode.off;
     try {
+      // Commit the mode flip before inserting so the insert is tracked (or the
+      // clean insert is genuinely untracked) rather than racing in one batch.
+      doc.changeTrackingMode = tracked ? Word.ChangeTrackingMode.trackAll : Word.ChangeTrackingMode.off;
+      await context.sync();
       doc.body.insertHtml(html, Word.InsertLocation.end);
       await context.sync();
     } finally {
-      doc.changeTrackingMode = priorMode;
-      await context.sync();
+      try {
+        doc.changeTrackingMode = priorMode;
+        await context.sync();
+      } catch {
+        // original error (if any) propagates
+      }
     }
-  });
+  }));
 }

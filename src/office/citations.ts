@@ -1,5 +1,6 @@
+import { resolveAfterAnchor } from "./anchor";
 import { runWord } from "./run";
-import { findRanges } from "./search";
+import { findBestRange } from "./search";
 
 /**
  * Document operations for the authority verifier: comment on a citation and
@@ -7,15 +8,21 @@ import { findRanges } from "./search";
  * navigate.selectClauseInDocument.
  */
 
-/** Attach a comment to the first occurrence of a citation. Returns false if not found. */
+/** Attach a comment to the best-matching occurrence of a citation. Returns false
+ *  if not found, or if the located occurrence is in a region where Word forbids
+ *  comments (footnote/header). */
 export async function commentOnCitation(raw: string, comment: string): Promise<boolean> {
   return runWord(async (context) => {
-    const items = await findRanges(context, raw);
-    const range = items[0];
+    const range = await findBestRange(context, raw);
     if (!range) return false;
-    range.insertComment(comment);
-    await context.sync();
-    return true;
+    try {
+      range.insertComment(comment);
+      await context.sync();
+      return true;
+    } catch {
+      // Located but comments are unsupported here (e.g. a footnote citation).
+      return false;
+    }
   });
 }
 
@@ -33,18 +40,12 @@ export interface AuthorityEntry {
  */
 export async function insertTableOfAuthorities(cases: AuthorityEntry[]): Promise<void> {
   return runWord(async (context) => {
-    const doc = context.document;
-    const paras = doc.getSelection().paragraphs;
-    paras.load("items");
-    await context.sync();
-
-    const items = paras.items;
-    let cursor: Word.Paragraph | null = items.length > 0 ? items[items.length - 1] ?? null : null;
+    // Table-aware anchor so a cursor inside a table cell does not inject the
+    // entire Table of Authorities into that single cell.
+    let cursor: Word.Paragraph | Word.Range = await resolveAfterAnchor(context);
 
     const add = (text: string, style?: Word.BuiltInStyleName): Word.Paragraph => {
-      const p = cursor
-        ? cursor.insertParagraph(text, Word.InsertLocation.after)
-        : doc.body.insertParagraph(text, Word.InsertLocation.end);
+      const p = cursor.insertParagraph(text, Word.InsertLocation.after);
       if (style) p.styleBuiltIn = style;
       cursor = p;
       return p;

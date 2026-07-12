@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/ui/primitives";
 import { listClients, createClientNote, type Client } from "@/api/platform";
+import { ApiError, friendlyMessage } from "@/api/errors";
 
 /**
  * Save an assistant answer as a note on a Vaquill AI client. Lazy: it loads
@@ -26,15 +27,19 @@ export function SaveAnswerToNotes({
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Distinct from an empty list: a failed load must NOT masquerade as "no
+  // clients" (a broken state the user could not tell from genuinely having none).
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   async function loadClients() {
     if (clients !== null) return;
+    setLoadError(null);
     try {
       const c = await listClients();
       setClients(c);
       if (c[0]) setClientId(c[0].id);
-    } catch {
-      setClients([]);
+    } catch (e) {
+      setLoadError(e instanceof ApiError ? friendlyMessage(e) : (e as Error).message);
     }
   }
 
@@ -78,7 +83,25 @@ export function SaveAnswerToNotes({
       </button>
     );
   }
-  if (clients && clients.length === 0) {
+  if (loadError) {
+    return (
+      <div className="row msg__note-row" style={{ gap: 6, flexWrap: "wrap" }}>
+        <span className="small" style={{ color: "var(--danger)" }}>
+          Could not load clients. {loadError}
+        </span>
+        <Button variant="ghost" size="sm" onClick={() => void loadClients()}>
+          Retry
+        </Button>
+        <Button variant="ghost" size="sm" onClick={cancel}>
+          Cancel
+        </Button>
+      </div>
+    );
+  }
+  if (clients === null) {
+    return <span className="small muted msg__note-status">Loading clients...</span>;
+  }
+  if (clients.length === 0) {
     return <span className="small muted msg__note-status">No clients to save to.</span>;
   }
   return (
@@ -89,7 +112,7 @@ export function SaveAnswerToNotes({
         value={clientId}
         onChange={(e) => setClientId(e.target.value)}
       >
-        {(clients ?? []).map((c) => (
+        {clients.map((c) => (
           <option key={c.id} value={c.id}>
             {c.name}
           </option>

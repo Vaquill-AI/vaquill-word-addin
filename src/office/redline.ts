@@ -1,5 +1,5 @@
 import { applyWordDiff, type DiffResult } from "office-word-diff";
-import { runWord, OfficeError } from "./run";
+import { runWord, OfficeError, serializeTrackChanges } from "./run";
 import { findRanges } from "./search";
 import type { RedlineSuggestion } from "@/api/types";
 
@@ -65,7 +65,7 @@ export async function applyVerifiedRedline(
     throw new OfficeError("This redline is too long to apply in place. Use Accept via Vaquill AI instead.");
   }
 
-  return runWord(async (context) => {
+  return serializeTrackChanges(() => runWord(async (context) => {
     const doc = context.document;
     doc.load("changeTrackingMode");
     const items = await findRanges(context, query);
@@ -84,11 +84,14 @@ export async function applyVerifiedRedline(
     }
 
     const range = items[0];
-    range.load("text");
-    await context.sync();
 
     const priorMode = doc.changeTrackingMode;
     doc.changeTrackingMode = tracked ? Word.ChangeTrackingMode.trackAll : Word.ChangeTrackingMode.off;
+    // Load the diff baseline AFTER the mode flip and immediately before diffing.
+    // Reading it earlier and diffing after two more syncs would let a co-author
+    // edit inside the range in between, so applyWordDiff would diff against stale
+    // text and smear the insert/delete ops into a garbled tracked change.
+    range.load("text");
     await context.sync();
 
     try {
@@ -102,8 +105,13 @@ export async function applyVerifiedRedline(
         deletions: diff.deletions,
       };
     } finally {
-      doc.changeTrackingMode = priorMode;
-      await context.sync();
+      // Best-effort restore so a broken context can't mask the original error.
+      try {
+        doc.changeTrackingMode = priorMode;
+        await context.sync();
+      } catch {
+        // original error (if any) propagates
+      }
     }
-  });
+  }));
 }

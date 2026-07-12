@@ -105,7 +105,7 @@ function RegulationMode() {
         </Field>
         {blurb && <p className="small muted" style={{ margin: 0 }}>{blurb}</p>}
 
-        <Button variant="primary" block onClick={start}>
+        <Button variant="primary" className="btn--cta" onClick={start}>
           Check compliance
         </Button>
       </div>

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { readDocumentText } from "@/office/document";
+import { readFullDocumentText } from "@/office/document";
 import { fillFromReference, type FillItem } from "@/api/fill";
 import { ApiError, friendlyMessage } from "@/api/errors";
 import { detectPlaceholders } from "./detect";
@@ -23,7 +23,7 @@ export function useFill() {
   const detect = useCallback(async () => {
     setState({ status: "detecting" });
     try {
-      const text = await readDocumentText();
+      const text = await readFullDocumentText();
       setState({ status: "ready", placeholders: detectPlaceholders(text) });
     } catch (e) {
       setState({ status: "error", error: (e as Error).message });

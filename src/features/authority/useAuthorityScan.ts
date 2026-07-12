@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { readDocumentText } from "@/office/document";
+import { readFullDocumentText } from "@/office/document";
 import { getCaseStatusBatch, verifyCitation, type AuthorityResult } from "@/api/authority";
 import { extractCaseCitations } from "./extract";
 import { ApiError } from "@/api/errors";
@@ -81,7 +81,7 @@ export function useAuthorityScan() {
 
     setState({ ...INITIAL, status: "reading" });
     try {
-      const text = await readDocumentText();
+      const text = await readFullDocumentText();
       if (signal.aborted) return;
       const cites = extractCaseCitations(text);
       if (cites.length === 0) {

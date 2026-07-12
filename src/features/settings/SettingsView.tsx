@@ -4,15 +4,15 @@ import { clearSession, getUser } from "@/auth/session";
 import { getActiveOrgId } from "@/lib/org";
 import { listMyOrganizations } from "@/api/organizations";
 import { fetchUsageSnapshot, type QuotaSnapshot, type UsageMetric } from "@/api/usage";
-import { Combobox } from "@/ui/Combobox";
 import { MatterPicker } from "@/features/integration/MatterPicker";
+import { OrgSwitcher } from "@/features/org/OrgSwitcher";
 import {
   getReviewPrefs,
   setReviewPrefs,
   subscribeReviewPrefs,
   type ReviewPrefs,
 } from "@/lib/prefs";
-import { CONTRACT_TYPES, JURISDICTIONS } from "@/features/review/constants";
+import { JURISDICTIONS } from "@/features/review/constants";
 import "./settings.css";
 
 /**
@@ -177,6 +177,9 @@ export function SettingsView() {
               <span className="small muted">Organization</span>
               <span className="small">{orgName ?? "Default workspace"}</span>
             </div>
+            {/* Switch active workspace, when the user owns more than one. Self-hides
+                at <= 1 org. */}
+            <OrgSwitcher />
           </div>
           <Button variant="ghost" size="sm" onClick={clearSession}>
             Sign out
@@ -193,7 +196,7 @@ export function SettingsView() {
         <h2 className="settings-heading">Workspace defaults</h2>
         <p className="small muted settings-heading__hint">
           Set your matter and jurisdiction once. New reviews and the assistant use them
-          automatically, so you never re-pick them. Contract type pre-fills the review form.
+          automatically, so you never re-pick them.
         </p>
         <div className="form-grid">
           <MatterPicker
@@ -212,14 +215,6 @@ export function SettingsView() {
                 </option>
               ))}
             </select>
-          </Field>
-          <Field label="Default contract type">
-            <Combobox
-              value={prefs.contractType}
-              onChange={(v) => setReviewPrefs({ contractType: v })}
-              options={[{ value: "", label: "No default" }, ...CONTRACT_TYPES]}
-              ariaLabel="Default contract type"
-            />
           </Field>
         </div>
       </div>

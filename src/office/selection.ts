@@ -1,5 +1,5 @@
 import { applyWordDiff } from "office-word-diff";
-import { runWord, OfficeError } from "./run";
+import { runWord, OfficeError, serializeTrackChanges } from "./run";
 
 /**
  * Selection-scoped Word operations for the clause tools.
@@ -8,10 +8,12 @@ import { runWord, OfficeError } from "./run";
 
 /** Replace the current selection with new text as a tracked change (word-level diff). */
 export async function replaceSelectionTracked(newText: string): Promise<void> {
-  return runWord(async (context) => {
+  return serializeTrackChanges(() => runWord(async (context) => {
     const doc = context.document;
     const sel = doc.getSelection();
     sel.load("text");
+    const selTables = sel.tables;
+    selTables.load("items");
     doc.load("changeTrackingMode");
     await context.sync();
 
@@ -22,6 +24,15 @@ export async function replaceSelectionTracked(newText: string): Promise<void> {
     if (!original || !original.trim()) {
       throw new OfficeError("Select some text in the document first.", "no_selection");
     }
+    // A selection that spans table structure carries inter-cell/row markers in
+    // its text; word-diffing plain replacement text against that smears the diff
+    // and can delete table structure. Refuse rather than corrupt the table.
+    if (selTables.items.length > 0) {
+      throw new OfficeError(
+        "Your selection spans a table. Rewrite text within a single cell, or select text outside the table.",
+        "selection_spans_table",
+      );
+    }
 
     const priorMode = doc.changeTrackingMode;
     doc.changeTrackingMode = Word.ChangeTrackingMode.trackAll;
@@ -30,10 +41,15 @@ export async function replaceSelectionTracked(newText: string): Promise<void> {
     try {
       await applyWordDiff(context, sel, original, newText, { enableTracking: true, logLevel: "error" });
     } finally {
-      doc.changeTrackingMode = priorMode;
-      await context.sync();
+      // Best-effort restore so a broken context can't mask the original error.
+      try {
+        doc.changeTrackingMode = priorMode;
+        await context.sync();
+      } catch {
+        // original error (if any) propagates
+      }
     }
-  });
+  }));
 }
 
 /** Attach a comment to the current selection (WordApi 1.4+). */

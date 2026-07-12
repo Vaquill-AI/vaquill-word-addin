@@ -19,6 +19,25 @@ export function isWordHost(): boolean {
   );
 }
 
+// Serializes operations that flip the document's change-tracking mode. Each such
+// op saves the current mode, forces its own (trackAll for a redline, off for a
+// clean edit/redact), then restores. If two overlapped, the second would capture
+// the FIRST op's forced mode as its "prior" and, on restore, could leave the
+// document with tracking OFF - so later edits would go untracked, which for a
+// redline tool is a real correctness/safety hole. Running them one at a time
+// guarantees each captures the true pre-op mode. Rejections are swallowed from
+// the chain so a single failed op never wedges the queue.
+let trackChain: Promise<unknown> = Promise.resolve();
+
+export function serializeTrackChanges<T>(fn: () => Promise<T>): Promise<T> {
+  const run = trackChain.then(fn, fn);
+  trackChain = run.then(
+    () => undefined,
+    () => undefined,
+  );
+  return run;
+}
+
 // Message shown when the document is protected or read-only. Office surfaces
 // this as AccessDenied, or occasionally as a GeneralException whose message
 // mentions permission/protection, so we match on both the code and the text.
@@ -37,6 +56,18 @@ function looksProtected(code: string, message: string): boolean {
     haystack.includes("read only") ||
     haystack.includes("readonly")
   );
+}
+
+/**
+ * True when an Office error indicates the document is protected/read-only. A
+ * caller that swallows per-item failures (e.g. a redact/fill loop) can use this
+ * to re-throw instead, so runWord surfaces the clean "Restrict Editing" message
+ * rather than silently reporting the value as "not found" - which for a
+ * redaction tool is a data-leak-grade wrong signal.
+ */
+export function isProtectionError(e: unknown): boolean {
+  const err = e as { message?: string; code?: string } | null;
+  return looksProtected(err?.code ?? "", err?.message ?? "");
 }
 
 export async function runWord<T>(fn: (context: Word.RequestContext) => Promise<T>): Promise<T> {

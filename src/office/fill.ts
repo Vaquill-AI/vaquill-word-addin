@@ -1,4 +1,5 @@
-import { runWord } from "./run";
+import { isProtectionError, runWord, serializeTrackChanges } from "./run";
+import { gatherExtraScopes } from "./search";
 
 const SEARCH_LIMIT = 255;
 
@@ -22,7 +23,7 @@ export async function applyFills(
   );
   if (items.length === 0) return { applied: 0, notFound: [] };
 
-  return runWord(async (context) => {
+  return serializeTrackChanges(() => runWord(async (context) => {
     const doc = context.document;
     doc.load("changeTrackingMode");
     await context.sync();
@@ -31,16 +32,23 @@ export async function applyFills(
     doc.changeTrackingMode = Word.ChangeTrackingMode.trackAll;
     await context.sync();
 
+    // Placeholders commonly sit in headers/footers (page footers, letterhead),
+    // which doc.body excludes - a body-only search would leave the literal token
+    // in the shipped file. Fan the fill across every region and replace every
+    // occurrence (a token like [EFFECTIVE DATE] may appear in both body and
+    // footer). gatherExtraScopes degrades to [] if the host lacks the regions.
+    const scopes: Word.Body[] = [doc.body, ...(await gatherExtraScopes(context))];
+
     let applied = 0;
     const notFound: string[] = [];
     try {
       let done = 0;
       for (const { placeholder, value } of items) {
         try {
-          const results = doc.body.search(placeholder, { matchCase: true });
-          results.load("items");
+          const resultSets = scopes.map((s) => s.search(placeholder, { matchCase: true }));
+          for (const r of resultSets) r.load("items");
           await context.sync();
-          const ranges = results.items;
+          const ranges = resultSets.flatMap((r) => r.items);
           if (ranges.length === 0) {
             notFound.push(placeholder);
           } else {
@@ -50,16 +58,25 @@ export async function applyFills(
             await context.sync();
             applied += ranges.length;
           }
-        } catch {
+        } catch (err) {
+          // A protected/read-only document blocks the insert. Swallowing it would
+          // report the placeholder as merely "not found"; re-throw so runWord
+          // surfaces the clean "Restrict Editing" message instead.
+          if (isProtectionError(err)) throw err;
           notFound.push(placeholder);
         }
         done += 1;
         opts.onProgress?.(done, items.length);
       }
     } finally {
-      doc.changeTrackingMode = priorMode;
-      await context.sync();
+      // Best-effort restore so a broken context can't mask the original error.
+      try {
+        doc.changeTrackingMode = priorMode;
+        await context.sync();
+      } catch {
+        // original error (if any) propagates
+      }
     }
     return { applied, notFound };
-  });
+  }));
 }

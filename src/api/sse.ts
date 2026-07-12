@@ -43,6 +43,34 @@ async function openStream(path: string, body: unknown, bearer: string, opts: Str
   }
 }
 
+// No bytes at all (not even a heartbeat) for this long means the connection has
+// gone half-open (Wi-Fi/cellular handoff, sleep/resume, a proxy holding the
+// socket). Without this, reader.read() below can hang forever and leave the
+// review/chat UI stuck "streaming" with no error. The backend sends `:`
+// heartbeats well inside this window, so a healthy stream never trips it.
+const STREAM_IDLE_TIMEOUT_MS = 60_000;
+
+/** reader.read() raced against an idle deadline. On timeout the outer finally
+ *  cancels the reader, settling the still-pending read. */
+function readWithIdleTimeout<T>(read: Promise<T>, ms: number): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(
+      () => reject(new ApiError("network", 0, "The response stalled. Please retry.")),
+      ms,
+    );
+    read.then(
+      (r) => {
+        clearTimeout(timer);
+        resolve(r);
+      },
+      (e) => {
+        clearTimeout(timer);
+        reject(e);
+      },
+    );
+  });
+}
+
 export async function postStream(path: string, body: unknown, opts: StreamHandlers): Promise<void> {
   const token = await getAccessToken();
   if (!token) throw new ApiError("unauthorized", 401, "Not signed in.");
@@ -72,8 +100,23 @@ export async function postStream(path: string, body: unknown, opts: StreamHandle
       else if (line.startsWith("data:")) dataLines.push(line.slice(5).replace(/^ /, ""));
     }
     if (dataLines.length === 0) return;
+    const data = dataLines.join("\n");
+    // The legal-tool streams (contract-review, etc.) do NOT emit an SSE
+    // `event:` line - they carry the event name inside the JSON payload as
+    // `{"type": "...", ...}` (see backend legal_tools_streaming._sse_event). When
+    // no explicit event line was present, recover the event from the payload so
+    // consumers can dispatch and `done` is detected. The chat stream sends real
+    // `event:` lines, so this only affects the type-in-data streams.
+    if (event === "message") {
+      try {
+        const parsed = JSON.parse(data) as { type?: unknown };
+        if (typeof parsed.type === "string") event = parsed.type;
+      } catch {
+        // Not JSON (or not a typed payload); leave as "message".
+      }
+    }
     if (event === "done") sawDone = true;
-    opts.onEvent({ event, data: dataLines.join("\n") });
+    opts.onEvent({ event, data });
   };
 
   // The read loop can exit via a truncation throw (or an event-driven throw in
@@ -84,7 +127,7 @@ export async function postStream(path: string, body: unknown, opts: StreamHandle
   try {
     // eslint-disable-next-line no-constant-condition
     while (true) {
-      const { value, done } = await reader.read();
+      const { value, done } = await readWithIdleTimeout(reader.read(), STREAM_IDLE_TIMEOUT_MS);
       if (done) break;
       buffer += decoder.decode(value, { stream: true });
       let sep: number;

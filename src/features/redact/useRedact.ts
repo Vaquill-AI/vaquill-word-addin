@@ -1,6 +1,6 @@
 import { useCallback, useState } from "react";
 import { detectEntities } from "@/api/redact";
-import { readDocumentText, readSelectionText } from "@/office/document";
+import { readFullDocumentText, readSelectionText } from "@/office/document";
 import { redactValues, type RedactScope } from "@/office/redact";
 import { CATEGORIES } from "./categories";
 import { mergeAiEntities, scanText, type RedactCandidate } from "./detect";
@@ -37,7 +37,7 @@ export function useRedact() {
       // Selection scope reads only the highlighted text; document scope reads
       // the whole body. A collapsed cursor reads as empty, so guard the user
       // toward selecting something rather than silently scanning the whole doc.
-      const text = scope === "selection" ? await readSelectionText() : await readDocumentText();
+      const text = scope === "selection" ? await readSelectionText() : await readFullDocumentText();
       if (scope === "selection") {
         if (text.trim().length === 0) {
           setState({

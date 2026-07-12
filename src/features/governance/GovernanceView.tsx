@@ -94,7 +94,7 @@ function SignoffAction({
           onChange={(e) => setNote(e.target.value)}
         />
       </div>
-      <Button variant="primary" block loading={busy} onClick={() => onSignoff(note || undefined)}>
+      <Button variant="primary" className="btn--cta" loading={busy} onClick={() => onSignoff(note || undefined)}>
         <CheckIcon size={14} /> Record my approval
       </Button>
       {error && <Banner tone="danger">{error}</Banner>}
@@ -137,7 +137,7 @@ function LockControl() {
         Make the fields Vaquill AI tagged (amounts, dates, defined terms) read-only, so nobody edits the
         approved numbers after sign-off.
       </p>
-      <Button variant={locked ? "default" : "primary"} block loading={busy} onClick={toggle}>
+      <Button variant={locked ? "default" : "primary"} className="btn--cta" loading={busy} onClick={toggle}>
         {locked ? "Unlock tagged fields" : "Lock tagged fields"}
       </Button>
       {note && <p className="small muted" style={{ margin: 0 }}>{note}</p>}

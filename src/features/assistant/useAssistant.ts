@@ -5,11 +5,37 @@ import {
   type ChatSource,
   type AssistantOptions,
 } from "@/api/chat";
-import { readDocumentText, readSelectionText } from "@/office/document";
+import { readFullDocumentText, readSelectionText } from "@/office/document";
 import { uuid } from "@/api/ids";
 import { ApiError, friendlyMessage } from "@/api/errors";
 
 export type Scope = "document" | "selection";
+
+/** A file the user attached as extra grounding context (already extracted to text). */
+export interface ContextAttachment {
+  name: string;
+  text: string;
+}
+
+// When files are attached they share the request budget with the open document,
+// so a huge attachment can't starve the doc (or vice versa). The doc keeps the
+// larger share since the assistant is primarily answering about it.
+const ATTACHMENT_BUDGET = 20_000;
+const DOC_BUDGET_WITH_ATTACHMENTS = 30_000;
+
+/** Fold attached-file text into the document context as clearly delimited blocks. */
+function mergeContext(docContext: string, attachments: ContextAttachment[]): string {
+  if (attachments.length === 0) return docContext;
+  let remaining = ATTACHMENT_BUDGET;
+  const blocks: string[] = [];
+  for (const a of attachments) {
+    if (remaining <= 0) break;
+    const body = a.text.slice(0, remaining);
+    remaining -= body.length;
+    blocks.push(`\n\n===== Attached file: ${a.name} =====\n${body}`);
+  }
+  return docContext.slice(0, DOC_BUDGET_WITH_ATTACHMENTS) + blocks.join("");
+}
 
 export interface AssistantMessage {
   id: string;
@@ -88,7 +114,12 @@ export function useAssistant() {
   }, []);
 
   const send = useCallback(
-    async (text: string, scope: Scope, grounding?: AssistantOptions) => {
+    async (
+      text: string,
+      scope: Scope,
+      grounding?: AssistantOptions,
+      attachments?: ContextAttachment[],
+    ) => {
       const trimmed = text.trim();
       if (!trimmed) return;
 
@@ -130,12 +161,17 @@ export function useAssistant() {
       let finalized = false;
 
       try {
-        const context = scope === "selection" ? await readSelectionText() : await readDocumentText();
-        if (scope === "selection" && !context.trim()) {
+        const baseContext =
+          scope === "selection" ? await readSelectionText() : await readFullDocumentText();
+        const atts = attachments ?? [];
+        // A bare selection ask needs a selection; but an attached file is context
+        // in its own right, so don't block the ask when files are attached.
+        if (scope === "selection" && !baseContext.trim() && atts.length === 0) {
           patchAssistant((m) => ({ ...m, content: "Select some text in the document first, then ask.", pending: false }));
           setState((s) => ({ ...s, streaming: false, thinking: null }));
           return;
         }
+        const context = mergeContext(baseContext, atts);
 
         await streamAssistant(
           history,
@@ -155,6 +191,9 @@ export function useAssistant() {
                 }),
               })),
             onSources: (sources) => patchAssistant((m) => ({ ...m, sources })),
+            // Backend asked to clear the answer so far (regeneration / citation
+            // correction); reset content so the re-streamed answer replaces it.
+            onReplace: () => patchAssistant((m) => ({ ...m, content: "" })),
             onDelta: (delta) =>
               setState((s) => ({
                 ...s,
@@ -200,7 +239,12 @@ export function useAssistant() {
   // and its question, then resend the question. Deferred to a macrotask so the
   // truncation commits (and messagesRef updates) before `send` rebuilds history.
   const regenerate = useCallback(
-    (assistantId: string, scope: Scope, grounding?: AssistantOptions) => {
+    (
+      assistantId: string,
+      scope: Scope,
+      grounding?: AssistantOptions,
+      attachments?: ContextAttachment[],
+    ) => {
       const msgs = messagesRef.current;
       const idx = msgs.findIndex((m) => m.id === assistantId);
       if (idx <= 0) return;
@@ -208,7 +252,7 @@ export function useAssistant() {
       if (!user || user.role !== "user") return;
       truncateBefore(user.id);
       const content = user.content;
-      setTimeout(() => void send(content, scope, grounding), 0);
+      setTimeout(() => void send(content, scope, grounding, attachments), 0);
     },
     [truncateBefore, send],
   );

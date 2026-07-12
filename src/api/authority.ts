@@ -95,9 +95,6 @@ interface ResolveResponse {
   url?: string;
 }
 
-/** Public host that renders a the case-law source opinion page. */
-const CASE_HOST = "https://example.com";
-
 /** Turn a (relative) in-app path into an absolute link to the Vaquill web app. */
 function buildAppUrl(url?: string): string | undefined {
   if (!url) return undefined;
@@ -110,11 +107,11 @@ function cleanCourt(court?: string): string | undefined {
   return court;
 }
 
-/** Turn a (usually relative) absolute_url into a real, clickable link. */
-function buildCaseUrl(absoluteUrl?: string): string | undefined {
-  if (!absoluteUrl) return undefined;
-  if (absoluteUrl.startsWith("http")) return absoluteUrl;
-  return `${CASE_HOST}${absoluteUrl.startsWith("/") ? "" : "/"}${absoluteUrl}`;
+/** Build the in-app case link from the cluster id. We deliberately do NOT link
+ *  to the external case-law host: customer-facing links must point to the
+ *  Vaquill app, per the cutover + attribution policy. */
+function buildCaseUrl(clusterId?: number): string | undefined {
+  return clusterId !== undefined ? `${config.appBase}/cases/${clusterId}` : undefined;
 }
 
 /**
@@ -205,7 +202,7 @@ export async function verifyCitation(
         court: cleanCourt(cluster.court ?? cluster.court_id),
         year: (cluster.date_filed ?? "").slice(0, 4) || undefined,
         clusterId,
-        caseUrl: buildCaseUrl(cluster.absolute_url),
+        caseUrl: buildCaseUrl(clusterId),
         citedByCount,
       };
     }

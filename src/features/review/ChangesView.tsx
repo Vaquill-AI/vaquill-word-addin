@@ -9,6 +9,7 @@ import {
   acceptTrackedChanges,
   type DocChanges,
 } from "@/office/changes";
+import { resolveComment, replyToComment } from "@/office/comments";
 import { selectClauseInDocument } from "@/office/navigate";
 import { triageChanges, positionsSummary, type Verdict, type VerdictMap } from "./triage";
 import { usePlaybookDetails } from "@/features/playbook/usePlaybookDetails";
@@ -48,6 +49,12 @@ export function ChangesView() {
   const [bulk, setBulk] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [actionNote, setActionNote] = useState<string | null>(null);
+  // Per-comment resolve/reply state. `commentBusy` is keyed `resolve:${id}` /
+  // `reply:${id}` so only the acting control spins; `replyFor` opens one inline
+  // reply box at a time.
+  const [replyFor, setReplyFor] = useState<string | null>(null);
+  const [replyText, setReplyText] = useState("");
+  const [commentBusy, setCommentBusy] = useState<string | null>(null);
 
   const abortRef = useRef<AbortController | null>(null);
 
@@ -69,6 +76,41 @@ export function ChangesView() {
       setLoad("error");
     }
   }, []);
+
+  async function onResolveComment(id: string, resolved: boolean) {
+    setCommentBusy(`resolve:${id}`);
+    setActionError(null);
+    try {
+      const ok = await resolveComment(id, resolved);
+      if (!ok) setActionError("Could not update that comment (it may have been deleted).");
+      else await reload();
+    } catch (e) {
+      setActionError((e as Error).message);
+    } finally {
+      setCommentBusy(null);
+    }
+  }
+
+  async function onReplyComment(id: string) {
+    const text = replyText.trim();
+    if (!text) return;
+    setCommentBusy(`reply:${id}`);
+    setActionError(null);
+    try {
+      const ok = await replyToComment(id, text);
+      if (ok) {
+        setReplyText("");
+        setReplyFor(null);
+        await reload();
+      } else {
+        setActionError("Could not reply to that comment (it may have been deleted).");
+      }
+    } catch (e) {
+      setActionError((e as Error).message);
+    } finally {
+      setCommentBusy(null);
+    }
+  }
 
   useEffect(() => {
     void reload();
@@ -378,13 +420,71 @@ export function ChangesView() {
       {comments.length > 0 && (
         <div className="stack" style={{ gap: 6 }}>
           <h2 className="small muted">Comments ({comments.length})</h2>
-          {comments.map((c, i) => (
-            <div key={i} className="card change-item">
+          {comments.map((c) => (
+            <div key={c.id} className="card change-item">
               <p className="change-item__text">
                 {c.author ? <strong>{c.author}: </strong> : null}
                 {c.text}
                 {c.resolved ? <span className="small muted"> (resolved)</span> : null}
               </p>
+              {c.replies.length > 0 && (
+                <div className="comment-replies">
+                  {c.replies.map((r, ri) => (
+                    <p key={ri} className="small comment-replies__item">
+                      {r.author ? <strong>{r.author}: </strong> : null}
+                      {r.text}
+                    </p>
+                  ))}
+                </div>
+              )}
+              <div className="row" style={{ gap: 6, flexWrap: "wrap" }}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => void onResolveComment(c.id, !c.resolved)}
+                  loading={commentBusy === `resolve:${c.id}`}
+                  disabled={commentBusy !== null}
+                >
+                  {c.resolved ? "Reopen" : "Resolve"}
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setReplyText("");
+                    setReplyFor((cur) => (cur === c.id ? null : c.id));
+                  }}
+                  disabled={commentBusy !== null}
+                >
+                  Reply
+                </Button>
+              </div>
+              {replyFor === c.id && (
+                <div className="row" style={{ gap: 6 }}>
+                  <input
+                    type="text"
+                    className="comment-reply__input"
+                    value={replyText}
+                    aria-label="Reply to comment"
+                    placeholder="Write a reply..."
+                    onChange={(e) => setReplyText(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && replyText.trim()) {
+                        e.preventDefault();
+                        void onReplyComment(c.id);
+                      }
+                    }}
+                  />
+                  <Button
+                    size="sm"
+                    onClick={() => void onReplyComment(c.id)}
+                    loading={commentBusy === `reply:${c.id}`}
+                    disabled={!replyText.trim() || commentBusy !== null}
+                  >
+                    Send
+                  </Button>
+                </div>
+              )}
             </div>
           ))}
         </div>

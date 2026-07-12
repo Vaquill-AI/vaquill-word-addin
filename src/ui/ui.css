@@ -51,6 +51,15 @@
 .btn--block {
   width: 100%;
 }
+/* Single call-to-action: a capped width, right-aligned in its row instead of
+   stretching edge-to-edge. Right-aligns in block, flex-column, and flex-row
+   parents (margin-left:auto on a shrink-to-fit flex box). */
+.btn--cta {
+  display: flex;
+  width: fit-content;
+  max-width: 280px;
+  margin-left: auto;
+}
 /* Tertiary/inline action: ink text (blue is reserved for links via .linkaction). */
 .btn--ghost {
   border-color: transparent;

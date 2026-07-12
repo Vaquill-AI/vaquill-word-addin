@@ -174,7 +174,7 @@ export function ReviewForm({
         {prefs.matterId ? " · grounded in your matter" : ""}. Change in Settings.
       </p>
 
-      <Button type="submit" variant="primary" block loading={busy}>
+      <Button type="submit" variant="primary" className="btn--cta" loading={busy}>
         Review this contract
       </Button>
     </form>

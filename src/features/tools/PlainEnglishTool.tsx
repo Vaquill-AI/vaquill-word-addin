@@ -43,7 +43,7 @@ export function PlainEnglishTool({ clauseText }: { clauseText: string }) {
 
   return (
     <div className="stack">
-      <Button variant="primary" block onClick={run} loading={busy}>
+      <Button variant="primary" className="btn--cta" onClick={run} loading={busy}>
         Explain in plain English
       </Button>
 

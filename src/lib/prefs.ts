@@ -36,7 +36,12 @@ function sanitize(raw: unknown): ReviewPrefs {
   const obj = raw as Record<string, unknown>;
   return {
     matterId: typeof obj.matterId === "string" ? obj.matterId : "",
-    jurisdiction: typeof obj.jurisdiction === "string" ? obj.jurisdiction : "",
+    // Lowercase on load: jurisdiction codes are lowercase (matching the backend
+    // `state` payload and JURISDICTIONS options). An older build persisted
+    // uppercase ("CA"), which would no longer match the lowercase <option> and
+    // silently read as "United States (general)".
+    jurisdiction:
+      typeof obj.jurisdiction === "string" ? obj.jurisdiction.toLowerCase() : "",
     contractType: typeof obj.contractType === "string" ? obj.contractType : "",
   };
 }

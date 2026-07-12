@@ -81,7 +81,7 @@ export function GuidelinesView() {
           spellCheck={false}
         />
       </Field>
-      <Button variant="primary" block onClick={start}>
+      <Button variant="primary" className="btn--cta" onClick={start}>
         Run guideline check
       </Button>
     </div>

@@ -2,12 +2,19 @@ import { getSupabase } from "@/auth/supabase";
 import { getUser } from "@/auth/session";
 
 /**
- * List the organizations the signed-in user is an ACTIVE member of.
+ * List the organizations the signed-in user is an ACTIVE member of (owned or
+ * member-of), so the org switcher can offer every workspace.
  *
- * There is no REST endpoint for this (the main app reads it from Supabase
- * directly), so we query the same tables through the add-in's authenticated
- * Supabase client. RLS scopes rows to the caller; we also filter by user_id
- * defensively. Used by the org switcher in the header.
+ * Reads `organization_members` with the org name embedded. This relies on two
+ * RLS policies that were previously broken and fixed in the DB migration
+ * `fix_org_members_rls_recursion`:
+ *   1. The `organization_members` SELECT policy used to sub-select itself,
+ *      throwing Postgres 42P17 (infinite recursion) under a user JWT; the fix
+ *      routes it through the SECURITY DEFINER helper `user_organization_ids()`.
+ *   2. `organizations` SELECT was owner-only, so a member could not read the
+ *      name of an org they belong to; the fix adds a member-visibility policy.
+ * Before that migration this call errored and returned [], which silently hid
+ * the switcher for everyone.
  */
 export interface Org {
   id: string;

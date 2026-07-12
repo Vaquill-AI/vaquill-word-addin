@@ -169,13 +169,17 @@ export function ReviewView({
     },
     [result, state.docHash],
   );
-  const { decisionOf, setDecision, addressed } = useDecisions(
+  const { decisionOf, decisionOfLive, setDecision, addressed } = useDecisions(
     result?.redlines ?? [],
     result?.id,
     snapshot?.decisions,
     persistDecisions,
   );
   const busy = state.status === "reading" || state.status === "streaming";
+  // Shared apply lock so a per-card Accept and "Apply all" can never run at the
+  // same time. Without it an insertion-type redline can be applied twice (the
+  // clause gets appended to the document end twice, with no idempotency key).
+  const [applyBusy, setApplyBusy] = useState(false);
 
   // The progress card renders below the form and was easy to miss. When a run
   // starts, bring it into view so the user immediately sees it working.
@@ -312,6 +316,8 @@ export function ReviewView({
                   index={i}
                   decision={decisionOf(i)}
                   onDecision={setDecision}
+                  applyBusy={applyBusy}
+                  setApplyBusy={setApplyBusy}
                 />
               ))}
             </div>
@@ -323,7 +329,10 @@ export function ReviewView({
             redlines={redlines}
             contractType={result.contractType ?? params?.contractType ?? "other"}
             decisionOf={decisionOf}
+            decisionOfLive={decisionOfLive}
             setDecision={setDecision}
+            applyBusy={applyBusy}
+            setApplyBusy={setApplyBusy}
           />
         )}
       </div>

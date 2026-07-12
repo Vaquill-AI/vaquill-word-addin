@@ -6,7 +6,7 @@ import { CheckIcon } from "@/ui/icons";
 import { extractClause, type ExtractedClause } from "@/api/clause";
 import { reconcileTerms, type Reconciliation } from "@/api/reconcile";
 import { insertClauseTracked } from "@/office/richInsert";
-import { readDocumentText } from "@/office/document";
+import { readFullDocumentText } from "@/office/document";
 import { ApiError, friendlyMessage } from "@/api/errors";
 import "./transplant.css";
 
@@ -67,7 +67,7 @@ export function TransplantView() {
     setReconciling(true);
     setNote(null);
     try {
-      const dest = await readDocumentText();
+      const dest = await readFullDocumentText();
       setRecon(await reconcileTerms(clauseText, dest));
     } catch (e) {
       setNote(e instanceof ApiError ? friendlyMessage(e) : (e as Error).message);
@@ -157,7 +157,7 @@ export function TransplantView() {
 
             <Button
               variant="primary"
-              block
+              className="btn--cta"
               onClick={() => insert(recon?.reconciledText ?? state.clause.text)}
               disabled={inserted}
               loading={inserting}

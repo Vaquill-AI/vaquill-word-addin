@@ -1,5 +1,8 @@
 import { useEffect } from "react";
 import { CheckIcon } from "@/ui/icons";
+import { ATTACH_ACCEPT } from "@/api/context";
+import { AttachmentChips } from "./AttachmentChips";
+import { MAX_ATTACHMENTS, type AttachedFile } from "./useAttachments";
 import "./context-menu.css";
 
 /**
@@ -47,11 +50,21 @@ export function ContextMenu({
   config,
   onChange,
   hasMatter,
+  attachments,
+  onAttach,
+  onRemoveAttachment,
+  atCap,
   onClose,
 }: {
   config: ContextConfig;
   onChange: (config: ContextConfig) => void;
   hasMatter: boolean;
+  /** Files attached as ad-hoc context (uploaded + extracted server-side). */
+  attachments: AttachedFile[];
+  onAttach: (file: File) => void;
+  onRemoveAttachment: (id: string) => void;
+  /** True when the attachment count cap is reached (attach control disabled). */
+  atCap: boolean;
   onClose: () => void;
 }) {
   useEffect(() => {
@@ -101,6 +114,37 @@ export function ContextMenu({
             Set an active matter in Settings to search its documents.
           </p>
         )}
+
+        <div className="attach ctx-attach">
+          <div className="attach__head">
+            <span className="ctx-source__label">Attach files</span>
+            <span className="small muted">Upload documents to ground this question</span>
+          </div>
+
+          <AttachmentChips files={attachments} onRemove={onRemoveAttachment} />
+
+          <label className={`attach__add${atCap ? " attach__add--disabled" : ""}`}>
+            <input
+              type="file"
+              accept={ATTACH_ACCEPT}
+              multiple
+              disabled={atCap}
+              className="attach__input"
+              onChange={(e) => {
+                const picked = Array.from(e.target.files ?? []);
+                for (const file of picked) onAttach(file);
+                // Reset so re-picking the same file after removal fires onChange.
+                e.target.value = "";
+              }}
+            />
+            <span aria-hidden>+</span> Attach file
+          </label>
+          <p className="attach__hint small muted">
+            {atCap
+              ? `Attachment limit reached (${MAX_ATTACHMENTS} files).`
+              : `PDF, Word, or text. Up to ${MAX_ATTACHMENTS} files.`}
+          </p>
+        </div>
       </div>
     </>
   );

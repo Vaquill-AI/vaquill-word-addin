@@ -3,7 +3,7 @@ import { Banner, Button, Field, Spinner, LiveRegion } from "@/ui/primitives";
 import { InfoTip } from "@/ui/InfoTip";
 import { RedlineCard } from "@/features/review/RedlineCard";
 import { editDocument, type EditItem } from "@/api/edit";
-import { readDocumentText } from "@/office/document";
+import { readFullDocumentText } from "@/office/document";
 import { ApiError, friendlyMessage } from "@/api/errors";
 import type { RedlineSuggestion } from "@/api/types";
 import type { Decision } from "@/features/review/decisions";
@@ -48,7 +48,7 @@ export function EditView() {
     setState({ status: "generating" });
     setDecisions({});
     try {
-      const text = await readDocumentText();
+      const text = await readFullDocumentText();
       const edits = await editDocument(text, instr);
       setState({ status: "review", redlines: edits.map(toRedline) });
     } catch (e) {
@@ -81,7 +81,7 @@ export function EditView() {
       </Field>
       <Button
         variant="primary"
-        block
+        className="btn--cta"
         onClick={generate}
         loading={state.status === "generating"}
         disabled={!instruction.trim() || state.status === "generating"}
