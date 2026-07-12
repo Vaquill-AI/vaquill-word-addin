@@ -1,0 +1,31 @@
+.sendready-view {
+  gap: 12px;
+}
+
+.sendready-list {
+  gap: 0;
+}
+
+.sendready-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 8px 2px;
+}
+
+.sendready-row + .sendready-row {
+  border-top: 1px solid var(--border);
+}
+
+/* Status dot: a small colored disc, aligned to the label's first line. */
+.sendready-row__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-top: 5px;
+  flex-shrink: 0;
+}
+
+.sendready-row__label {
+  font-weight: 600;
+}

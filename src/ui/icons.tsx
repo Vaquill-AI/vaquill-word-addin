@@ -230,6 +230,16 @@ export function DownloadIcon({ size = 15 }: P) {
   );
 }
 
+/** Paper plane: the Send-ready pre-flight hub. */
+export function SendIcon({ size = 15 }: P) {
+  return (
+    <svg {...base(size)} aria-hidden>
+      <path d="M22 2 11 13" />
+      <path d="M22 2 15 22l-4-9-9-4z" />
+    </svg>
+  );
+}
+
 /** Chain link: the cross-reference integrity checker. */
 export function LinkIcon({ size = 15 }: P) {
   return (

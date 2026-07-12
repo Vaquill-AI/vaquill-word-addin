@@ -1,7 +1,7 @@
 import { useCallback, useRef, useState } from "react";
 import { Button, Banner, Badge, Field, Spinner, SegmentedControl } from "@/ui/primitives";
 import { InfoTip } from "@/ui/InfoTip";
-import { CheckIcon, CopyIcon } from "@/ui/icons";
+import { CheckIcon, CopyIcon, FillIcon, ArrowLeftIcon } from "@/ui/icons";
 import {
   generateDraft,
   generateDraftQueued,
@@ -25,6 +25,8 @@ import { getReviewPrefs } from "@/lib/prefs";
 import { SaveToVaquill } from "@/features/integration/SaveToVaquill";
 import { TemplatesView } from "./TemplatesView";
 import { SavedDraftsView } from "./SavedDraftsView";
+import { TransplantView } from "@/features/transplant/TransplantView";
+import { FillView } from "@/features/fill/FillView";
 import { DRAFT_MODE_OPTIONS, type DraftMode } from "./mode";
 import { ApiError, friendlyMessage } from "@/api/errors";
 import "./draft.css";
@@ -188,6 +190,24 @@ export function DraftView() {
   }
   if (mode === "saved") {
     return <SavedDraftsView mode={mode} setMode={setMode} />;
+  }
+  // Transplant and Fill are secondary "bring content in" surfaces. They keep
+  // their own titles, so Draft just adds a back control to return to Generate.
+  if (mode === "transplant" || mode === "fill") {
+    return (
+      <div className="stack draft-view">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setMode("generate")}
+          style={{ alignSelf: "flex-start" }}
+          aria-label="Back to Draft"
+        >
+          <ArrowLeftIcon size={14} /> Draft
+        </Button>
+        {mode === "transplant" ? <TransplantView /> : <FillView />}
+      </div>
+    );
   }
 
   if (status === "done" && result) {
@@ -464,6 +484,20 @@ export function DraftView() {
       )}
 
       {status === "error" && error && <Banner tone="danger">{error}</Banner>}
+
+      {status === "idle" && (
+        <div className="draft-bringin stack" style={{ gap: 6 }}>
+          <span className="small muted">Or bring content in from another document</span>
+          <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+            <Button variant="default" size="sm" onClick={() => setMode("transplant")}>
+              <CopyIcon size={14} /> Pull a clause
+            </Button>
+            <Button variant="default" size="sm" onClick={() => setMode("fill")}>
+              <FillIcon size={14} /> Fill placeholders
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

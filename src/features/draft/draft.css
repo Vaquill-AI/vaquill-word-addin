@@ -91,3 +91,11 @@
   overflow: hidden;
   line-height: 1.4;
 }
+
+/* Secondary "bring content in" affordance under the Generate form: set apart
+   with a divider so it reads as an alternative, not part of the form. */
+.draft-bringin {
+  margin-top: 4px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}

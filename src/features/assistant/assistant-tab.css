@@ -1,0 +1,25 @@
+/* Ask/Edit shell for the Assistant tab. The toggle is a fixed-height row; the
+   body takes the rest so the chat (height:100%, own scroll) and the edit form
+   (scrolls) both fill the pane correctly. */
+.assistant-tab {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.assistant-tab__toggle {
+  flex-shrink: 0;
+  padding: var(--space-s) var(--space-l) 0;
+}
+
+.assistant-tab__body {
+  flex: 1;
+  min-height: 0;
+}
+
+/* Chat manages its own scroll and full-bleed padding; the edit form does not,
+   so pad + scroll it here only in Edit mode. */
+.assistant-tab__body--pad {
+  overflow-y: auto;
+  padding: var(--space-l);
+}

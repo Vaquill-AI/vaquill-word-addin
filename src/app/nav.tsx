@@ -14,25 +14,21 @@ import { createContext, useCallback, useContext, useMemo, useState, type ReactNo
  */
 
 export type AppTab = "home" | "review" | "draft" | "assistant" | "research" | "playbook" | "tools";
-export type ReviewSub = "redlines" | "changes" | "citations" | "signoff";
+export type ReviewSub = "redlines" | "changes" | "compare" | "citations";
 export type SelectionToolKey = "rewrite" | "explain" | "plain" | "risk" | "compliance";
 export type ToolKey =
-  | "nda"
-  | "compare"
   | "cleancopy"
-  | "compliance"
   | "terms"
   | "xref"
-  | "redact"
-  | "fill"
-  | "edit"
-  | "transplant";
+  | "sendready"
+  | "redact";
 
 export type AppIntent =
   // Review hub
   | { kind: "reviewContract" }
   | { kind: "runPlaybook"; playbookId: string; contractType: string }
   | { kind: "checkCitations" }
+  | { kind: "reviewPreset"; preset: "nda" | "compliance" }
   // Assistant
   | { kind: "assistantAsk"; prompt: string; scope?: "document" | "selection"; autoSend?: boolean }
   | { kind: "selectionTool"; tool: SelectionToolKey }
@@ -66,7 +62,11 @@ export function AppNavProvider({ children }: { children: ReactNode }) {
   const navigate = useCallback((nextTab: AppTab, nextIntent?: AppIntent) => {
     // Some intents also target a Review sub-tab.
     if (nextIntent?.kind === "checkCitations") setReviewSub("citations");
-    else if (nextIntent?.kind === "reviewContract" || nextIntent?.kind === "runPlaybook") {
+    else if (
+      nextIntent?.kind === "reviewContract" ||
+      nextIntent?.kind === "runPlaybook" ||
+      nextIntent?.kind === "reviewPreset"
+    ) {
       setReviewSub("redlines");
     }
     setTab(nextTab);

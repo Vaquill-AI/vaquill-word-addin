@@ -118,10 +118,7 @@ export function HomeView() {
             <button
               type="button"
               className="home__signal home__signal--btn"
-              onClick={() => {
-                setReviewSub("signoff");
-                setTab("review");
-              }}
+              onClick={() => navigate("tools", { kind: "openTool", tool: "sendready" })}
             >
               {signals?.signoff ? (
                 <Badge tone={SIGNOFF_TONE[signals.signoff]}>{SIGNOFF_LABEL[signals.signoff]}</Badge>
@@ -151,7 +148,7 @@ export function HomeView() {
           icon={<ShieldCheckIcon size={18} />}
           title="Check compliance"
           desc="Test the document against a regulation or your guidelines."
-          onClick={() => navigate("tools", { kind: "openTool", tool: "compliance" })}
+          onClick={() => navigate("review", { kind: "reviewPreset", preset: "compliance" })}
         />
         <ActionRow
           icon={<DraftIcon size={18} />}

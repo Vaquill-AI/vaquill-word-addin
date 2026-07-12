@@ -18,6 +18,9 @@ import { DocumentTools } from "./DocumentTools";
 import { OutlinePanel } from "./OutlinePanel";
 import { SaveToVaquill } from "@/features/integration/SaveToVaquill";
 import { RecordGovernance } from "@/features/governance/RecordGovernance";
+import { NdaTriageView } from "@/features/nda/NdaTriageView";
+import { ComplianceView } from "@/features/compliance/ComplianceView";
+import { ArrowLeftIcon } from "@/ui/icons";
 import { useReviewContext } from "./ReviewProvider";
 import type { RunParams } from "./useReview";
 import { useReviewFreshness } from "./useReviewFreshness";
@@ -74,16 +77,23 @@ function fmtDate(iso: string): string {
 
 export function ReviewView({
   pendingPlaybook,
+  pendingPreset,
   onPendingConsumed,
 }: {
   /** A "Run this playbook" handoff from the Playbook tab: pre-fills the form. */
   pendingPlaybook?: { playbookId: string; contractType: string } | null;
+  /** A "quick check" handoff: open the NDA-screen or compliance preset. */
+  pendingPreset?: "nda" | "compliance" | null;
   onPendingConsumed?: () => void;
 } = {}) {
   const { state, run, reset, hydrate } = useReviewContext();
   const [params, setParams] = useState<RunParams | null>(null);
   const [formInit, setFormInit] = useState<{ contractType: string; playbookId: string } | null>(null);
   const [filter, setFilter] = useState<RedlineFilter>("all");
+  // Quick-check presets: an NDA screen and a compliance check are review flavors,
+  // so they live here rather than as separate tools. When set, the preset view
+  // takes over; the full review's state is preserved underneath.
+  const [preset, setPreset] = useState<null | "nda" | "compliance">(null);
   const [snapshot, setSnapshot] = useState<ReviewSnapshot | null>(null);
   const [dismissedResume, setDismissedResume] = useState(false);
   const [resumeChanged, setResumeChanged] = useState(false);
@@ -118,6 +128,13 @@ export function ReviewView({
     reset();
     onPendingConsumed?.();
   }, [pendingPlaybook, reset, onPendingConsumed]);
+
+  // A "quick check" handoff opens the NDA / compliance preset.
+  useEffect(() => {
+    if (!pendingPreset) return;
+    setPreset(pendingPreset);
+    onPendingConsumed?.();
+  }, [pendingPreset, onPendingConsumed]);
 
   // Persist a freshly completed review into the .docx (skip when resuming).
   useEffect(() => {
@@ -216,6 +233,23 @@ export function ReviewView({
     setParams(p);
     setFilter("all");
     void run(p);
+  }
+
+  if (preset) {
+    return (
+      <div className="stack review">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setPreset(null)}
+          style={{ alignSelf: "flex-start" }}
+          aria-label="Back to Review"
+        >
+          <ArrowLeftIcon size={14} /> Review
+        </Button>
+        {preset === "nda" ? <NdaTriageView /> : <ComplianceView />}
+      </div>
+    );
   }
 
   if (result) {
@@ -381,6 +415,20 @@ export function ReviewView({
         busy={busy}
         initial={formInit ?? undefined}
       />
+
+      {!busy && (
+        <div className="review-presets stack" style={{ gap: 6 }}>
+          <span className="small muted">Or run a quick check instead of a full review</span>
+          <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+            <Button variant="default" size="sm" onClick={() => setPreset("nda")}>
+              NDA quick-screen
+            </Button>
+            <Button variant="default" size="sm" onClick={() => setPreset("compliance")}>
+              Compliance check
+            </Button>
+          </div>
+        </div>
+      )}
 
       {busy && (
         <div className="stack" style={{ gap: 8 }} ref={streamingRef}>

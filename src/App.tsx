@@ -19,9 +19,9 @@ import { LoginView } from "@/features/auth/LoginView";
 import { HomeView } from "@/features/home/HomeView";
 import { ReviewView } from "@/features/review/ReviewView";
 import { ChangesView } from "@/features/review/ChangesView";
+import { CompareView } from "@/features/compare/CompareView";
 import { AuthorityView } from "@/features/authority/AuthorityView";
-import { GovernanceView } from "@/features/governance/GovernanceView";
-import { AssistantView } from "@/features/assistant/AssistantView";
+import { AssistantTab } from "@/features/assistant/AssistantTab";
 import { ResearchView } from "@/features/research/ResearchView";
 import { DraftView } from "@/features/draft/DraftView";
 import { PlaybookView } from "@/features/playbook/PlaybookView";
@@ -38,11 +38,15 @@ import "./styles/app.css";
  * others; reviewing a document is one hub with a sub-nav; the document utilities
  * (Compliance, Redact, Fill) are folded under a single Tools launcher.
  */
+// Order leads with the primary in-document jobs (Review is the flagship and the
+// most frequent task for an in-house transactional user), then the launcher and
+// secondary surfaces. Home/Research/Playbook are slated to slim or deep-link out
+// in the IA consolidation; this is the interim reorder.
 const TABS: { id: AppTab; label: string; icon: (p: { size?: number }) => ReactNode }[] = [
-  { id: "home", label: "Home", icon: HomeIcon },
   { id: "review", label: "Review", icon: ReviewIcon },
   { id: "draft", label: "Draft", icon: DraftIcon },
   { id: "assistant", label: "Assistant", icon: AssistantIcon },
+  { id: "home", label: "Home", icon: HomeIcon },
   { id: "research", label: "Research", icon: ResearchIcon },
   { id: "playbook", label: "Playbook", icon: PlaybookIcon },
   { id: "tools", label: "Tools", icon: ToolsIcon },
@@ -74,6 +78,9 @@ function AppShell() {
     tab === "review" && intent?.kind === "runPlaybook"
       ? { playbookId: intent.playbookId, contractType: intent.contractType }
       : null;
+  // A "quick check" handoff (NDA screen / compliance) opens that Review preset.
+  const pendingPreset =
+    tab === "review" && intent?.kind === "reviewPreset" ? intent.preset : null;
   // reviewContract / checkCitations intents only steer navigation; consume them
   // once we have landed so they do not re-fire.
   useEffect(() => {
@@ -160,8 +167,8 @@ function AppShell() {
             options={[
               { value: "redlines", label: "Redlines" },
               { value: "changes", label: "Changes" },
+              { value: "compare", label: "Compare" },
               { value: "citations", label: "Citations" },
-              { value: "signoff", label: "Sign-off" },
             ]}
           />
         </div>
@@ -195,18 +202,22 @@ function AppShell() {
           <HomeView />
         ) : tab === "review" ? (
           reviewSub === "redlines" ? (
-            <ReviewView pendingPlaybook={pendingPlaybook} onPendingConsumed={clearIntent} />
+            <ReviewView
+              pendingPlaybook={pendingPlaybook}
+              pendingPreset={pendingPreset}
+              onPendingConsumed={clearIntent}
+            />
           ) : reviewSub === "changes" ? (
             <ChangesView />
-          ) : reviewSub === "citations" ? (
-            <AuthorityView />
+          ) : reviewSub === "compare" ? (
+            <CompareView />
           ) : (
-            <GovernanceView />
+            <AuthorityView />
           )
         ) : tab === "draft" ? (
           <DraftView />
         ) : tab === "assistant" ? (
-          <AssistantView
+          <AssistantTab
             intent={tab === "assistant" ? intent : null}
             onIntentDone={clearIntent}
           />
