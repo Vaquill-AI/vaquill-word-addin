@@ -199,3 +199,77 @@ export function PlaybookIcon({ size = 15 }: P) {
     </svg>
   );
 }
+
+/** Open book: the Research surface (search + read US statutes). */
+export function ResearchIcon({ size = 15 }: P) {
+  return (
+    <svg {...base(size)} aria-hidden>
+      <path d="M12 7v14" />
+      <path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z" />
+    </svg>
+  );
+}
+
+/** Two overlapping pages: the Document Compare tool. */
+export function CompareIcon({ size = 15 }: P) {
+  return (
+    <svg {...base(size)} aria-hidden>
+      <rect x="3" y="4" width="11" height="16" rx="1.5" />
+      <path d="M17 8h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1h-9a1 1 0 0 1-1-1v-1" />
+    </svg>
+  );
+}
+
+/** Downward arrow into a tray: download the redline .docx. */
+export function DownloadIcon({ size = 15 }: P) {
+  return (
+    <svg {...base(size)} aria-hidden>
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+      <path d="M12 3v12M7 10l5 5 5-5" />
+    </svg>
+  );
+}
+
+/** Chain link: the cross-reference integrity checker. */
+export function LinkIcon({ size = 15 }: P) {
+  return (
+    <svg {...base(size)} aria-hidden>
+      <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+      <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+    </svg>
+  );
+}
+
+/** Quotation marks: the defined-terms checker. */
+export function TermsIcon({ size = 15 }: P) {
+  return (
+    <svg {...base(size)} aria-hidden>
+      <path d="M6 7H4a1 1 0 0 0-1 1v3a1 1 0 0 0 1 1h2a1 1 0 0 0 1-1V6a3 3 0 0 1-3 3" />
+      <path d="M15 7h-2a1 1 0 0 0-1 1v3a1 1 0 0 0 1 1h2a1 1 0 0 0 1-1V6a3 3 0 0 1-3 3" />
+      <path d="M20 15v2a1 1 0 0 1-1 1H5" />
+    </svg>
+  );
+}
+
+/** Clipboard with a check: the NDA triage 10-criteria screen. */
+export function ChecklistIcon({ size = 15 }: P) {
+  return (
+    <svg {...base(size)} aria-hidden>
+      <rect x="5" y="4" width="14" height="17" rx="2" />
+      <path d="M9 4V3a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1" />
+      <path d="m8.5 12 2 2 3.5-3.5" />
+    </svg>
+  );
+}
+
+/** Broom: produce a clean copy (accept changes, strip comments). */
+export function CleanIcon({ size = 15 }: P) {
+  return (
+    <svg {...base(size)} aria-hidden>
+      <path d="M19 3 12 10" />
+      <path d="M14 6.5 17.5 10" />
+      <path d="M11 9 4 16c-1 1-1 3 0 4s3 1 4 0l7-7" />
+      <path d="M6 21c0-2-1-3-3-3" />
+    </svg>
+  );
+}

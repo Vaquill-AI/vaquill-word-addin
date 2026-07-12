@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { Button, Banner, Badge, Field, Spinner, SegmentedControl } from "@/ui/primitives";
 import { InfoTip } from "@/ui/InfoTip";
 import { CheckIcon, CopyIcon } from "@/ui/icons";
@@ -7,6 +7,7 @@ import {
   generateDraftQueued,
   cancelDraftGeneration,
   isGenerationCancelled,
+  uploadDraftReference,
   DRAFT_CATEGORIES,
   DRAFT_CATEGORY_GROUPS,
   DRAFT_TONES,
@@ -15,10 +16,16 @@ import {
   type DraftIssue,
   type GenerationProgress,
 } from "@/api/drafting";
+import { ATTACH_ACCEPT } from "@/api/context";
+import { useAttachments, MAX_ATTACHMENTS } from "@/features/assistant/useAttachments";
+import { AttachmentChips } from "@/features/assistant/AttachmentChips";
 import { insertDraftFormatted } from "@/office/richInsert";
 import { JURISDICTIONS, labelOf } from "@/features/review/constants";
 import { getReviewPrefs } from "@/lib/prefs";
 import { SaveToVaquill } from "@/features/integration/SaveToVaquill";
+import { TemplatesView } from "./TemplatesView";
+import { SavedDraftsView } from "./SavedDraftsView";
+import { DRAFT_MODE_OPTIONS, type DraftMode } from "./mode";
 import { ApiError, friendlyMessage } from "@/api/errors";
 import "./draft.css";
 
@@ -32,11 +39,25 @@ function severityBadge(severity: DraftIssue["severity"]): { tone: "red" | "yello
 }
 
 export function DraftView() {
+  // Draft has two modes: Generate a first draft from inputs, or Templates,
+  // browse the firm library and insert one. Generate owns the toggle; Templates
+  // renders its own copy so both surfaces switch from the same control.
+  const [mode, setMode] = useState<DraftMode>("generate");
   const [category, setCategory] = useState("nda");
   const [title, setTitle] = useState("");
   const [jurisdiction, setJurisdiction] = useState(getReviewPrefs().jurisdiction || "");
   const [tone, setTone] = useState("balanced");
   const [instructions, setInstructions] = useState("");
+
+  // Reference documents ground the draft: upload each to /upload-reference and
+  // pass the returned ids to generate. The backend injects their text into every
+  // section prompt.
+  const refs = useAttachments(
+    useCallback(async (file) => {
+      const r = await uploadDraftReference(file);
+      return { refId: r.id };
+    }, []),
+  );
 
   const [status, setStatus] = useState<Status>("idle");
   const [result, setResult] = useState<DraftResult | null>(null);
@@ -73,6 +94,7 @@ export function DraftView() {
       governingLawState: jurisdiction || "federal",
       tone,
       specialInstructions: instructions,
+      referenceDocumentIds: refs.refIds(),
     };
 
     try {
@@ -155,6 +177,17 @@ export function DraftView() {
     setInserted(false);
     setCopyNote(null);
     setProgress(null);
+    refs.clear();
+  }
+
+  // Templates and Saved are self-contained surfaces; each renders its own mode
+  // toggle, so we delegate wholesale. Checked before the "done" branch so a user
+  // can switch modes even while a generated draft is on screen.
+  if (mode === "templates") {
+    return <TemplatesView mode={mode} setMode={setMode} />;
+  }
+  if (mode === "saved") {
+    return <SavedDraftsView mode={mode} setMode={setMode} />;
   }
 
   if (status === "done" && result) {
@@ -241,7 +274,7 @@ export function DraftView() {
         )}
 
         <div className="draft-actions">
-          <Button variant="primary" block onClick={insert} disabled={inserted} loading={inserting}>
+          <Button variant="primary" className="btn--cta" onClick={insert} disabled={inserted} loading={inserting}>
             {inserted ? (
               <>
                 <CheckIcon size={14} /> Inserted into document
@@ -282,6 +315,13 @@ export function DraftView() {
           Generate a first-draft agreement and insert it into this document.
         </p>
       </div>
+
+      <SegmentedControl<DraftMode>
+        label="Draft mode"
+        options={DRAFT_MODE_OPTIONS}
+        value={mode}
+        onChange={setMode}
+      />
 
       <div className="form-grid">
         <Field label="Document type">
@@ -339,7 +379,40 @@ export function DraftView() {
         />
       </Field>
 
-      <Button variant="primary" block onClick={generate} loading={status === "generating"}>
+      <div className="attach">
+        <div className="attach__head">
+          <span className="small" style={{ fontWeight: 600 }}>
+            Reference documents (optional)
+          </span>
+          <span className="small muted">
+            Ground the draft in an existing agreement, term sheet, or precedent. Party names,
+            defined terms, and clauses are carried across.
+          </span>
+        </div>
+        <AttachmentChips files={refs.files} onRemove={refs.remove} />
+        <label className={`attach__add${refs.atCap ? " attach__add--disabled" : ""}`}>
+          <input
+            type="file"
+            accept={ATTACH_ACCEPT}
+            multiple
+            disabled={refs.atCap}
+            className="attach__input"
+            onChange={(e) => {
+              const picked = Array.from(e.target.files ?? []);
+              for (const file of picked) refs.add(file);
+              e.target.value = "";
+            }}
+          />
+          <span aria-hidden>+</span> Attach reference
+        </label>
+        <p className="attach__hint small muted">
+          {refs.atCap
+            ? `Attachment limit reached (${MAX_ATTACHMENTS} files).`
+            : `PDF, Word, or text. Up to ${MAX_ATTACHMENTS} files.`}
+        </p>
+      </div>
+
+      <Button variant="primary" className="btn--cta" onClick={generate} loading={status === "generating"}>
         Generate draft
       </Button>
 

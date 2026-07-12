@@ -1,16 +1,43 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { Button } from "@/ui/primitives";
 import type { AppIntent } from "@/app/nav";
-import { ArrowLeftIcon, ShieldCheckIcon, RedactIcon, FillIcon, EditIcon, CopyIcon } from "@/ui/icons";
+import {
+  ArrowLeftIcon,
+  ShieldCheckIcon,
+  RedactIcon,
+  FillIcon,
+  EditIcon,
+  CopyIcon,
+  CompareIcon,
+  CleanIcon,
+  ChecklistIcon,
+  TermsIcon,
+  LinkIcon,
+} from "@/ui/icons";
 import { ToolCard, ToolCardList } from "@/ui/ToolCard";
 import { ComplianceView } from "@/features/compliance/ComplianceView";
 import { RedactView } from "@/features/redact/RedactView";
 import { FillView } from "@/features/fill/FillView";
 import { EditView } from "@/features/edit/EditView";
 import { TransplantView } from "@/features/transplant/TransplantView";
+import { CompareView } from "@/features/compare/CompareView";
+import { CleanCopyView } from "@/features/cleancopy/CleanCopyView";
+import { NdaTriageView } from "@/features/nda/NdaTriageView";
+import { DefinedTermsView } from "@/features/terms/DefinedTermsView";
+import { CrossRefView } from "@/features/xref/CrossRefView";
 import "./toolshub.css";
 
-type ToolKey = "compliance" | "redact" | "fill" | "edit" | "transplant";
+type ToolKey =
+  | "nda"
+  | "compare"
+  | "cleancopy"
+  | "compliance"
+  | "terms"
+  | "xref"
+  | "redact"
+  | "fill"
+  | "edit"
+  | "transplant";
 
 interface ToolDef {
   key: ToolKey;
@@ -22,11 +49,46 @@ interface ToolDef {
 
 const TOOLS: ToolDef[] = [
   {
+    key: "nda",
+    title: "NDA triage",
+    description: "Screen an inbound NDA against 10 standard criteria: Green, Yellow, or Red.",
+    icon: <ChecklistIcon size={18} />,
+    view: <NdaTriageView />,
+  },
+  {
+    key: "compare",
+    title: "Compare versions",
+    description: "See what changed between this document and another version as tracked changes.",
+    icon: <CompareIcon size={18} />,
+    view: <CompareView />,
+  },
+  {
+    key: "cleancopy",
+    title: "Clean copy",
+    description: "Accept changes and strip comments to produce a send-ready copy.",
+    icon: <CleanIcon size={18} />,
+    view: <CleanCopyView />,
+  },
+  {
     key: "compliance",
     title: "Compliance",
     description: "Check the document against a regulation or your own guideline questions.",
     icon: <ShieldCheckIcon size={18} />,
     view: <ComplianceView />,
+  },
+  {
+    key: "terms",
+    title: "Defined terms",
+    description: "Find terms used but not defined, defined twice, or never used.",
+    icon: <TermsIcon size={18} />,
+    view: <DefinedTermsView />,
+  },
+  {
+    key: "xref",
+    title: "Cross-references",
+    description: "Find references to a section or schedule that does not exist.",
+    icon: <LinkIcon size={18} />,
+    view: <CrossRefView />,
   },
   {
     key: "redact",

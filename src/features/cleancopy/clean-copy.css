@@ -1,0 +1,17 @@
+.cleancopy-view {
+  gap: 12px;
+}
+
+.cleancopy-option {
+  gap: 10px;
+  align-items: flex-start;
+}
+
+/* The confirmation well matches Compare's: a tinted, bordered step so the
+   destructive action reads as deliberate. */
+.cleancopy-confirm {
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-muted);
+}

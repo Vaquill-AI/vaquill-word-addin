@@ -70,3 +70,24 @@
 .draft-actions > .btn:first-child {
   flex: 1;
 }
+
+/* Template library cards (Draft > Templates mode). */
+.template-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+}
+.template-card__title {
+  font-weight: 600;
+  font-size: 13px;
+}
+.template-card__desc {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  line-height: 1.4;
+}

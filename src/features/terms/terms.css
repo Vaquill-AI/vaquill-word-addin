@@ -1,0 +1,20 @@
+.terms-view {
+  gap: 12px;
+}
+
+.terms-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 2px;
+}
+
+.terms-row + .terms-row {
+  border-top: 1px solid var(--border);
+}
+
+.terms-term {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}

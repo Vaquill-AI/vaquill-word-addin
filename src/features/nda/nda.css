@@ -1,0 +1,25 @@
+.nda-view {
+  gap: 12px;
+}
+
+.nda-verdict {
+  padding: 10px 12px;
+}
+
+.nda-routing {
+  padding-top: 2px;
+}
+
+.nda-list {
+  margin: 0;
+  padding-left: 16px;
+}
+
+.nda-criterion {
+  padding: 8px 10px;
+}
+
+/* Playbook deviation reads as an emphasized aside under the criterion. */
+.nda-deviation {
+  color: var(--brand);
+}

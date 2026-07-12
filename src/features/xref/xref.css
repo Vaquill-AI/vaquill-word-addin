@@ -1,0 +1,20 @@
+.xref-view {
+  gap: 12px;
+}
+
+.xref-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 2px;
+}
+
+.xref-row + .xref-row {
+  border-top: 1px solid var(--border);
+}
+
+.xref-label {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}

@@ -29,9 +29,11 @@ export function DistributionBar({
       {total === 0 ? (
         <span className="dist-bar__empty" />
       ) : (
-        shown.map((s) => (
+        shown.map((s, i) => (
           <span
-            key={`${s.tone}-${s.label}`}
+            // Index-keyed: two segments can legitimately share tone+label, so a
+            // tone/label key could collide. Order is stable (caller-supplied).
+            key={`${i}-${s.tone}`}
             className="dist-bar__seg"
             style={{ flexGrow: s.count, background: TONE_COLOR[s.tone] }}
             title={`${s.count} ${s.label}`}

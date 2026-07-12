@@ -1,0 +1,25 @@
+.compare-view {
+  gap: 12px;
+}
+
+.compare-summary {
+  margin: 0;
+  padding-left: 16px;
+}
+
+.compare-loading {
+  padding: 8px 0;
+}
+
+.compare-actions {
+  margin-top: 2px;
+}
+
+/* The destructive-replace confirmation sits in a tinted, bordered well so the
+   warning reads as a distinct, deliberate step rather than another button. */
+.compare-confirm {
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-muted);
+}

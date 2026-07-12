@@ -7,7 +7,13 @@ import { runWord } from "./run";
  */
 export interface DocChanges {
   trackedChanges: { author: string; type: string; text: string }[];
-  comments: { author: string; text: string; resolved: boolean }[];
+  comments: {
+    id: string;
+    author: string;
+    text: string;
+    resolved: boolean;
+    replies: { author: string; text: string }[];
+  }[];
 }
 
 export async function readDocumentChanges(): Promise<DocChanges> {
@@ -16,15 +22,17 @@ export async function readDocumentChanges(): Promise<DocChanges> {
     const changes = body.getTrackedChanges();
     changes.load("author,type,text");
     const comments = body.getComments();
-    comments.load("authorName,content,resolved");
+    comments.load("id,authorName,content,resolved,replies/authorName,replies/content");
     await context.sync();
 
     return {
       trackedChanges: changes.items.map((c) => ({ author: c.author, type: c.type, text: c.text })),
       comments: comments.items.map((c) => ({
+        id: c.id,
         author: c.authorName,
         text: c.content,
         resolved: c.resolved,
+        replies: c.replies.items.map((r) => ({ author: r.authorName, text: r.content })),
       })),
     };
   });
@@ -73,6 +81,24 @@ export async function acceptTrackedChanges(texts: string[]): Promise<number> {
     for (const t of targets) t.accept();
     await context.sync();
     return targets.length;
+  });
+}
+
+/**
+ * Accept EVERY tracked change in the document in one pass, to produce a clean
+ * copy. Done by iterating `getTrackedChanges()` and calling `.accept()` on each
+ * (cross-platform), because `document.body.acceptAllRevisions` is desktop-only.
+ * Returns the number accepted. Word's native Undo still reverses it. WordApi 1.6.
+ */
+export async function acceptAllTrackedChanges(): Promise<number> {
+  return runWord(async (context) => {
+    const changes = context.document.body.getTrackedChanges();
+    changes.load("type");
+    await context.sync();
+    const items = changes.items;
+    for (const c of items) c.accept();
+    await context.sync();
+    return items.length;
   });
 }
 

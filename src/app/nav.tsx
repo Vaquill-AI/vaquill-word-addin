@@ -13,10 +13,20 @@ import { createContext, useCallback, useContext, useMemo, useState, type ReactNo
  * it has applied it, so an intent fires exactly once.
  */
 
-export type AppTab = "home" | "review" | "draft" | "assistant" | "playbook" | "tools";
+export type AppTab = "home" | "review" | "draft" | "assistant" | "research" | "playbook" | "tools";
 export type ReviewSub = "redlines" | "changes" | "citations" | "signoff";
 export type SelectionToolKey = "rewrite" | "explain" | "plain" | "risk" | "compliance";
-export type ToolKey = "compliance" | "redact" | "fill" | "edit" | "transplant";
+export type ToolKey =
+  | "nda"
+  | "compare"
+  | "cleancopy"
+  | "compliance"
+  | "terms"
+  | "xref"
+  | "redact"
+  | "fill"
+  | "edit"
+  | "transplant";
 
 export type AppIntent =
   // Review hub
