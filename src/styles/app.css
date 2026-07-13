@@ -51,12 +51,17 @@
   top: 0;
   z-index: 5;
 }
-.appbar__mark {
+/* Logo links to the marketing site; the anchor must not add its own box to the
+   flex bar, so it lays out like the image it wraps. */
+.appbar__brand {
   align-self: center;
   flex: 0 0 auto;
+  display: inline-flex;
+  margin-right: 2px;
+}
+.appbar__mark {
   border-radius: 5px;
   display: block;
-  margin-right: 2px;
 }
 .appbar__tabs {
   display: flex;

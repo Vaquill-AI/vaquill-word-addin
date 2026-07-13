@@ -97,13 +97,22 @@ function AppShell() {
         <Header />
       ) : (
         <header className="appbar">
-          <img
-            src="/assets/icon-80.png"
-            width={22}
-            height={22}
-            alt="Vaquill AI"
-            className="appbar__mark"
-          />
+          <a
+            href="https://vaquill.ai"
+            target="_blank"
+            rel="noreferrer"
+            className="appbar__brand"
+            title="Vaquill AI"
+            aria-label="Open vaquill.ai in your browser"
+          >
+            <img
+              src="/assets/icon-80.png"
+              width={22}
+              height={22}
+              alt="Vaquill AI"
+              className="appbar__mark"
+            />
+          </a>
           <nav
             className="appbar__tabs"
             role="tablist"

@@ -144,6 +144,7 @@ export function SegmentedControl<T extends string>({
         return (
           <button
             key={o.value}
+            type="button"
             role="tab"
             aria-selected={on}
             tabIndex={on ? 0 : -1}

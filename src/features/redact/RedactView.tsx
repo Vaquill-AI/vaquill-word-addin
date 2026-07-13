@@ -227,7 +227,11 @@ function RedactReview({
             <span className="small muted">Detecting names, organizations, and locations...</span>
           </div>
         ) : (
-          <Banner tone="info">No sensitive values were found for the selected categories.</Banner>
+          <Banner tone="info">
+            Redact finds sensitive values (IDs, contact details, financial data, and names) so you
+            can remove them for good. Nothing matched the categories you chose. Add more categories,
+            or widen the scope to the whole document, then scan again.
+          </Banner>
         )}
       </div>
     );

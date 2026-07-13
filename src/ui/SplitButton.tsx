@@ -1,6 +1,8 @@
 import { type ReactNode, useEffect, useId, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Button } from "./primitives";
 import type { OverflowMenuItem } from "./OverflowMenu";
+import { usePopover } from "./usePopover";
 import "./split-button.css";
 
 function CaretIcon() {
@@ -47,12 +49,17 @@ export function SplitButton({
 }) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
   const menuId = useId();
+  const style = usePopover(open, rootRef, menuRef, { align: "end", gap: 4 });
 
   useEffect(() => {
     if (!open) return;
     const onDown = (e: MouseEvent) => {
-      if (!rootRef.current?.contains(e.target as Node)) setOpen(false);
+      const target = e.target as Node;
+      // Menu is portaled outside the root; check it too so a mousedown on an item
+      // does not close before its click fires.
+      if (!rootRef.current?.contains(target) && !menuRef.current?.contains(target)) setOpen(false);
     };
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
@@ -94,25 +101,27 @@ export function SplitButton({
       >
         <CaretIcon />
       </Button>
-      {open && (
-        <div className="split-btn__menu" id={menuId} role="menu">
-          {items.map((item) => (
-            <button
-              key={item.label}
-              type="button"
-              role="menuitem"
-              className={`split-btn__item${item.tone === "danger" ? " split-btn__item--danger" : ""}`}
-              onClick={() => {
-                setOpen(false);
-                item.onSelect();
-              }}
-            >
-              {item.icon}
-              <span>{item.label}</span>
-            </button>
-          ))}
-        </div>
-      )}
+      {open &&
+        createPortal(
+          <div className="split-btn__menu" id={menuId} role="menu" ref={menuRef} style={style}>
+            {items.map((item) => (
+              <button
+                key={item.label}
+                type="button"
+                role="menuitem"
+                className={`split-btn__item${item.tone === "danger" ? " split-btn__item--danger" : ""}`}
+                onClick={() => {
+                  setOpen(false);
+                  item.onSelect();
+                }}
+              >
+                {item.icon}
+                <span>{item.label}</span>
+              </button>
+            ))}
+          </div>,
+          document.body,
+        )}
     </div>
   );
 }

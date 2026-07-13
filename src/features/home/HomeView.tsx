@@ -6,6 +6,7 @@ import {
   AssistantIcon,
   ShieldCheckIcon,
   CheckIcon,
+  ChevronIcon,
 } from "@/ui/icons";
 import { useAppNav } from "@/app/nav";
 import { getDocumentStats } from "@/office/document";
@@ -96,36 +97,29 @@ export function HomeView() {
           </p>
         ) : (
           <div className="home__signals">
-            <div className="home__signal">
-              <span className="home__signal-val">{signals?.words ?? 0}</span>
-              <span className="small muted">words</span>
-            </div>
-            <button
-              type="button"
-              className="home__signal home__signal--btn"
+            <Signal value={signals?.words ?? 0} label="words" />
+            <Signal
+              value={signals?.trackedChanges ?? 0}
+              label="counterparty changes"
+              alert={(signals?.trackedChanges ?? 0) > 0}
               onClick={() => {
                 setReviewSub("changes");
                 setTab("review");
               }}
-            >
-              <span className="home__signal-val">{signals?.trackedChanges ?? 0}</span>
-              <span className="small muted">counterparty changes</span>
-            </button>
-            <div className="home__signal">
-              <span className="home__signal-val">{signals?.openComments ?? 0}</span>
-              <span className="small muted">open comments</span>
-            </div>
-            <button
-              type="button"
-              className="home__signal home__signal--btn"
+            />
+            <Signal
+              value={signals?.openComments ?? 0}
+              label="open comments"
+              alert={(signals?.openComments ?? 0) > 0}
+              onClick={() => {
+                setReviewSub("changes");
+                setTab("review");
+              }}
+            />
+            <SignoffSignal
+              signoff={signals?.signoff ?? null}
               onClick={() => navigate("tools", { kind: "openTool", tool: "sendready" })}
-            >
-              {signals?.signoff ? (
-                <Badge tone={SIGNOFF_TONE[signals.signoff]}>{SIGNOFF_LABEL[signals.signoff]}</Badge>
-              ) : (
-                <span className="small muted">Sign-off not set</span>
-              )}
-            </button>
+            />
           </div>
         )}
       </div>
@@ -167,6 +161,64 @@ export function HomeView() {
   );
 }
 
+/** One document-status stat: a prominent tabular number over a small label.
+ *  Turns amber when there is something to act on, and (when clickable) shows a
+ *  hover fill + chevron so it reads as a jump into the surface that resolves it. */
+function Signal({
+  value,
+  label,
+  alert,
+  onClick,
+}: {
+  value: number;
+  label: string;
+  alert?: boolean;
+  onClick?: () => void;
+}) {
+  const cls = `home__signal${onClick ? " home__signal--btn" : ""}${alert ? " home__signal--alert" : ""}`;
+  const body = (
+    <span className="home__signal-body">
+      <span className="home__signal-val">{value}</span>
+      <span className="home__signal-label">{label}</span>
+    </span>
+  );
+  if (!onClick) return <div className={cls}>{body}</div>;
+  return (
+    <button type="button" className={cls} onClick={onClick}>
+      {body}
+      <span className="home__signal-go" aria-hidden>
+        <ChevronIcon size={14} />
+      </span>
+    </button>
+  );
+}
+
+/** Sign-off status as a small pill (or "Not set"), clickable into the send-ready
+ *  gate. Kept visually consistent with the numeric stats: value over label. */
+function SignoffSignal({
+  signoff,
+  onClick,
+}: {
+  signoff: GovernanceStatus | null;
+  onClick: () => void;
+}) {
+  return (
+    <button type="button" className="home__signal home__signal--btn" onClick={onClick}>
+      <span className="home__signal-body">
+        {signoff ? (
+          <Badge tone={SIGNOFF_TONE[signoff]}>{SIGNOFF_LABEL[signoff]}</Badge>
+        ) : (
+          <span className="home__signal-val home__signal-val--sm">Not set</span>
+        )}
+        <span className="home__signal-label">sign-off</span>
+      </span>
+      <span className="home__signal-go" aria-hidden>
+        <ChevronIcon size={14} />
+      </span>
+    </button>
+  );
+}
+
 function ActionRow({
   icon,
   title,
@@ -186,6 +238,9 @@ function ActionRow({
       <span className="home__action-body">
         <span className="home__action-title">{title}</span>
         <span className="home__action-desc small muted">{desc}</span>
+      </span>
+      <span className="home__action-go" aria-hidden>
+        <ChevronIcon size={15} />
       </span>
     </button>
   );

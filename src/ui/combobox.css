@@ -43,19 +43,15 @@
 }
 
 /* Floating popover: a true overlay, so a shadow is allowed. */
+/* Positioned by JS (usePopover) into a body portal, matched to the trigger
+   width and viewport-clamped, so it never clips off the pane. */
 .combobox__popover {
-  position: absolute;
-  z-index: 20;
-  top: calc(100% + 4px);
-  left: 0;
-  right: 0;
+  z-index: 1000;
   display: flex;
   flex-direction: column;
-  max-height: 280px;
   background: var(--surface);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-16);
-  overflow: hidden;
 }
 .combobox__search {
   margin: 6px;

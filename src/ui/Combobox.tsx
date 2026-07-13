@@ -1,5 +1,7 @@
 import { useEffect, useId, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { ChevronIcon, CheckIcon } from "./icons";
+import { usePopover } from "./usePopover";
 import "./combobox.css";
 
 export interface ComboOption {
@@ -35,8 +37,11 @@ export function Combobox({
   const [query, setQuery] = useState("");
   const [active, setActive] = useState(0);
   const rootRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const popRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const listId = useId();
+  const style = usePopover(open, triggerRef, popRef, { align: "start", matchWidth: true });
 
   const current = options.find((o) => o.value === value);
   const q = query.trim().toLowerCase();
@@ -45,7 +50,10 @@ export function Combobox({
   useEffect(() => {
     if (!open) return;
     function onDoc(e: MouseEvent) {
-      if (!rootRef.current?.contains(e.target as Node)) setOpen(false);
+      const target = e.target as Node;
+      // Popover is portaled outside the root, so check it too (else clicking the
+      // search input or an option would count as "outside" and close it).
+      if (!rootRef.current?.contains(target) && !popRef.current?.contains(target)) setOpen(false);
     }
     document.addEventListener("mousedown", onDoc);
     return () => document.removeEventListener("mousedown", onDoc);
@@ -85,6 +93,7 @@ export function Combobox({
       <button
         type="button"
         id={id}
+        ref={triggerRef}
         className="combobox__trigger"
         aria-haspopup="listbox"
         aria-expanded={open}
@@ -96,10 +105,11 @@ export function Combobox({
         </span>
         <ChevronIcon size={15} />
       </button>
-      {open && (
-        <div className="combobox__popover">
-          <input
-            ref={inputRef}
+      {open &&
+        createPortal(
+          <div className="combobox__popover" ref={popRef} style={style}>
+            <input
+              ref={inputRef}
             className="combobox__search"
             type="text"
             value={query}
@@ -137,8 +147,9 @@ export function Combobox({
               </li>
             ))}
           </ul>
-        </div>
-      )}
+          </div>,
+          document.body,
+        )}
     </div>
   );
 }

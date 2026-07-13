@@ -203,6 +203,8 @@ export function SettingsView() {
             value={prefs.matterId}
             onChange={(id) => setReviewPrefs({ matterId: id })}
             label="Default matter"
+            emptyLabel="General matter"
+            showWhenEmpty
           />
           <Field label="Default jurisdiction">
             <select

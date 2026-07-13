@@ -17,12 +17,12 @@
   border-left: 1px solid rgba(255, 255, 255, 0.35);
 }
 
+/* Positioned by JS (usePopover) into a body portal, viewport-clamped, so it
+   never clips off the pane. */
 .split-btn__menu {
-  position: absolute;
-  top: calc(100% + 4px);
-  left: 0;
-  z-index: 20;
+  z-index: 1000;
   min-width: 200px;
+  max-width: calc(100vw - 16px);
   padding: 4px;
   background: var(--surface);
   border: 1px solid var(--border-strong);

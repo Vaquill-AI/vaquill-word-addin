@@ -1,5 +1,7 @@
 import type { ReactNode } from "react";
 import { useEffect, useId, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import { usePopover } from "./usePopover";
 import "./overflow-menu.css";
 
 /** Vertical three-dots (kebab) glyph. Kept local so the shared icon set stays lean. */
@@ -46,6 +48,7 @@ export function OverflowMenu({
   const triggerRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const menuId = useId();
+  const style = usePopover(open, triggerRef, menuRef, { align: "end", gap: 4 });
 
   // Focus the first item when the menu opens (APG: menu button moves focus in).
   useEffect(() => {
@@ -59,7 +62,11 @@ export function OverflowMenu({
   useEffect(() => {
     if (!open) return;
     function onDocMouseDown(e: MouseEvent) {
-      if (!rootRef.current?.contains(e.target as Node)) setOpen(false);
+      const target = e.target as Node;
+      // The menu is portaled outside the root, so a mousedown on a menu item is
+      // "outside" the root; check the menu too, or the click-to-close would fire
+      // before the item's onClick and swallow the selection.
+      if (!rootRef.current?.contains(target) && !menuRef.current?.contains(target)) setOpen(false);
     }
     document.addEventListener("mousedown", onDocMouseDown);
     return () => document.removeEventListener("mousedown", onDocMouseDown);
@@ -116,16 +123,18 @@ export function OverflowMenu({
         <KebabGlyph size={16} />
       </button>
 
-      {open && (
-        <div
-          className="ovm__menu"
-          id={menuId}
-          role="menu"
-          aria-label={label}
-          ref={menuRef}
-          onKeyDown={onMenuKeyDown}
-        >
-          {items.map((item, i) => (
+      {open &&
+        createPortal(
+          <div
+            className="ovm__menu"
+            id={menuId}
+            role="menu"
+            aria-label={label}
+            ref={menuRef}
+            onKeyDown={onMenuKeyDown}
+            style={style}
+          >
+            {items.map((item, i) => (
             <button
               type="button"
               // Labels are the stable identity of a static action list here.
@@ -138,9 +147,10 @@ export function OverflowMenu({
               {item.icon && <span className="ovm__item-icon">{item.icon}</span>}
               <span className="ovm__item-label">{item.label}</span>
             </button>
-          ))}
-        </div>
-      )}
+            ))}
+          </div>,
+          document.body,
+        )}
     </div>
   );
 }

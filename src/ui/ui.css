@@ -242,15 +242,27 @@ summary:focus-visible {
   background: var(--fill-subtle);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
+  /* Size to the segments, not the pane: a 2-3 option toggle should stay compact
+     and NOT stretch edge-to-edge as the user widens the task pane. fit-content
+     handles block parents; align-self handles flex-column parents (which would
+     otherwise stretch it); max-width keeps it inside a narrow pane. */
+  width: fit-content;
+  max-width: 100%;
+  align-self: flex-start;
+}
+/* Full-width variant for the rare case that genuinely wants to span (opt-in). */
+.seg--full {
+  width: 100%;
+  align-self: stretch;
 }
 .seg__btn {
-  flex: 1;
+  flex: 1 1 auto;
   min-width: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 5px;
-  padding: 5px 6px;
+  padding: 5px 12px;
   border: none;
   border-radius: var(--radius-sm);
   background: transparent;

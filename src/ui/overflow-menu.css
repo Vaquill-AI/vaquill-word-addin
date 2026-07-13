@@ -12,12 +12,12 @@
   color: var(--text);
 }
 
+/* Positioned by JS (usePopover) into a body portal with fixed coordinates, so it
+   flips above / clamps horizontally and never clips off the pane. */
 .ovm__menu {
-  position: absolute;
-  top: calc(100% + 4px);
-  right: 0;
-  z-index: 20;
+  z-index: 1000;
   min-width: 172px;
+  max-width: calc(100vw - 16px);
   padding: 4px;
   display: flex;
   flex-direction: column;

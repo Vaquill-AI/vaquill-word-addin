@@ -205,7 +205,9 @@ function ComplianceResults({
 
       {reqs.length === 0 ? (
         <Banner tone="info">
-          No specific requirements were returned for {regulationLabel(regulation)}.
+          Compliance tests this document against a regulation and marks each requirement met,
+          partial, a gap, or not applicable. No requirements came back for{" "}
+          {regulationLabel(regulation)} this time. Try again, or choose a different regulation.
         </Banner>
       ) : (
         <>

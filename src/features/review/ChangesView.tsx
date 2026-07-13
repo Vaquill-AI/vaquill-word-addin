@@ -341,8 +341,14 @@ export function ChangesView() {
         </p>
       </div>
 
-      {tcs.length === 0 && comments.length === 0 && (
-        <Banner tone="info">This document has no tracked changes or comments.</Banner>
+      {tcs.length === 0 && (
+        <Banner tone="info">
+          {comments.length === 0
+            ? "No tracked changes or comments in this document yet. "
+            : "No tracked changes yet. "}
+          When the other side returns this contract with tracked changes, they appear here to triage
+          against your playbook, accept or reject in bulk, and draft a grounded reply to each.
+        </Banner>
       )}
 
       {tcs.length > 0 && (

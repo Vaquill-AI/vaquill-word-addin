@@ -138,7 +138,11 @@ function GuidelineResults({
       </div>
 
       {results.length === 0 ? (
-        <Banner tone="info">No results were returned. Try again or refine your guidelines.</Banner>
+        <Banner tone="info">
+          Each guideline is checked against the whole document and marked met, partial, not met, or
+          unclear, with the passage that proves it. No verdicts came back this time. Make sure each
+          line reads as a clear yes/no question, then run the check again.
+        </Banner>
       ) : (
         <>
           {chips.length > 1 && (
