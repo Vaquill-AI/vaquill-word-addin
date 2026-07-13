@@ -2,6 +2,7 @@ import { config } from "@/config";
 import { request } from "./http";
 import { ApiError } from "./errors";
 import { isStatuteCitation, type CitationKind } from "@/features/authority/extract";
+import type { ContextSnippet } from "@/lib/context-snippet";
 
 /**
  * Authority verification against Vaquill AI's US corpus.
@@ -33,6 +34,8 @@ export interface AuthorityResult {
   raw: string;
   count: number;
   verdict: Verdict;
+  /** Text around the first occurrence in the document, for an in-context preview. */
+  context?: ContextSnippet;
   /** Which corpus this was checked against. Absent is treated as a case. */
   kind?: CitationKind;
   caseName?: string;

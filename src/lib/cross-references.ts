@@ -20,6 +20,8 @@
  *    they are never wrongly flagged.
  */
 
+import { snippetAround, type ContextSnippet } from "./context-snippet";
+
 export type XrefKind = "section" | "schedule";
 
 export interface BrokenRef {
@@ -28,6 +30,8 @@ export interface BrokenRef {
   label: string;
   /** How many times this missing target is referenced. */
   count: number;
+  /** Text around the first occurrence, for an in-context preview. */
+  context?: ContextSnippet;
 }
 
 export interface CrossRefReport {
@@ -113,11 +117,11 @@ export function analyzeCrossReferences(
   const checkedSchedules = schedules.size >= 1;
 
   // Missing target -> {label, count}. Keyed to dedupe repeated references.
-  const missing = new Map<string, { kind: XrefKind; label: string; count: number }>();
-  const bump = (key: string, kind: XrefKind, label: string) => {
+  const missing = new Map<string, BrokenRef>();
+  const bump = (key: string, kind: XrefKind, label: string, context?: ContextSnippet) => {
     const prev = missing.get(key);
     if (prev) prev.count += 1;
-    else missing.set(key, { kind, label, count: 1 });
+    else missing.set(key, { kind, label, count: 1, context });
   };
 
   // Section references: "Section 7.4" / "Clause 7.4" / "Paragraph 7.4" / "§ 7.4".
@@ -126,7 +130,13 @@ export function analyzeCrossReferences(
     let m: RegExpExecArray | null;
     while ((m = secRe.exec(fullText)) !== null) {
       const id = m[1];
-      if (!hasSection(sections, id)) bump(`section:${id}`, "section", `Section ${id}`);
+      if (!hasSection(sections, id))
+        bump(
+          `section:${id}`,
+          "section",
+          `Section ${id}`,
+          snippetAround(fullText, m.index, m.index + m[0].length),
+        );
     }
   }
 
@@ -141,7 +151,12 @@ export function analyzeCrossReferences(
       const key = `${type.toUpperCase()}:${id.toUpperCase()}`;
       if (!schedules.has(key)) {
         const label = `${type.charAt(0).toUpperCase()}${type.slice(1).toLowerCase()} ${id.toUpperCase()}`;
-        bump(`schedule:${key}`, "schedule", label);
+        bump(
+          `schedule:${key}`,
+          "schedule",
+          label,
+          snippetAround(fullText, m.index, m.index + m[0].length),
+        );
       }
     }
   }

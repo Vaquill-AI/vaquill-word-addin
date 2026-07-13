@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { getPlaybooksWithPositions, type PlaybookDetail } from "@/api/playbooks";
-import { ApiError, friendlyMessage } from "@/api/errors";
+import { errorMessage } from "@/api/errors";
 
 interface State {
   status: "loading" | "ready" | "error";
@@ -18,7 +18,7 @@ export function usePlaybookDetails() {
       const playbooks = await getPlaybooksWithPositions();
       setState({ status: "ready", playbooks, error: null });
     } catch (e) {
-      const error = e instanceof ApiError ? friendlyMessage(e) : (e as Error).message;
+      const error = errorMessage(e);
       setState({ status: "error", playbooks: [], error });
     }
   }, []);

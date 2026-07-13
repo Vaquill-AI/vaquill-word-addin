@@ -16,8 +16,27 @@ export interface ImprovePromptResult {
   changed: boolean;
 }
 
-const IMPROVE_PROMPT = "/api/v1/drafting/improve-prompt";
+// Three purpose-built improvers share one request/response shape. Each sharpens
+// a different KIND of free-text field, so callers pick by what the field is:
+//   - drafting: a document-generation brief (parties/terms -> a drafter brief)
+//   - legalTool: a steering NOTE for an analysis (review focus, NDA context,
+//     rewrite instruction) -- expands the issues to examine, never the facts
+//   - chat: a research QUESTION for the assistant
+const DRAFTING = "/api/v1/drafting/improve-prompt";
+const LEGAL_TOOL = "/api/v1/legal-tools/improve-prompt";
+const CHAT = "/api/v1/chat/improve-prompt";
 
 export async function improveDraftingPrompt(prompt: string): Promise<ImprovePromptResult> {
-  return request(IMPROVE_PROMPT, { method: "POST", body: { prompt } });
+  return request(DRAFTING, { method: "POST", body: { prompt } });
+}
+
+/** Improve a steering note (review focus, NDA business context, a rewrite
+ *  instruction): expands the issues to cover without inventing facts. */
+export async function improveLegalToolPrompt(prompt: string): Promise<ImprovePromptResult> {
+  return request(LEGAL_TOOL, { method: "POST", body: { prompt } });
+}
+
+/** Improve a research question for the assistant composer. */
+export async function improveChatPrompt(prompt: string): Promise<ImprovePromptResult> {
+  return request(CHAT, { method: "POST", body: { prompt } });
 }

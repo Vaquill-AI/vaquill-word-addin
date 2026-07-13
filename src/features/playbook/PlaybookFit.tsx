@@ -6,7 +6,7 @@ import { DistributionBar, type DistributionSegment } from "@/ui/DistributionBar"
 import { FilterChips, type FilterChipOption } from "@/ui/FilterChips";
 import { StatusGroup } from "@/ui/StatusGroup";
 import { readStructuredDocumentText } from "@/office/document";
-import { ApiError, friendlyMessage } from "@/api/errors";
+import { errorMessage } from "@/api/errors";
 import {
   checkPlaybookFit,
   type PlaybookFitResult,
@@ -81,7 +81,7 @@ export function PlaybookFit({
       if (controller.signal.aborted) return;
       setState({
         status: "error",
-        error: e instanceof ApiError ? friendlyMessage(e) : (e as Error).message,
+        error: errorMessage(e),
       });
     }
   }, [playbook.positions]);

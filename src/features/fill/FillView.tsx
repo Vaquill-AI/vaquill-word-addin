@@ -1,7 +1,7 @@
 import { useState } from "react";
+import { ViewHeader } from "@/ui/ViewHeader";
 import { Badge, Banner, Button, Spinner } from "@/ui/primitives";
 import { Dropzone } from "@/ui/Dropzone";
-import { InfoTip } from "@/ui/InfoTip";
 import { CheckIcon } from "@/ui/icons";
 import { applyFills } from "@/office/fill";
 import type { FillItem } from "@/api/fill";
@@ -42,16 +42,11 @@ export function FillView() {
     const extracting = state.status === "extracting";
     return (
       <div className="stack fill-view">
-        <div className="stack" style={{ gap: 4 }}>
-          <div className="row" style={{ justifyContent: "space-between", alignItems: "flex-start" }}>
-            <h1 className="view-title">Fill</h1>
-            <InfoTip text="Fills the placeholders in this document (like [Company Name] or [Insert Date]) using an attached reference document. Every value is backed by a quote from the reference and proposed as a tracked change you can accept or reject." />
-          </div>
-          <p className="small muted" style={{ margin: 0 }}>
-            Fill this template's placeholders from a reference document (a signed agreement, term
-            sheet, etc.).
-          </p>
-        </div>
+        <ViewHeader
+        title="Fill"
+        info="Fills the placeholders in this document (like [Company Name] or [Insert Date]) using an attached reference document. Every value is backed by a quote from the reference and proposed as a tracked change you can accept or reject."
+        subtitle="Fill this template's placeholders from a reference document (a signed agreement, term sheet, etc.)."
+      />
 
         {state.placeholders.length === 0 ? (
           <Banner tone="info">

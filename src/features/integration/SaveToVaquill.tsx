@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Button, Banner } from "@/ui/primitives";
+import { CheckIcon } from "@/ui/icons";
 import { getReviewPrefs } from "@/lib/prefs";
 import {
   importDraft,
@@ -182,7 +183,7 @@ export function SaveToVaquill(props: Props) {
     <div className="card doc-tools">
       <h2 className="small muted" style={{ margin: 0 }}>Save to Vaquill AI</h2>
       <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
-        <Button variant="default" size="sm" onClick={saveDraft} loading={busy === "draft"} disabled={!!busy}>
+        <Button variant="primary" size="sm" onClick={saveDraft} loading={busy === "draft"} disabled={!!busy}>
           {draftLabel}
         </Button>
         <Button variant="default" size="sm" onClick={saveTemplate} loading={busy === "template"} disabled={!!busy}>
@@ -190,22 +191,35 @@ export function SaveToVaquill(props: Props) {
         </Button>
       </div>
       {saved && (
-        <p className="small muted" style={{ margin: 0 }}>
-          {saved.label}{" "}
-          {saved.url && (
-            <a href={saved.url} target="_blank" rel="noreferrer">
-              Open it
-            </a>
-          )}
-          {props.mode === "review" && draftId && (
-            <>
-              {" "}
-              <a href={`${config.appBase}/compare`} target="_blank" rel="noreferrer">
-                Compare versions
+        <div
+          className="row"
+          style={{
+            gap: 6,
+            alignItems: "center",
+            padding: "6px 9px",
+            borderRadius: "var(--radius-sm)",
+            background: "var(--success-tint)",
+            color: "var(--success)",
+          }}
+        >
+          <CheckIcon size={14} />
+          <span className="small">
+            {saved.label}{" "}
+            {saved.url && (
+              <a href={saved.url} target="_blank" rel="noreferrer">
+                Open it
               </a>
-            </>
-          )}
-        </p>
+            )}
+            {props.mode === "review" && draftId && (
+              <>
+                {" "}
+                <a href={`${config.appBase}/compare`} target="_blank" rel="noreferrer">
+                  Compare versions
+                </a>
+              </>
+            )}
+          </span>
+        </div>
       )}
       {showVendor && !vendorProposal && (
         <Button

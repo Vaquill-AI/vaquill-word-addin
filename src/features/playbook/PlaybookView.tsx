@@ -1,6 +1,6 @@
 import { useState } from "react";
+import { ViewHeader } from "@/ui/ViewHeader";
 import { Banner, Spinner, Button } from "@/ui/primitives";
-import { InfoTip } from "@/ui/InfoTip";
 import { ScopedSearchList } from "@/ui/ScopedSearchList";
 import { ArrowLeftIcon } from "@/ui/icons";
 import { usePlaybookDetails } from "./usePlaybookDetails";
@@ -10,13 +10,11 @@ import { PlaybookLibrary } from "./PlaybookLibrary";
 import { config } from "@/config";
 import type { PlaybookDetail } from "@/api/playbooks";
 import "./playbook.css";
+import { humanize } from "@/lib/strings";
 import "./playbook-library.css";
 
 const PRIORITY_ORDER: Record<string, number> = { must_have: 0, should_have: 1, nice_to_have: 2 };
 
-function humanize(s: string): string {
-  return s.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
-}
 
 export function PlaybookView({
   onRunPlaybook,
@@ -126,16 +124,12 @@ export function PlaybookView({
   // ---- Library: searchable list of playbooks -----------------------------
   return (
     <div className="stack playbook-view">
-      <div className="stack" style={{ gap: 4 }}>
-        <div className="row" style={{ justifyContent: "space-between", alignItems: "flex-start" }}>
-          <h1 className="view-title">Playbooks</h1>
-          <InfoTip side="left" text="Your negotiation playbooks: per-clause preferred positions, a fallback ladder to step down to, and the walk-away floor. Open one to insert any rung into the document as a tracked change. Guidance, not legal advice." />
-        </div>
-        <p className="small muted" style={{ margin: 0 }}>
-          Open a playbook to browse its clause positions and insert them as tracked changes, or run
-          one against the open document.
-        </p>
-      </div>
+      <ViewHeader
+        title="Playbooks"
+        info="Your negotiation playbooks: per-clause preferred positions, a fallback ladder to step down to, and the walk-away floor. Open one to insert any rung into the document as a tracked change. Guidance, not legal advice."
+        infoSide="left"
+        subtitle="Open a playbook to browse its clause positions and insert them as tracked changes, or run one against the open document."
+      />
 
       <PlaybookLibrary
         playbooks={playbooks}

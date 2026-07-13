@@ -1,7 +1,7 @@
 import { useCallback, useState } from "react";
 import { rewriteClause, type ComplianceRequirement } from "@/api/clause-tools";
 import { insertClauseTracked } from "@/office/richInsert";
-import { ApiError, friendlyMessage } from "@/api/errors";
+import { errorMessage } from "@/api/errors";
 
 /**
  * Drives the "Draft a fix" flow for a single non-compliant (or partially
@@ -72,7 +72,7 @@ export function useDraftFix(req: ComplianceRequirement) {
     } catch (e) {
       setState({
         status: "error",
-        error: e instanceof ApiError ? friendlyMessage(e) : (e as Error).message,
+        error: errorMessage(e),
       });
     }
   }, [req]);

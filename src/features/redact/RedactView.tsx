@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
+import { ViewHeader } from "@/ui/ViewHeader";
 import { Banner, Button, Spinner, LiveRegion, SegmentedControl, ConfirmDialog } from "@/ui/primitives";
-import { InfoTip } from "@/ui/InfoTip";
 import { FilterChips, type FilterChipOption } from "@/ui/FilterChips";
 import { StatusGroup } from "@/ui/StatusGroup";
 import type { RedactScope } from "@/office/redact";
@@ -40,16 +40,11 @@ export function RedactView() {
   if (state.status === "idle" || state.status === "error") {
     return (
       <div className="stack redact-view">
-        <div className="stack" style={{ gap: 4 }}>
-          <div className="row" style={{ justifyContent: "space-between", alignItems: "flex-start" }}>
-            <h1 className="view-title">Redact</h1>
-            <InfoTip text="Finds sensitive values (IDs, contact info, financial data) and removes the ones you confirm from the document. True removal, not a visual mask. Keep an unredacted copy first." />
-          </div>
-          <p className="small muted" style={{ margin: 0 }}>
-            Scan for sensitive data (IDs, contact info, financial values, and AI-detected names,
-            organizations, and locations) and remove what you confirm.
-          </p>
-        </div>
+        <ViewHeader
+        title="Redact"
+        info="Finds sensitive values and replaces the ones you confirm with a solid black bar. The original text is deleted, not hidden behind a mask, so it cannot be recovered from the file. Keep an unredacted copy first."
+        subtitle="Find sensitive data (IDs, contact, financial, and AI-detected names, organizations, and locations) and replace what you confirm with a black bar."
+      />
 
         {state.status === "error" && <Banner tone="danger">{state.error}</Banner>}
 
@@ -79,8 +74,8 @@ export function RedactView() {
         </div>
 
         <Banner tone="warn">
-          Redaction permanently removes the confirmed text. Keep an unredacted copy; you can undo in
-          Word with Ctrl+Z.
+          Redaction replaces the text with a black bar and permanently deletes the original. Keep an
+          unredacted copy; Ctrl+Z can undo it in Word.
         </Banner>
 
         <Button
@@ -246,8 +241,8 @@ function RedactReview({
         </Button>
       </div>
       <p className="small muted" style={{ margin: 0 }}>
-        Found {candidates.length} value{candidates.length === 1 ? "" : "s"}. Uncheck any you want to
-        keep, then redact.
+        Found {candidates.length} value{candidates.length === 1 ? "" : "s"}, each shown in context.
+        Uncheck any you want to keep, then redact.
       </p>
       <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
         <span className="small muted">

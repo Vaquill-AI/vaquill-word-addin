@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { Badge, Button, Field, Spinner } from "@/ui/primitives";
+import { Avatar } from "@/ui/Avatar";
 import { Combobox } from "@/ui/Combobox";
+import { TONE_COLOR, type StatusTone } from "@/ui/status";
 import { clearSession, getUser } from "@/auth/session";
 import { getActiveOrgId } from "@/lib/org";
 import { listMyOrganizations } from "@/api/organizations";
@@ -89,9 +91,31 @@ function UsageSection({ state }: { state: UsageState }) {
         </div>
         {manageLink}
       </div>
-      <p className="small muted" style={{ margin: 0 }}>
-        Full usage and billing are in the Vaquill AI web app.
-      </p>
+      {messages && messages.limit > 0 && (
+        <UsageMeter current={messages.current} limit={messages.limit} />
+      )}
+    </div>
+  );
+}
+
+/** A thin usage meter, tinted green below 70%, yellow past 70%, red past 90%,
+ *  so "near your limit" is scannable at a glance. */
+function UsageMeter({ current, limit }: { current: number; limit: number }) {
+  const pct = Math.max(0, Math.min(100, Math.round((current / limit) * 100)));
+  const tone: StatusTone = pct >= 90 ? "red" : pct >= 70 ? "yellow" : "green";
+  return (
+    <div
+      className="settings-usage__meter"
+      role="progressbar"
+      aria-valuenow={pct}
+      aria-valuemin={0}
+      aria-valuemax={100}
+      aria-label={`${current} of ${limit} messages used`}
+    >
+      <span
+        className="settings-usage__meter-fill"
+        style={{ width: `${pct}%`, background: TONE_COLOR[tone] }}
+      />
     </div>
   );
 }
@@ -156,19 +180,22 @@ export function SettingsView() {
 
       <div className="card settings-card">
         <div className="settings-account__top">
-          <div className="stack settings-account">
-            {displayName && <span className="settings-account__name">{displayName}</span>}
-            <span className="small muted">{email || "Not signed in"}</span>
-            {/* One organization row: a switcher when the user owns more than one
-                workspace, otherwise static text (so the active org is not shown
-                twice). */}
-            <div className="row settings-account__org">
-              <span className="small muted">Organization</span>
-              {orgCount > 1 ? (
-                <OrgSwitcher />
-              ) : (
-                <span className="small">{orgName ?? "Personal"}</span>
-              )}
+          <div className="row" style={{ gap: 10, alignItems: "flex-start", minWidth: 0 }}>
+            <Avatar name={displayName || email || "User"} size={36} />
+            <div className="stack settings-account">
+              {displayName && <span className="settings-account__name">{displayName}</span>}
+              <span className="small muted">{email || "Not signed in"}</span>
+              {/* One organization row: a switcher when the user owns more than one
+                  workspace, otherwise static text (so the active org is not shown
+                  twice). */}
+              <div className="row settings-account__org">
+                <span className="small muted">Organization</span>
+                {orgCount > 1 ? (
+                  <OrgSwitcher />
+                ) : (
+                  <span className="small">{orgName ?? "Personal"}</span>
+                )}
+              </div>
             </div>
           </div>
           <Button variant="ghost" size="sm" onClick={clearSession}>

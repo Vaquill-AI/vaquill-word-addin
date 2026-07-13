@@ -85,3 +85,17 @@
 .settings-footer__ver {
   margin-left: auto;
 }
+
+/* Thin message-usage meter under the plan tier row. */
+.settings-usage__meter {
+  height: 5px;
+  border-radius: 999px;
+  background: var(--surface-muted);
+  overflow: hidden;
+}
+.settings-usage__meter-fill {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.3s ease;
+}

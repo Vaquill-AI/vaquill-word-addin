@@ -5,6 +5,20 @@ import { gatherExtraScopes } from "./search";
 const SEARCH_LIMIT = 255;
 export const DEFAULT_MARKER = "[REDACTED]";
 
+// A solid black redaction bar. We replace the sensitive text with full-block
+// glyphs shaded black (font + highlight), sized to the original so the bar reads
+// as a real redaction, not a placeholder word. The original characters are
+// genuinely deleted (see redactValues), so this is a true redaction with a
+// redaction's LOOK, never a highlight laid over still-present text.
+const BAR_CHAR = "█";
+const BAR_MIN = 2;
+const BAR_MAX = 16;
+
+function barFor(value: string): string {
+  const n = Math.max(BAR_MIN, Math.min(BAR_MAX, value.replace(/\s+/g, "").length));
+  return BAR_CHAR.repeat(n);
+}
+
 /**
  * Where to look for occurrences to redact:
  * - "document": the whole body (default).
@@ -20,7 +34,8 @@ export interface RedactOutcome {
 }
 
 /**
- * Replace every occurrence of each given value with a redaction marker.
+ * Replace every occurrence of each given value with a solid black redaction bar
+ * (or a literal `opts.marker` if one is given).
  *
  * This is TRUE removal, not a visual mask: change tracking is forced OFF for the
  * edit (and restored after), so the original text is deleted from the body
@@ -40,7 +55,9 @@ export async function redactValues(
   values: string[],
   opts: { marker?: string; scope?: RedactScope; onProgress?: (done: number, total: number) => void } = {},
 ): Promise<RedactOutcome> {
-  const marker = opts.marker ?? DEFAULT_MARKER;
+  // A literal `marker` (if given) is inserted verbatim; otherwise each value is
+  // replaced with a black bar sized to it and shaded black.
+  const marker = opts.marker;
   const scope = opts.scope ?? "document";
   // Longest-first: a short value that is a substring of a longer one (e.g. "$5"
   // inside "$500") must be redacted AFTER the longer value, or body.search would
@@ -102,8 +119,15 @@ export async function redactValues(
           if (items.length === 0) {
             notFound.push(value);
           } else {
+            const replacement = marker ?? barFor(value);
             for (const range of items) {
-              range.insertText(marker, Word.InsertLocation.replace);
+              const inserted = range.insertText(replacement, Word.InsertLocation.replace);
+              // Shade the bar solid black (fill + text) so it reads as a
+              // redaction. Skipped when a literal marker was requested.
+              if (!marker) {
+                inserted.font.color = "#000000";
+                inserted.font.highlightColor = "#000000";
+              }
             }
             await context.sync();
             redacted += items.length;

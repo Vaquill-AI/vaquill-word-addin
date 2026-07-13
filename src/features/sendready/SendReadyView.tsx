@@ -1,8 +1,17 @@
 import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { ViewHeader } from "@/ui/ViewHeader";
 import { Banner, Button, Spinner } from "@/ui/primitives";
-import { InfoTip } from "@/ui/InfoTip";
-import { CheckIcon, ArrowLeftIcon } from "@/ui/icons";
-import { TONE_COLOR, type StatusTone } from "@/ui/status";
+import {
+  CheckIcon,
+  ArrowLeftIcon,
+  EditIcon,
+  CommentIcon,
+  ShieldCheckIcon,
+  TermsIcon,
+  LinkIcon,
+  ChecklistIcon,
+} from "@/ui/icons";
+import { TONE_COLOR, TONE_TINT, type StatusTone } from "@/ui/status";
 import { useAppNav, type ToolKey } from "@/app/nav";
 import { GovernanceView } from "@/features/governance/GovernanceView";
 import { readDocumentChanges, acceptAllTrackedChanges } from "@/office/changes";
@@ -119,15 +128,11 @@ export function SendReadyView() {
   };
 
   const header = (
-    <div className="stack" style={{ gap: 4 }}>
-      <div className="row" style={{ justifyContent: "space-between", alignItems: "flex-start" }}>
-        <h1 className="view-title">Send-ready</h1>
-        <InfoTip text="A pre-send check: what still needs attention before this document leaves the building. Fixes the common blockers here (accept changes, remove comments) and opens the right tool for the rest. It cannot strip author names / hidden metadata cross-platform, so it points you at Word's Inspect Document for that." />
-      </div>
-      <p className="small muted" style={{ margin: 0 }}>
-        Check what still needs fixing before you send this document.
-      </p>
-    </div>
+    <ViewHeader
+        title="Send-ready"
+        info="A pre-send check: what still needs attention before this document leaves the building. Fixes the common blockers here (accept changes, remove comments) and opens the right tool for the rest. It cannot strip author names / hidden metadata cross-platform, so it points you at Word's Inspect Document for that."
+        subtitle="Check what still needs fixing before you send this document."
+      />
   );
 
   if (showSignoff) {
@@ -200,6 +205,7 @@ export function SendReadyView() {
       <div className="stack sendready-list">
         <Row
           tone={s.trackedChanges > 0 ? "yellow" : "green"}
+          icon={<EditIcon size={15} />}
           label="Tracked changes"
           detail={
             s.trackedChanges > 0
@@ -216,6 +222,7 @@ export function SendReadyView() {
         />
         <Row
           tone={s.comments > 0 ? "red" : "green"}
+          icon={<CommentIcon size={15} />}
           label="Comments"
           detail={
             s.comments > 0
@@ -232,6 +239,7 @@ export function SendReadyView() {
         />
         <Row
           tone={s.redactCandidates > 0 ? "neutral" : "green"}
+          icon={<ShieldCheckIcon size={15} />}
           label="Sensitive data"
           detail={
             s.redactCandidates > 0
@@ -248,6 +256,7 @@ export function SendReadyView() {
         />
         <Row
           tone={s.termIssues > 0 ? "yellow" : "green"}
+          icon={<TermsIcon size={15} />}
           label="Defined terms"
           detail={s.termIssues > 0 ? `${s.termIssues} issue${s.termIssues === 1 ? "" : "s"} to review.` : "No defined-term issues."}
           action={
@@ -260,6 +269,7 @@ export function SendReadyView() {
         />
         <Row
           tone={s.xrefBroken > 0 ? "red" : "green"}
+          icon={<LinkIcon size={15} />}
           label="Cross-references"
           detail={s.xrefBroken > 0 ? `${s.xrefBroken} broken reference${s.xrefBroken === 1 ? "" : "s"}.` : "All references resolve."}
           action={
@@ -272,6 +282,7 @@ export function SendReadyView() {
         />
         <Row
           tone={signoffTone(s.signoff)}
+          icon={<ChecklistIcon size={15} />}
           label="Sign-off"
           detail={signoffDetail(s.signoff)}
           action={
@@ -305,18 +316,29 @@ function signoffDetail(status: string): string {
 
 function Row({
   tone,
+  icon,
   label,
   detail,
   action,
 }: {
   tone: StatusTone;
+  icon: ReactNode;
   label: string;
   detail: string;
   action: ReactNode;
 }) {
+  // A passed check (green) reads best as a check; anything needing attention
+  // keeps its category icon so the row is identifiable at a glance.
+  const passed = tone === "green";
   return (
-    <div className="sendready-row">
-      <span className="sendready-row__dot" style={{ background: TONE_COLOR[tone] }} aria-hidden />
+    <div className={`sendready-row${passed ? " sendready-row--ok" : ""}`}>
+      <span
+        className="sendready-row__badge"
+        style={{ background: TONE_TINT[tone], color: TONE_COLOR[tone] }}
+        aria-hidden
+      >
+        {passed ? <CheckIcon size={15} /> : icon}
+      </span>
       <div className="stack" style={{ gap: 0, minWidth: 0, flex: 1 }}>
         <span className="sendready-row__label">{label}</span>
         <span className="small muted">{detail}</span>

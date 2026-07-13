@@ -1,7 +1,7 @@
 import { useCallback, useRef, useState } from "react";
 import { triageNda, type NdaTriageResult } from "@/api/nda-triage";
 import { readFullDocumentText } from "@/office/document";
-import { ApiError, friendlyMessage } from "@/api/errors";
+import { errorMessage } from "@/api/errors";
 
 /** Backend requires documentText >= 100 chars; guard before the network call. */
 const MIN_CHARS = 100;
@@ -49,7 +49,7 @@ export function useNdaTriage() {
         if ((e as Error).name === "AbortError") return;
         setState({
           status: "error",
-          error: e instanceof ApiError ? friendlyMessage(e) : (e as Error).message,
+          error: errorMessage(e),
         });
       }
     },

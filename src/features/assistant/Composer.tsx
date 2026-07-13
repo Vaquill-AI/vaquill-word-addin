@@ -1,6 +1,8 @@
 import { forwardRef, useImperativeHandle, useRef, useState } from "react";
-import { IconButton } from "@/ui/primitives";
+import { IconButton, SegmentedControl, Spinner } from "@/ui/primitives";
 import { StopIcon, WandIcon } from "@/ui/icons";
+import { useImprovePrompt } from "@/lib/useImprovePrompt";
+import { improveChatPrompt, improveDraftingPrompt } from "@/api/improve-prompt";
 import { FocusControl } from "./FocusControl";
 import { PromptLibrary } from "./PromptLibrary";
 import { ContextMenu, activeContextCount, type ContextConfig } from "./ContextMenu";
@@ -17,6 +19,17 @@ function PlusGlyph() {
   return (
     <svg viewBox="0 0 24 24" width={16} height={16} fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
       <path d="M12 5v14M5 12h14" />
+    </svg>
+  );
+}
+
+/** Sparkles glyph for the "Improve" affordance (distinct from the prompt-library
+ *  wand). Signals an AI rewrite of the current input. */
+function SparklesGlyph() {
+  return (
+    <svg viewBox="0 0 24 24" width={16} height={16} fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M12 3l1.9 4.6L18.5 9.5 13.9 11.4 12 16l-1.9-4.6L5.5 9.5 10.1 7.6 12 3z" />
+      <path d="M19 15l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8.8-2z" />
     </svg>
   );
 }
@@ -84,6 +97,13 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
   const [libraryOpen, setLibraryOpen] = useState(false);
   const [contextOpen, setContextOpen] = useState(false);
   const taRef = useRef<HTMLTextAreaElement>(null);
+  // Improve is mode-aware: an Edit turn is a drafting-style instruction, an Ask
+  // turn is a research question, so each routes to its own improver.
+  const improve = useImprovePrompt(
+    mode === "edit" ? improveDraftingPrompt : improveChatPrompt,
+    value,
+    onChange,
+  );
   // Ready attachments count toward the "+" badge alongside the toggled sources.
   const readyAttachments = attachments.filter((f) => f.status === "ready").length;
   const ctxCount = activeContextCount(context, hasMatter) + readyAttachments;
@@ -129,33 +149,7 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
         />
       )}
       <div className="composer__box">
-        <div
-          role="tablist"
-          aria-label="Assistant mode"
-          style={{ display: "flex", gap: 4, marginBottom: 6 }}
-        >
-          {(["ask", "edit"] as const).map((m) => (
-            <button
-              key={m}
-              type="button"
-              role="tab"
-              aria-selected={mode === m}
-              onClick={() => onMode(m)}
-              style={{
-                border: "none",
-                background: mode === m ? "var(--fill-subtle-hover)" : "transparent",
-                color: mode === m ? "var(--text)" : "var(--text-muted)",
-                fontWeight: 600,
-                fontSize: 12,
-                padding: "3px 10px",
-                borderRadius: "var(--radius-sm)",
-                cursor: "pointer",
-              }}
-            >
-              {m === "ask" ? "Ask" : "Edit"}
-            </button>
-          ))}
-        </div>
+        {improve.note && <span className="composer__improve-note small muted">{improve.note}</span>}
         {mode === "ask" && <FocusControl scope={scope} onScope={onScope} />}
         {attachments.length > 0 && (
           <AttachmentChips
@@ -203,7 +197,24 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
           >
             <WandIcon size={16} />
           </IconButton>
+          {improve.canImprove && !disabled && (
+            <IconButton
+              label={improve.improving ? "Improving..." : "Improve with AI"}
+              onClick={() => void improve.improve()}
+            >
+              {improve.improving ? <Spinner /> : <SparklesGlyph />}
+            </IconButton>
+          )}
           <span className="composer__spacer" />
+          <SegmentedControl<ComposerMode>
+            label="Assistant mode"
+            options={[
+              { value: "ask", label: "Ask" },
+              { value: "edit", label: "Edit" },
+            ]}
+            value={mode}
+            onChange={onMode}
+          />
           {disabled && onStop ? (
             <button
               type="button"

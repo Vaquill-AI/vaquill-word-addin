@@ -1,27 +1,13 @@
 import { useState } from "react";
 import { Banner, Button, Field, Spinner, LiveRegion } from "@/ui/primitives";
-import { InfoTip } from "@/ui/InfoTip";
+import { ViewHeader } from "@/ui/ViewHeader";
 import { RedlineCard } from "@/features/review/RedlineCard";
-import { editDocument, type EditItem } from "@/api/edit";
+import { editDocument, editToRedline } from "@/api/edit";
+import { detectContractType } from "@/features/assistant/SuggestedPrompts";
 import { readFullDocumentText } from "@/office/document";
-import { ApiError, friendlyMessage } from "@/api/errors";
+import { errorMessage } from "@/api/errors";
 import type { RedlineSuggestion } from "@/api/types";
 import type { Decision } from "@/features/review/decisions";
-
-/** Map a backend edit to the RedlineSuggestion the review card renders + applies.
- *  The backend already verified current_language is a literal substring, so the
- *  grounding is "verified" (RedlineCard can apply it in place). */
-function toRedline(e: EditItem): RedlineSuggestion {
-  return {
-    clauseName: e.label,
-    sectionReference: e.sectionReference || undefined,
-    currentLanguage: e.currentLanguage,
-    proposedLanguage: e.proposedLanguage,
-    rationale: e.rationale,
-    grounding: "verified",
-    isDealBreaker: false,
-  };
-}
 
 type State =
   | { status: "idle" }
@@ -49,27 +35,24 @@ export function EditView() {
     setDecisions({});
     try {
       const text = await readFullDocumentText();
-      const edits = await editDocument(text, instr);
-      setState({ status: "review", redlines: edits.map(toRedline) });
+      const contractType = detectContractType(text) ?? undefined;
+      const edits = await editDocument(text, instr, contractType);
+      setState({ status: "review", redlines: edits.map(editToRedline) });
     } catch (e) {
       setState({
         status: "error",
-        error: e instanceof ApiError ? friendlyMessage(e) : (e as Error).message,
+        error: errorMessage(e),
       });
     }
   }
 
   return (
     <div className="stack">
-      <div className="stack" style={{ gap: 4 }}>
-        <div className="row" style={{ justifyContent: "space-between", alignItems: "flex-start" }}>
-          <h1 className="view-title">Edit document</h1>
-          <InfoTip text="Describe a change in plain English and get grounded redlines across the whole document. Each edit is anchored to real text in the document and applied as a tracked change you accept or reject." />
-        </div>
-        <p className="small muted" style={{ margin: 0 }}>
-          Describe the changes you want. Vaquill AI proposes redlines you can accept or reject.
-        </p>
-      </div>
+      <ViewHeader
+        title="Edit document"
+        info="Describe a change in plain English and get grounded redlines across the whole document. Each edit is anchored to real text in the document and applied as a tracked change you accept or reject."
+        subtitle="Describe the changes you want. Vaquill AI proposes redlines you can accept or reject."
+      />
 
       <Field label="Instruction">
         <textarea

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { ViewHeader } from "@/ui/ViewHeader";
 import { Banner, Button, Badge } from "@/ui/primitives";
-import { InfoTip } from "@/ui/InfoTip";
 import { readReviewSnapshot, writeReviewSnapshot } from "@/office/reviewState";
 import { readDocumentFingerprint } from "@/office/document";
 import type { ReviewSnapshot } from "@/lib/reviewState";
@@ -384,15 +384,11 @@ export function ReviewView({
 
   return (
     <div className="stack review">
-      <div className="stack" style={{ gap: 4 }}>
-        <div className="row" style={{ justifyContent: "space-between", alignItems: "flex-start" }}>
-          <h1 className="view-title">Review this contract</h1>
-          <InfoTip text="Vaquill AI suggests grounded edits from your side and applies them as native tracked changes. A green Verified badge means we found the exact clause in your document, so it is safe to auto-apply; amber means verify it yourself. The sign-off gate flags when a deal needs manager, partner, or GC approval before you send." />
-        </div>
-        <p className="small muted" style={{ margin: 0 }}>
-          Grounded redlines from your side, applied as native tracked changes.
-        </p>
-      </div>
+      <ViewHeader
+        title="Review this contract"
+        info="Vaquill AI suggests grounded edits from your side and applies them as native tracked changes. A green Verified badge means we found the exact clause in your document, so it is safe to auto-apply; amber means verify it yourself. The sign-off gate flags when a deal needs manager, partner, or GC approval before you send."
+        subtitle="Grounded redlines from your side, applied as native tracked changes."
+      />
 
       {state.status === "idle" && snapshot && !dismissedResume && (
         <Banner tone={resumeChanged ? "warn" : "info"}>

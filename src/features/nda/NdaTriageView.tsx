@@ -1,9 +1,13 @@
 import { useState } from "react";
+import { ViewHeader } from "@/ui/ViewHeader";
 import { Badge, Banner, Button, Field, Spinner, LiveRegion } from "@/ui/primitives";
-import { InfoTip } from "@/ui/InfoTip";
 import { ElapsedSeconds } from "@/ui/ElapsedSeconds";
 import { DistributionBar, type DistributionSegment } from "@/ui/DistributionBar";
+import { StatusGroup } from "@/ui/StatusGroup";
 import type { StatusTone } from "@/ui/status";
+import { ImproveButton } from "@/ui/ImproveButton";
+import { useImprovePrompt } from "@/lib/useImprovePrompt";
+import { improveLegalToolPrompt } from "@/api/improve-prompt";
 import { useNdaTriage } from "./useNdaTriage";
 import type {
   CriterionStatus,
@@ -58,20 +62,17 @@ export function NdaTriageView() {
   const { state, run, reset } = useNdaTriage();
   const [counterparty, setCounterparty] = useState("");
   const [context, setContext] = useState("");
+  const ctx = useImprovePrompt(improveLegalToolPrompt, context, setContext);
   // Both inputs are optional, so keep them off the default surface: one-click
   // "Screen NDA", with an "Add context" disclosure for the rare case it helps.
   const [showContext, setShowContext] = useState(false);
 
   const header = (
-    <div className="stack" style={{ gap: 4 }}>
-      <div className="row" style={{ justifyContent: "space-between", alignItems: "flex-start" }}>
-        <h1 className="view-title">NDA triage</h1>
-        <InfoTip text="Screens the open NDA against 10 standard criteria and classifies it Green, Yellow, or Red so you can decide fast whether to sign, negotiate, or escalate. A first-pass screen, not a full review: run Review for redlines and get sign-off before signing." />
-      </div>
-      <p className="small muted" style={{ margin: 0 }}>
-        Screen this NDA against standard positions and get a Green / Yellow / Red call.
-      </p>
-    </div>
+    <ViewHeader
+        title="NDA triage"
+        info="Screens the open NDA against 10 standard criteria and classifies it Green, Yellow, or Red so you can decide fast whether to sign, negotiate, or escalate. A first-pass screen, not a full review: run Review for redlines and get sign-off before signing."
+        subtitle="Screen this NDA against standard positions and get a Green / Yellow / Red call."
+      />
   );
 
   if (state.status === "running") {
@@ -119,13 +120,23 @@ export function NdaTriageView() {
               onChange={(e) => setCounterparty(e.target.value)}
             />
           </Field>
-          <Field label="Business context (optional)">
+          <Field
+            label="Business context (optional)"
+            action={
+              <ImproveButton
+                improving={ctx.improving}
+                disabled={!ctx.canImprove}
+                onClick={() => void ctx.improve()}
+              />
+            }
+          >
             <textarea
               value={context}
               placeholder="e.g. Evaluating Acme as a data-processing vendor; they will receive our customer PII."
               onChange={(e) => setContext(e.target.value)}
             />
           </Field>
+          {ctx.note && <span className="small muted">{ctx.note}</span>}
         </div>
       ) : (
         <Button
@@ -241,26 +252,44 @@ function NdaResults({ result, onReset }: { result: NdaTriageResult; onReset: () 
 
       <div className="stack" style={{ gap: 6 }}>
         <h3 className="small muted">10-criteria screen</h3>
-        <div className="stack" style={{ gap: 6 }}>
-          {result.criteria.map((c) => (
-            <CriterionCard key={c.criterionId} criterion={c} />
-          ))}
+        <div className="stack" style={{ gap: 8 }}>
+          {CRITERION_STATUS_ORDER.map((status) => {
+            const items = result.criteria.filter((c) => c.status === status);
+            if (items.length === 0) return null;
+            return (
+              <StatusGroup
+                key={status}
+                tone={STATUS_TONE[status]}
+                label={STATUS_LABEL[status]}
+                count={items.length}
+                // Open what needs attention; collapse the passes and not-founds
+                // so the 1-2 fails are not buried under 7 clean criteria.
+                defaultOpen={status === "fail" || status === "warn"}
+              >
+                {items.map((c) => (
+                  <CriterionCard key={c.criterionId} criterion={c} />
+                ))}
+              </StatusGroup>
+            );
+          })}
         </div>
       </div>
     </div>
   );
 }
 
+// Actionability order for the grouped criteria screen: blockers first.
+const CRITERION_STATUS_ORDER: CriterionStatus[] = ["fail", "warn", "not_found", "pass"];
+
 function CriterionCard({ criterion: c }: { criterion: ScreeningCriterion }) {
   const deviation = c.playbookAssessment?.deviationSummary;
+  // Grouped under a status header (Fail/Warn/...), so the card no longer repeats
+  // the status badge; it just carries the criterion name + its findings.
   return (
     <div className="card nda-criterion stack" style={{ gap: 4 }}>
-      <div className="row" style={{ justifyContent: "space-between", alignItems: "center", gap: 8 }}>
-        <span className="small" style={{ fontWeight: 600 }}>
-          {c.criterionName}
-        </span>
-        <Badge tone={STATUS_TONE[c.status]}>{STATUS_LABEL[c.status]}</Badge>
-      </div>
+      <span className="small" style={{ fontWeight: 600 }}>
+        {c.criterionName}
+      </span>
       {c.findings && <p className="small" style={{ margin: 0 }}>{c.findings}</p>}
       {c.issues.length > 0 && (
         <ul className="nda-list stack" style={{ gap: 2 }}>

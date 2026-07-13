@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { readDocumentBlob } from "@/office/file";
-import { ApiError, friendlyMessage } from "@/api/errors";
+import { errorMessage } from "@/api/errors";
 import {
   uploadCompareSource,
   sourceRefFromUpload,
@@ -174,7 +174,7 @@ export function useCompare() {
         patch({
           phase: "error",
           step: "",
-          error: e instanceof ApiError ? friendlyMessage(e) : (e as Error).message,
+          error: errorMessage(e),
         });
       }
     },

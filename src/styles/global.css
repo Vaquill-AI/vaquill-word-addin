@@ -84,3 +84,20 @@ a {
     scroll-behavior: auto !important;
   }
 }
+
+/* Shared in-context preview: a finding shown inside its surrounding sentence
+   with the hit highlighted (used by defined-terms, cross-references). */
+.ctx-line {
+  margin: 2px 0 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-muted);
+  word-break: break-word;
+}
+.ctx-hit {
+  background: var(--brand-tint);
+  color: var(--brand);
+  border-radius: 3px;
+  padding: 0 2px;
+  font-weight: 600;
+}

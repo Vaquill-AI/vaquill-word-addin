@@ -1,6 +1,6 @@
 import { useCallback, useRef, useState } from "react";
 import { uuid } from "@/api/ids";
-import { ApiError, friendlyMessage } from "@/api/errors";
+import { errorMessage } from "@/api/errors";
 
 /**
  * One file the user attached as ad-hoc context. Upload/extraction happens on the
@@ -85,7 +85,7 @@ export function useAttachments(upload: Uploader, onOcr?: Uploader) {
           patch(id, { status: "ready", ...res });
         }
       } catch (e) {
-        const error = e instanceof ApiError ? friendlyMessage(e) : (e as Error).message;
+        const error = errorMessage(e);
         patch(id, { status: "error", error });
       }
     },
@@ -104,7 +104,7 @@ export function useAttachments(upload: Uploader, onOcr?: Uploader) {
         if (res.text?.trim()) patch(id, { status: "ready", ...res });
         else patch(id, { status: "error", error: "OCR could not read this document." });
       } catch (e) {
-        const error = e instanceof ApiError ? friendlyMessage(e) : (e as Error).message;
+        const error = errorMessage(e);
         patch(id, { status: "error", error });
       }
     },

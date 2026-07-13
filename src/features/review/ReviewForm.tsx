@@ -9,6 +9,9 @@ import {
   type ReviewScope,
 } from "./constants";
 import { config } from "@/config";
+import { ImproveButton } from "@/ui/ImproveButton";
+import { useImprovePrompt } from "@/lib/useImprovePrompt";
+import { improveLegalToolPrompt } from "@/api/improve-prompt";
 import { getReviewPrefs } from "@/lib/prefs";
 import { readDocumentText } from "@/office/document";
 import { classifyContract } from "@/api/contract-review";
@@ -68,6 +71,7 @@ export function ReviewForm({
   const [scope, setScope] = useState<ReviewScope>("document");
   const [playbookId, setPlaybookId] = useState(initial?.playbookId ?? "");
   const [instructions, setInstructions] = useState("");
+  const focus = useImprovePrompt(improveLegalToolPrompt, instructions, setInstructions);
   const [includeExtras, setIncludeExtras] = useState(false);
   const [markupLevel, setMarkupLevel] = useState<MarkupLevel>("standard");
   const [paperSide, setPaperSide] = useState<PaperSide>("");
@@ -208,12 +212,12 @@ export function ReviewForm({
             in Vaquill AI.
           </p>
 
-          <div className="field">
+          <div className="field field--inline">
             <label>Scope</label>
             <SegmentedControl label="Scope" options={SCOPE_OPTIONS} value={scope} onChange={setScope} />
           </div>
 
-          <div className="field">
+          <div className="field field--inline">
             <label>Whose paper</label>
             <SegmentedControl
               label="Whose paper"
@@ -224,7 +228,7 @@ export function ReviewForm({
             <span className="small muted">{PAPER_CAPTION[paperSide]}</span>
           </div>
 
-          <div className="field">
+          <div className="field field--inline">
             <label>Markup level</label>
             <SegmentedControl
               label="Markup level"
@@ -249,13 +253,23 @@ export function ReviewForm({
         </div>
       )}
 
-      <Field label="Focus (optional)">
+      <Field
+        label="Focus (optional)"
+        action={
+          <ImproveButton
+            improving={focus.improving}
+            disabled={!focus.canImprove}
+            onClick={() => void focus.improve()}
+          />
+        }
+      >
         <textarea
           value={instructions}
           placeholder="e.g. Prioritize liability, indemnity, and termination."
           onChange={(e) => setInstructions(e.target.value)}
         />
       </Field>
+      {focus.note && <span className="small muted">{focus.note}</span>}
 
       <Button type="submit" variant="primary" className="btn--cta" loading={busy}>
         Review this contract

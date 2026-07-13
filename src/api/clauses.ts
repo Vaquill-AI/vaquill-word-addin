@@ -43,18 +43,6 @@ export interface ClauseCreateInput {
   tags?: string[];
 }
 
-// Normalize a free-text name into a valid clause_type key (backend pattern
-// ^[a-z][a-z0-9_]*$). Falls back to "custom_clause" when nothing usable remains.
-export function toClauseTypeKey(name: string): string {
-  const key = name
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "_")
-    .replace(/^[^a-z]+/, "")
-    .replace(/_+$/g, "")
-    .slice(0, 64);
-  return key || "custom_clause";
-}
-
 export async function searchClauses(params: ClauseSearchParams = {}): Promise<ClauseEntry[]> {
   const q = new URLSearchParams();
   if (params.clauseType) q.set("clauseType", params.clauseType);

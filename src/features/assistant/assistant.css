@@ -158,6 +158,26 @@
   align-self: flex-start;
   max-width: 100%;
 }
+/* Answer identity: a small brand mark + name so the assistant's turns are
+   attributable and scannable against the user's right-aligned bubbles. */
+.msg__ident {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 5px;
+}
+.msg__ident-avatar {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  object-fit: cover;
+}
+.msg__ident-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
 .msg__body {
   font-size: var(--fs-body);
   color: var(--text);
@@ -475,4 +495,180 @@
 }
 .composer__send--stop:hover:not(:disabled) {
   background: var(--fill-subtle-hover);
+}
+
+/* ---- Empty-state: grounding sources, selection chip, recent chats ---- */
+.assistant__sources {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: center;
+  margin-top: 8px;
+}
+.assistant__source {
+  padding: 2px 9px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--fill-subtle);
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+/* The "ask about the selection" chip stands out with a brand tint since it is
+   contextual to what the user just highlighted. */
+.assistant__sel-chip {
+  align-self: center;
+  border-color: var(--brand-border);
+  background: var(--brand-tint);
+  color: var(--brand);
+}
+.assistant__sel-chip .suggest-chip__icon {
+  color: var(--brand);
+}
+
+.assistant__recent {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.assistant__recent-label {
+  padding-left: 2px;
+}
+.assistant__recent-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.12s ease, border-color 0.12s ease;
+}
+.assistant__recent-item:hover {
+  background: var(--surface-muted);
+}
+.assistant__recent-title {
+  font-weight: 600;
+  font-size: 13px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The Ask/Edit pill lives in the actions row; the shared .seg self-aligns to
+   flex-start, so re-center it against the 30px send/icon buttons. */
+.composer__actions .seg {
+  align-self: center;
+}
+
+/* Answer headings (## etc.) rendered at modest sizes for a narrow pane, never a
+   giant H1. Scoped under .msg__body so they beat the generic paragraph margins. */
+.msg__body .msg__heading {
+  margin: 10px 0 2px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+.msg__body .msg__heading:first-child {
+  margin-top: 0;
+}
+.msg__body .msg__heading--1 {
+  font-size: 15px;
+}
+.msg__body .msg__heading--2 {
+  font-size: 14px;
+}
+.msg__body .msg__heading--3 {
+  font-size: 13px;
+}
+.msg__body .msg__heading--4 {
+  font-size: 12.5px;
+  color: var(--text-muted);
+}
+.msg__body a {
+  text-decoration: underline;
+}
+
+/* Blockquote / note callout inside an answer. */
+.msg__body .msg__quote {
+  margin: 8px 0;
+  padding: 6px 10px;
+  border-left: 3px solid var(--brand-border, var(--border-strong));
+  background: var(--fill-subtle);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  color: var(--text-muted);
+}
+
+/* Answer tables: scroll horizontally inside their own wrapper so a wide table
+   never forces the whole pane to scroll sideways (narrow task pane). */
+.msg__body .msg__table-wrap {
+  margin: 8px 0;
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+.msg__body .msg__table {
+  border-collapse: collapse;
+  width: max-content;
+  min-width: 100%;
+  font-size: 12.5px;
+}
+.msg__body .msg__table th,
+.msg__body .msg__table td {
+  padding: 5px 9px;
+  border: 1px solid var(--border);
+  text-align: left;
+  vertical-align: top;
+}
+.msg__body .msg__table th {
+  background: var(--fill-subtle);
+  font-weight: 600;
+  white-space: nowrap;
+}
+/* Inline/answer images: never overflow the pane. */
+.msg__body .msg__img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 6px;
+  margin: 4px 0;
+}
+
+/* Ask-mode intent suggestion: when a message looks like a document action, offer
+   to run it (redline / navigate) instead of just answering. Sits above the
+   composer, dismissible via "Just answer". */
+.assistant__suggest {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 0 12px 8px;
+  padding: 8px 12px;
+  border: 1px solid var(--brand-border, #d6e0f5);
+  border-radius: var(--radius-md);
+  background: var(--brand-tint, #f4f7fe);
+}
+.assistant__suggest-text {
+  min-width: 0;
+  flex: 1;
+}
+
+/* "What I did" confirmation after an intent-routed action runs. */
+.assistant__action-result {
+  margin: 0 12px 8px;
+  padding: 6px 12px;
+  border-radius: var(--radius-md);
+  background: var(--fill-subtle);
+}
+
+/* One-line feedback for the composer's "Improve with AI" (sharpened / no-op). */
+.composer__improve-note {
+  display: block;
+  margin-bottom: 2px;
+  padding: 0 2px;
 }

@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
+import { ViewHeader } from "@/ui/ViewHeader";
 import { Badge, Banner, Button, Spinner } from "@/ui/primitives";
 import { Dropzone } from "@/ui/Dropzone";
-import { InfoTip } from "@/ui/InfoTip";
-import { CheckIcon, DownloadIcon } from "@/ui/icons";
-import { ApiError, friendlyMessage } from "@/api/errors";
+import { CheckIcon, DownloadIcon, CompareIcon, AlertTriangleIcon } from "@/ui/icons";
+import { errorMessage } from "@/api/errors";
 import { downloadDocx, replaceDocumentWithDocx } from "@/office/export";
 import { useCompare, type CompareDirection } from "./useCompare";
 import "./compare.css";
@@ -53,7 +53,7 @@ export function CompareView() {
       const { base64, filename } = await fetchRedline();
       downloadDocx(base64, filename);
     } catch (e) {
-      setNote(e instanceof ApiError ? friendlyMessage(e) : (e as Error).message);
+      setNote(errorMessage(e));
     } finally {
       setBusy(null);
     }
@@ -68,22 +68,18 @@ export function CompareView() {
       setReplaced(true);
       setConfirmReplace(false);
     } catch (e) {
-      setNote(e instanceof ApiError ? friendlyMessage(e) : (e as Error).message);
+      setNote(errorMessage(e));
     } finally {
       setBusy(null);
     }
   }
 
   const header = (
-    <div className="stack" style={{ gap: 4 }}>
-      <div className="row" style={{ justifyContent: "space-between", alignItems: "flex-start" }}>
-        <h1 className="view-title">Compare</h1>
-        <InfoTip text="Compare the open document against another version to see what changed as native tracked changes. Useful when a counterparty sends a contract back: pick the version you sent as the reference to see exactly what they changed." />
-      </div>
-      <p className="small muted" style={{ margin: 0 }}>
-        See what changed between this document and another version.
-      </p>
-    </div>
+    <ViewHeader
+        title="Compare"
+        info="Compare the open document against another version to see what changed as native tracked changes. Useful when a counterparty sends a contract back: pick the version you sent as the reference to see exactly what they changed."
+        subtitle="See what changed between this document and another version."
+      />
   );
 
   if (state.phase === "ready" && state.comparison) {
@@ -99,10 +95,13 @@ export function CompareView() {
 
         <div className="row" style={{ gap: 6, flexWrap: "wrap" }}>
           <Badge tone={c.hunkCount > 0 ? "brand" : "green"}>
+            {c.hunkCount > 0 ? <CompareIcon size={11} /> : <CheckIcon size={11} />}
             {c.hunkCount} change{c.hunkCount === 1 ? "" : "s"}
           </Badge>
           {c.substantiveCount > 0 && (
-            <Badge tone="yellow">{c.substantiveCount} substantive</Badge>
+            <Badge tone="yellow">
+              <AlertTriangleIcon size={11} /> {c.substantiveCount} substantive
+            </Badge>
           )}
         </div>
 

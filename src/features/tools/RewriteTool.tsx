@@ -9,7 +9,10 @@ import {
   type RewriteTone,
 } from "@/api/clause-tools";
 import { replaceSelectionTracked } from "@/office/selection";
-import { ApiError, friendlyMessage } from "@/api/errors";
+import { ImproveButton } from "@/ui/ImproveButton";
+import { useImprovePrompt } from "@/lib/useImprovePrompt";
+import { improveLegalToolPrompt } from "@/api/improve-prompt";
+import { errorMessage } from "@/api/errors";
 
 const MODE_OPTIONS: { value: RewriteMode; label: string }[] = [
   { value: "rewrite", label: "Rewrite" },
@@ -37,6 +40,7 @@ export function RewriteTool({ clauseText }: { clauseText: string }) {
   const [mode, setMode] = useState<RewriteMode>("rewrite");
   const [tone, setTone] = useState<RewriteTone>("balanced");
   const [instruction, setInstruction] = useState("");
+  const guide = useImprovePrompt(improveLegalToolPrompt, instruction, setInstruction);
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<RewriteResult | null>(null);
   const [applied, setApplied] = useState(false);
@@ -72,7 +76,7 @@ export function RewriteTool({ clauseText }: { clauseText: string }) {
       const r = await rewriteClause(clauseText, { mode, tone, instruction: instruction || undefined });
       setResult(r);
     } catch (e) {
-      setError(e instanceof ApiError ? friendlyMessage(e) : (e as Error).message);
+      setError(errorMessage(e));
     } finally {
       setBusy(false);
     }
@@ -116,12 +120,20 @@ export function RewriteTool({ clauseText }: { clauseText: string }) {
       </div>
 
       <div className="field">
-        <label>Extra guidance (optional)</label>
+        <div className="field__labelrow">
+          <label>Extra guidance (optional)</label>
+          <ImproveButton
+            improving={guide.improving}
+            disabled={!guide.canImprove}
+            onClick={() => void guide.improve()}
+          />
+        </div>
         <textarea
           value={instruction}
           placeholder="e.g. Cap liability at fees paid in the prior 12 months."
           onChange={(e) => setInstruction(e.target.value)}
         />
+        {guide.note && <span className="small muted">{guide.note}</span>}
       </div>
 
       <Button variant="primary" className="btn--cta" onClick={run} loading={busy && !result}>

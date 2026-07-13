@@ -1,5 +1,6 @@
 import type { DetectedEntity } from "@/api/redact";
 import { aiCategoryForEntity, CATEGORIES } from "./categories";
+import { snippetAroundValue } from "@/lib/context-snippet";
 
 export interface RedactCandidate {
   category: string;
@@ -7,6 +8,16 @@ export interface RedactCandidate {
   text: string;
   /** How many times it appears in the document. */
   count: number;
+  /** A short snippet around the first occurrence, for an in-context preview. */
+  context?: { before: string; after: string };
+}
+
+/**
+ * A short snippet around the first occurrence of `value`, for showing a redaction
+ * hit in its surrounding sentence. Thin wrapper over the shared snippet helper.
+ */
+export function contextAround(text: string, value: string): { before: string; after: string } | undefined {
+  return snippetAroundValue(text, value);
 }
 
 /**
@@ -32,7 +43,7 @@ export function scanText(text: string, selected: ReadonlySet<string>): RedactCan
     }
     for (const [value, count] of counts) {
       claimed.add(value);
-      out.push({ category: cat.key, text: value, count });
+      out.push({ category: cat.key, text: value, count, context: contextAround(text, value) });
     }
   }
   return out;
@@ -79,7 +90,7 @@ export function mergeAiEntities(
     const count = countOccurrences(text, value);
     if (count === 0) continue; // Not in the document (text changed): skip.
     claimed.add(value);
-    merged.push({ category: catKey, text: value, count });
+    merged.push({ category: catKey, text: value, count, context: contextAround(text, value) });
   }
   return merged;
 }

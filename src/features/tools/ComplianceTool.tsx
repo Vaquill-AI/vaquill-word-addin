@@ -5,7 +5,7 @@ import {
   type ComplianceResult,
   type ComplianceStatusValue,
 } from "@/api/clause-tools";
-import { ApiError, friendlyMessage } from "@/api/errors";
+import { errorMessage } from "@/api/errors";
 // Single source of truth for the supported regulations (was re-declared here).
 import { REGULATIONS } from "@/features/compliance/regulations";
 
@@ -60,7 +60,7 @@ export function ComplianceTool({ clauseText }: { clauseText: string }) {
     try {
       setResult(await checkCompliance(clauseText, regulation));
     } catch (e) {
-      setError(e instanceof ApiError ? friendlyMessage(e) : (e as Error).message);
+      setError(errorMessage(e));
     } finally {
       setBusy(false);
     }
@@ -103,8 +103,15 @@ export function ComplianceTool({ clauseText }: { clauseText: string }) {
             <div className="stack" style={{ gap: 6 }}>
               <h3 className="small muted">Requirements</h3>
               <ul className="checklist">
-                {requirements.map((req, i) => (
-                  <li key={req.requirementId ?? i} className="checklist__item">
+                {requirements.map((req, i) => {
+                  // A met/NA requirement recedes so attention lands on the gaps.
+                  const passed = req.status === "compliant" || req.status === "not_applicable";
+                  return (
+                  <li
+                    key={req.requirementId ?? i}
+                    className="checklist__item"
+                    style={passed ? { opacity: 0.6 } : undefined}
+                  >
                     <Badge tone={statusTone(req.status)}>{statusLabel(req.status)}</Badge>
                     <div className="stack" style={{ gap: 2 }}>
                       <span className="small">
@@ -119,7 +126,8 @@ export function ComplianceTool({ clauseText }: { clauseText: string }) {
                       )}
                     </div>
                   </li>
-                ))}
+                  );
+                })}
               </ul>
             </div>
           )}

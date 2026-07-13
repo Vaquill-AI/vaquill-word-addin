@@ -182,6 +182,26 @@
   justify-content: space-between;
   gap: 8px;
 }
+/* Inline field: the label sits on the SAME row as its control (a compact toggle),
+   to save vertical space. Responsive: the control wraps to the next row when the
+   pane is too narrow, and any caption always takes its own line below. */
+.field--inline {
+  flex-direction: row;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+}
+.field--inline > label {
+  flex: 0 0 auto;
+  margin: 0;
+}
+.field--inline .seg {
+  align-self: center;
+}
+.field--inline > .small {
+  flex-basis: 100%;
+  margin: 0;
+}
 /* Bordered inputs; the border goes brand + a soft ring on focus. */
 .field select,
 .field input,
@@ -288,8 +308,8 @@ summary:focus-visible {
   color: var(--text);
 }
 .seg__btn--on {
-  background: var(--surface);
-  color: var(--text);
+  background: var(--btn-primary-bg);
+  color: var(--btn-primary-fg);
   box-shadow: none;
 }
 /* Compact variant for dense inline rows. */

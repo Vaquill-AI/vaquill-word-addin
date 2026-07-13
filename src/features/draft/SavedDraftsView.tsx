@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { ViewHeader } from "@/ui/ViewHeader";
 import { Badge, Banner, Button, SegmentedControl, Spinner } from "@/ui/primitives";
-import { InfoTip } from "@/ui/InfoTip";
 import { CheckIcon } from "@/ui/icons";
-import { ApiError, friendlyMessage } from "@/api/errors";
+import { errorMessage } from "@/api/errors";
 import { insertDocxAtCursorOrDownload } from "@/office/export";
 import { listDrafts, exportDraftDocx, type DraftListItem } from "@/api/drafts";
 import { DRAFT_MODE_OPTIONS, type DraftMode } from "./mode";
+import { humanize } from "@/lib/strings";
 import "./draft.css";
 
 const LIMIT = 30;
@@ -15,9 +16,6 @@ type ListState =
   | { status: "ready"; items: DraftListItem[]; hasMore: boolean }
   | { status: "error"; error: string };
 
-function humanize(s: string): string {
-  return s.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
-}
 
 /** A draft that is still generating (or failed) can't be inserted yet. */
 function isInsertable(d: DraftListItem): boolean {
@@ -59,7 +57,7 @@ export function SavedDraftsView({
       if ((e as Error).name === "AbortError") return;
       setState({
         status: "error",
-        error: e instanceof ApiError ? friendlyMessage(e) : (e as Error).message,
+        error: errorMessage(e),
       });
     } finally {
       setLoadingMore(false);
@@ -84,7 +82,7 @@ export function SavedDraftsView({
         setNote("This host can't insert files in place, so the draft was downloaded instead.");
       }
     } catch (e) {
-      setNote(e instanceof ApiError ? friendlyMessage(e) : (e as Error).message);
+      setNote(errorMessage(e));
     } finally {
       setBusyId(null);
     }
@@ -94,10 +92,10 @@ export function SavedDraftsView({
 
   return (
     <div className="stack draft-view">
-      <div className="row" style={{ justifyContent: "space-between", alignItems: "flex-start" }}>
-        <h1 className="view-title">Draft</h1>
-        <InfoTip text="Insert one of your saved Vaquill drafts into the open document, preserving its formatting. Useful for resuming a draft you started on the web or in an earlier session." />
-      </div>
+      <ViewHeader
+        title="Draft"
+        info="Insert one of your saved Vaquill drafts into the open document, preserving its formatting. Useful for resuming a draft you started on the web or in an earlier session."
+      />
 
       <SegmentedControl<DraftMode>
         label="Draft mode"

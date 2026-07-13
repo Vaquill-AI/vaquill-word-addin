@@ -1,13 +1,13 @@
 import { useState } from "react";
+import { ViewHeader } from "@/ui/ViewHeader";
 import { Badge, Banner, Button, Field } from "@/ui/primitives";
 import { Dropzone } from "@/ui/Dropzone";
-import { InfoTip } from "@/ui/InfoTip";
 import { CheckIcon } from "@/ui/icons";
 import { extractClause, type ExtractedClause } from "@/api/clause";
 import { reconcileTerms, type Reconciliation } from "@/api/reconcile";
 import { insertClauseTracked } from "@/office/richInsert";
 import { readFullDocumentText } from "@/office/document";
-import { ApiError, friendlyMessage } from "@/api/errors";
+import { errorMessage } from "@/api/errors";
 import "./transplant.css";
 
 const ACCEPT = ".pdf,.docx,.doc,.txt";
@@ -45,7 +45,7 @@ export function TransplantView() {
     } catch (e) {
       setState({
         status: "error",
-        error: e instanceof ApiError ? friendlyMessage(e) : (e as Error).message,
+        error: errorMessage(e),
       });
     }
   }
@@ -70,7 +70,7 @@ export function TransplantView() {
       const dest = await readFullDocumentText();
       setRecon(await reconcileTerms(clauseText, dest));
     } catch (e) {
-      setNote(e instanceof ApiError ? friendlyMessage(e) : (e as Error).message);
+      setNote(errorMessage(e));
     } finally {
       setReconciling(false);
     }
@@ -85,15 +85,11 @@ export function TransplantView() {
 
   return (
     <div className="stack">
-      <div className="stack" style={{ gap: 4 }}>
-        <div className="row" style={{ justifyContent: "space-between", alignItems: "flex-start" }}>
-          <h1 className="view-title">Clause transplant</h1>
-          <InfoTip text="Pull a clause from another contract and insert it into this document as a tracked change. The clause is copied verbatim from the source; place your cursor where you want it before inserting." />
-        </div>
-        <p className="small muted" style={{ margin: 0 }}>
-          Pull a clause from another contract into this document.
-        </p>
-      </div>
+      <ViewHeader
+        title="Clause transplant"
+        info="Pull a clause from another contract and insert it into this document as a tracked change. The clause is copied verbatim from the source; place your cursor where you want it before inserting."
+        subtitle="Pull a clause from another contract into this document."
+      />
 
       <Field label="Clause to pull">
         <input

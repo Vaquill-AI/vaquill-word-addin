@@ -1,18 +1,13 @@
 import { useCallback, useEffect, useState } from "react";
+import { ViewHeader } from "@/ui/ViewHeader";
 import { Button, Banner, Badge, Field, Spinner, IconButton } from "@/ui/primitives";
-import { InfoTip } from "@/ui/InfoTip";
 import { ScopedSearchList } from "@/ui/ScopedSearchList";
 import { XIcon } from "@/ui/icons";
-import {
-  searchClauses,
-  createClause,
-  deleteClause,
-  toClauseTypeKey,
-  type ClauseEntry,
-} from "@/api/clauses";
+import { searchClauses, createClause, deleteClause, type ClauseEntry } from "@/api/clauses";
+import { toClauseTypeKey } from "@/lib/strings";
 import { readSelectionText } from "@/office/document";
 import { insertPassageAtCursor } from "@/office/richInsert";
-import { ApiError, friendlyMessage } from "@/api/errors";
+import { errorMessage } from "@/api/errors";
 import "./clauses.css";
 
 const PREVIEW_MAX = 180;
@@ -65,7 +60,7 @@ export function ClauseLibraryView() {
     try {
       setClauses(await searchClauses({ limit: 100 }));
     } catch (e) {
-      setError(e instanceof ApiError ? friendlyMessage(e) : (e as Error).message);
+      setError(errorMessage(e));
       setClauses([]);
     }
   }, []);
@@ -107,7 +102,7 @@ export function ClauseLibraryView() {
       await deleteClause(c.id);
       setClauses((list) => (list ?? []).filter((x) => x.id !== c.id));
     } catch (e) {
-      setNote(e instanceof ApiError ? friendlyMessage(e) : (e as Error).message);
+      setNote(errorMessage(e));
     } finally {
       setBusyId(null);
     }
@@ -124,15 +119,11 @@ export function ClauseLibraryView() {
 
   return (
     <div className="stack clauses">
-      <div className="stack" style={{ gap: 4 }}>
-        <div className="row" style={{ justifyContent: "space-between", alignItems: "flex-start" }}>
-          <h1 className="view-title">Clause library</h1>
-          <InfoTip text="Save a clause from the open document for reuse, and insert a saved clause at your cursor. Your standard blocks, one click away." />
-        </div>
-        <p className="small muted" style={{ margin: 0 }}>
-          Insert a saved clause at the cursor, or save the selected text for reuse.
-        </p>
-      </div>
+      <ViewHeader
+        title="Clause library"
+        info="Save a clause from the open document for reuse, and insert a saved clause at your cursor. Your standard blocks, one click away."
+        subtitle="Insert a saved clause at the cursor, or save the selected text for reuse."
+      />
 
       {note && <Banner tone="warn">{note}</Banner>}
       {error && <Banner tone="danger">{error}</Banner>}
@@ -242,10 +233,14 @@ function SaveClauseForm({
     setSaving(true);
     setError(null);
     try {
-      await createClause({ name: trimmed, clauseType: toClauseTypeKey(trimmed), content: text });
+      await createClause({
+        name: trimmed,
+        clauseType: toClauseTypeKey(trimmed, "custom_clause"),
+        content: text,
+      });
       await onSaved();
     } catch (e) {
-      setError(e instanceof ApiError ? friendlyMessage(e) : (e as Error).message);
+      setError(errorMessage(e));
       setSaving(false);
     }
   }

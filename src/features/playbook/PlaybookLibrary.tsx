@@ -1,35 +1,10 @@
 import { Badge, Button } from "@/ui/primitives";
 import { ScopedSearchList } from "@/ui/ScopedSearchList";
 import { PlaybookIcon, PlayIcon } from "@/ui/icons";
+import { formatRelativeTime } from "@/lib/relativeTime";
+import { humanize } from "@/lib/strings";
 import type { PlaybookDetail } from "@/api/playbooks";
 
-function humanize(s: string): string {
-  return s.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
-}
-
-/**
- * Compact relative-time label ("3d ago") from an ISO timestamp. Returns null for
- * a missing / unparseable value so the caller can omit the label. Tiny by design:
- * we do not pull in a date library for one string.
- */
-function relativeTime(iso: string | null | undefined): string | null {
-  if (!iso) return null;
-  const then = Date.parse(iso);
-  if (Number.isNaN(then)) return null;
-  const diffMs = Date.now() - then;
-  if (diffMs < 45_000) return "just now";
-  const min = Math.floor(diffMs / 60_000);
-  if (min < 60) return `${min}m ago`;
-  const hr = Math.floor(min / 60);
-  if (hr < 24) return `${hr}h ago`;
-  const day = Math.floor(hr / 24);
-  if (day < 7) return `${day}d ago`;
-  const wk = Math.floor(day / 7);
-  if (wk < 5) return `${wk}w ago`;
-  const mo = Math.floor(day / 30);
-  if (mo < 12) return `${mo}mo ago`;
-  return `${Math.floor(day / 365)}y ago`;
-}
 
 function PlaybookRow({
   playbook,
@@ -41,7 +16,7 @@ function PlaybookRow({
   onRun?: () => void;
 }) {
   const clauseCount = Object.keys(playbook.positions).length;
-  const modified = relativeTime(playbook.updatedAt);
+  const modified = formatRelativeTime(playbook.updatedAt);
   return (
     <div className="playbook-row" role="listitem">
       <span className="playbook-row__badge" aria-hidden>

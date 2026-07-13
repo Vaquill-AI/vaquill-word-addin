@@ -121,3 +121,13 @@
   border-radius: 8px;
   background: var(--brand-tint, #f4f7fe);
 }
+
+/* Fallback ladder rung shown per redline: the position to fall back to if the
+   primary redline is rejected in negotiation. */
+.redline__fallback {
+  padding: 5px 9px;
+  border-left: 2px solid var(--border-strong);
+  background: var(--fill-subtle);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  line-height: 1.45;
+}

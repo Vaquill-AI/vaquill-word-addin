@@ -94,7 +94,10 @@ export function useAuthorityScan() {
       for (const c of cites) {
         if (signal.aborted) return;
         try {
-          acc.push(await verifyCitation(c.raw, c.count, signal));
+          const verified = await verifyCitation(c.raw, c.count, signal);
+          // Carry the document context (surrounding sentence) onto the result so
+          // the card can show the cite in place; verifyCitation does not see it.
+          acc.push(c.context ? { ...verified, context: c.context } : verified);
         } catch (e) {
           if ((e as Error).name === "AbortError") return;
           if (e instanceof ApiError && e.kind === "rate_limited") {
@@ -108,7 +111,7 @@ export function useAuthorityScan() {
             await runTreatmentPass(acc);
             return;
           }
-          acc.push({ raw: c.raw, count: c.count, verdict: "error" });
+          acc.push({ raw: c.raw, count: c.count, verdict: "error", context: c.context });
         }
         if (signal.aborted) return;
         setState({

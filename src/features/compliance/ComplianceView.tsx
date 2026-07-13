@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
+import { ViewHeader } from "@/ui/ViewHeader";
 import { Badge, Banner, Button, Field, Spinner, LiveRegion, SegmentedControl } from "@/ui/primitives";
-import { InfoTip } from "@/ui/InfoTip";
 import { ElapsedSeconds } from "@/ui/ElapsedSeconds";
 import { DistributionBar, type DistributionSegment } from "@/ui/DistributionBar";
 import { FilterChips, type FilterChipOption } from "@/ui/FilterChips";
@@ -52,10 +52,10 @@ export function ComplianceView() {
   return (
     <div className="stack compliance-view">
       <div className="stack" style={{ gap: 8 }}>
-        <div className="row" style={{ justifyContent: "space-between", alignItems: "flex-start" }}>
-          <h1 className="view-title">Compliance</h1>
-          <InfoTip text={MODE_INFO[mode]} />
-        </div>
+        <ViewHeader
+        title="Compliance"
+        info={MODE_INFO[mode]}
+      />
         <SegmentedControl
           options={MODE_OPTIONS}
           value={mode}

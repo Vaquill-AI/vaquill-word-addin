@@ -1,8 +1,8 @@
 .redact-row {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 8px;
-  padding: 6px 8px;
+  padding: 7px 8px;
   border-radius: var(--radius-sm);
   cursor: pointer;
 }
@@ -13,17 +13,47 @@
 
 .redact-row input[type="checkbox"] {
   flex: none;
+  margin-top: 2px;
   cursor: pointer;
 }
 
-.redact-row__text {
-  flex: 1;
+.redact-row__body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
   min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  flex: 1;
+}
+
+/* The in-context preview: surrounding text + the value struck + a black bar. */
+.redact-row__preview {
   font-size: 12px;
+  line-height: 1.5;
+  word-break: break-word;
+}
+.redact-ctx {
+  color: var(--text-muted);
+}
+.redact-strike {
+  color: var(--danger);
+  text-decoration: line-through;
+  text-decoration-color: rgba(124, 28, 20, 0.6);
+}
+/* A solid black bar, mirroring what redaction inserts into the document. */
+.redact-bar {
+  color: #000;
+  background: #000;
+  border-radius: 2px;
+  letter-spacing: -0.5px;
+  vertical-align: baseline;
+}
+/* Kept (unchecked) value: shown plainly, no strike, no bar. */
+.redact-keep {
+  color: var(--text);
+  font-weight: 600;
+}
+.redact-row--kept {
+  opacity: 0.7;
 }
 
 .redact-row__count {

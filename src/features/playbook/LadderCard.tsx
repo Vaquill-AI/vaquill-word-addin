@@ -2,11 +2,9 @@ import { useState } from "react";
 import { Badge, Button } from "@/ui/primitives";
 import { CheckIcon, ChevronIcon } from "@/ui/icons";
 import { insertClauseTracked } from "@/office/richInsert";
+import { humanize } from "@/lib/strings";
 import type { PlaybookPosition } from "@/api/playbooks";
 
-function humanize(clauseType: string): string {
-  return clauseType.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
-}
 
 function priorityBadge(priority?: string | null) {
   if (priority === "must_have") return <Badge tone="red">Must-have</Badge>;

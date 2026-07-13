@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Badge, Banner, Button, Spinner } from "@/ui/primitives";
 import { checkCitationStyle, type CitationStyleResult } from "@/api/citationStyle";
-import { ApiError, friendlyMessage } from "@/api/errors";
+import { errorMessage } from "@/api/errors";
 
 type State =
   | { status: "idle" }
@@ -26,7 +26,7 @@ export function CitationStyle({ citations }: { citations: string[] }) {
     } catch (e) {
       setState({
         status: "error",
-        error: e instanceof ApiError ? friendlyMessage(e) : (e as Error).message,
+        error: errorMessage(e),
       });
     }
   }

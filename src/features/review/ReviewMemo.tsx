@@ -6,7 +6,7 @@ import { selectClauseInDocument } from "@/office/navigate";
 import { readDocumentText } from "@/office/document";
 import { downloadDocx } from "@/office/export";
 import { exportCorrectedDocx } from "@/api/contract-review";
-import { ApiError, friendlyMessage } from "@/api/errors";
+import { errorMessage } from "@/api/errors";
 import type {
   AcceptedRedline,
   ContractReviewResponse,
@@ -266,7 +266,7 @@ export function ReviewMemo({
       });
       downloadDocx(base64, filename);
     } catch (e) {
-      setNote(e instanceof ApiError ? friendlyMessage(e) : (e as Error).message);
+      setNote(errorMessage(e));
     } finally {
       setDownloading(false);
     }

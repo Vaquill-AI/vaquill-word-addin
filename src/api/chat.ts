@@ -61,7 +61,13 @@ export interface AssistantGrounding {
 export type AssistantOptions = { useRag?: boolean } & AssistantGrounding;
 
 const CHAT = "/api/v1/stream/chat";
-const CONTEXT_CAP = 50_000;
+// Inline document context sent with each question. ~300k chars is roughly a
+// 100-page single-spaced contract (~2.7k chars/page). The backend `context`
+// field has no length limit and modern models take this comfortably; the cost
+// is more input tokens + slightly slower first token on very large docs. Beyond
+// this a document is truncated (front-of-doc), so genuinely huge agreements
+// would want chunk-and-retrieve rather than a flat cap.
+const CONTEXT_CAP = 300_000;
 
 const STEP_LABELS: Record<string, string> = {
   analyzing: "Understanding your question",

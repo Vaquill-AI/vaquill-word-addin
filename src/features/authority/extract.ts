@@ -59,6 +59,8 @@ const STATE_CODE_SIGNAL_RE =
 const STATUTE_HINT_RE =
   /(?:U\.?\s?S\.?\s?C|C\.?\s?F\.?\s?R)\b|§|\bCode\b|\bStat(?:s|utes)?\b|\bCPLR\b/i;
 
+import { snippetAround, type ContextSnippet } from "@/lib/context-snippet";
+
 export type CitationKind = "case" | "statute";
 
 export interface ExtractedCitation {
@@ -68,6 +70,8 @@ export interface ExtractedCitation {
   count: number;
   /** Which corpus this citation should be verified against. */
   kind: CitationKind;
+  /** Text around the first occurrence, for an in-context preview. */
+  context?: ContextSnippet;
 }
 
 /** Coverage of the most recent extraction, so the UI can report the cap honestly. */
@@ -151,7 +155,13 @@ export function extractCaseCitations(text: string, cap = EXTRACT_CAP): Extracted
     const key = h.raw.toLowerCase();
     const existing = byKey.get(key);
     if (existing) existing.count += 1;
-    else byKey.set(key, { raw: h.raw, count: 1, kind: h.kind });
+    else
+      byKey.set(key, {
+        raw: h.raw,
+        count: 1,
+        kind: h.kind,
+        context: snippetAround(text, h.start, h.end),
+      });
   }
 
   const unique = Array.from(byKey.values());

@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useState } from "react";
+import { ViewHeader } from "@/ui/ViewHeader";
 import { Badge, Banner, Button, Spinner } from "@/ui/primitives";
-import { InfoTip } from "@/ui/InfoTip";
 import { LocateIcon } from "@/ui/icons";
 import { readNumberedParagraphs } from "@/office/structure";
 import { selectClauseInDocument } from "@/office/navigate";
 import { analyzeCrossReferences, type CrossRefReport } from "@/lib/cross-references";
+import { useDocumentAutoRefresh } from "@/lib/useDocumentAutoRefresh";
 import "./xref.css";
 
 type State =
@@ -37,6 +38,21 @@ export function CrossRefView() {
     void scan();
   }, [scan]);
 
+  // Silent re-scan: refresh the report in place when the document is edited (a
+  // clause renumber can break refs), without flashing the scanning spinner.
+  const refresh = useCallback(async () => {
+    try {
+      const paragraphs = await readNumberedParagraphs();
+      const report = analyzeCrossReferences(paragraphs);
+      setState((s) => (s.status === "ready" ? { status: "ready", report } : s));
+    } catch {
+      // Ignore transient read failures; the next change event or rescan recovers.
+    }
+  }, []);
+
+  // Auto-refresh: re-scan when the document changes while this view is open.
+  useDocumentAutoRefresh(refresh);
+
   async function find(label: string) {
     setNote(null);
     const ok = await selectClauseInDocument(label);
@@ -44,15 +60,11 @@ export function CrossRefView() {
   }
 
   const header = (
-    <div className="stack" style={{ gap: 4 }}>
-      <div className="row" style={{ justifyContent: "space-between", alignItems: "flex-start" }}>
-        <h1 className="view-title">Cross-references</h1>
-        <InfoTip text="Checks internal references (see Section 7.4, Exhibit C) against the sections and schedules that actually exist, catching pointers left dangling after clauses were cut or renumbered. Reads both typed and auto-numbered sections. Roman-numeral Articles are out of scope." />
-      </div>
-      <p className="small muted" style={{ margin: 0 }}>
-        Find references that point at a section or schedule that does not exist.
-      </p>
-    </div>
+    <ViewHeader
+        title="Cross-references"
+        info="Checks internal references (see Section 7.4, Exhibit C) against the sections and schedules that actually exist, catching pointers left dangling after clauses were cut or renumbered. Reads both typed and auto-numbered sections. Roman-numeral Articles are out of scope."
+        subtitle="Find references that point at a section or schedule that does not exist."
+      />
   );
 
   if (state.status === "scanning") {
@@ -122,6 +134,13 @@ export function CrossRefView() {
                   Referenced {b.count}
                   {b.count === 1 ? " time" : " times"}, not found
                 </span>
+                {b.context && (
+                  <span className="ctx-line">
+                    {b.context.before}
+                    <mark className="ctx-hit">{b.label}</mark>
+                    {b.context.after}
+                  </span>
+                )}
               </div>
               <Button
                 variant="ghost"

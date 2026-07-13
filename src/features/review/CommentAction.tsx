@@ -5,7 +5,7 @@ import { insertCommentOnSelection } from "@/office/selection";
 import { selectClauseInDocument } from "@/office/navigate";
 import { goToBookmark } from "@/office/bookmarks";
 import { rewriteClause } from "@/api/clause-tools";
-import { ApiError, friendlyMessage } from "@/api/errors";
+import { errorMessage } from "@/api/errors";
 import type { RedlineSuggestion } from "@/api/types";
 import "./comment-action.css";
 
@@ -131,7 +131,7 @@ export function CommentAction({
       if (text) setDraft({ register, text });
       else setError("Could not draft a comment. Please try again.");
     } catch (e) {
-      setError(e instanceof ApiError ? friendlyMessage(e) : (e as Error).message);
+      setError(errorMessage(e));
     } finally {
       setGenerating(null);
     }
@@ -158,7 +158,7 @@ export function CommentAction({
       setInserted(true);
       setDraft(null);
     } catch (e) {
-      setError(e instanceof ApiError ? friendlyMessage(e) : (e as Error).message);
+      setError(errorMessage(e));
     } finally {
       setInserting(false);
     }

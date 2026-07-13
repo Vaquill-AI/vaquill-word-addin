@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useState } from "react";
-import { Badge, Banner, Button, Spinner, Toggle } from "@/ui/primitives";
+import { Badge, Banner, Button, IconButton, Spinner, Toggle } from "@/ui/primitives";
+import { ViewHeader } from "@/ui/ViewHeader";
 import { InfoTip } from "@/ui/InfoTip";
-import { CheckIcon, CleanIcon } from "@/ui/icons";
+import { CheckIcon, CleanIcon, RefreshIcon } from "@/ui/icons";
 import { readDocumentChanges, acceptAllTrackedChanges } from "@/office/changes";
 import { deleteAllComments, countDocumentComments } from "@/office/comments";
+import { useDocumentAutoRefresh } from "@/lib/useDocumentAutoRefresh";
 import "./clean-copy.css";
 
 type Scan = { trackedChanges: number; comments: number };
@@ -53,6 +55,27 @@ export function CleanCopyView() {
     void scan();
   }, [scan]);
 
+  // Silent re-scan: update the counts in place when the document is edited while
+  // this view is open, without flashing the scanning spinner. Only touches the
+  // ready/confirm states so it never disrupts an apply-in-progress or the result.
+  const refresh = useCallback(async () => {
+    try {
+      const [c, comments] = await Promise.all([readDocumentChanges(), countDocumentComments()]);
+      setPhase((p) =>
+        p.status === "ready" || p.status === "confirm"
+          ? { ...p, scan: { trackedChanges: c.trackedChanges.length, comments } }
+          : p,
+      );
+    } catch {
+      // Ignore transient read failures during a background refresh; the manual
+      // refresh and the next change event will recover.
+    }
+  }, []);
+
+  // Auto-refresh: re-scan when the document changes while this view is open, so
+  // the counts stay live without navigating away and back.
+  useDocumentAutoRefresh(refresh);
+
   async function apply() {
     setPhase({ status: "applying" });
     // Track progress outside the try so a failure after accepting changes can
@@ -72,16 +95,22 @@ export function CleanCopyView() {
     }
   }
 
+  const canRefresh = phase.status === "ready" || phase.status === "confirm";
   const header = (
-    <div className="stack" style={{ gap: 4 }}>
-      <div className="row" style={{ justifyContent: "space-between", alignItems: "flex-start" }}>
-        <h1 className="view-title">Clean copy</h1>
-        <InfoTip text="Prepare a send-ready copy: accept every tracked change and remove every comment, so no internal note or unresolved edit travels with the file. Word's Undo (Ctrl+Z) reverses it." />
-      </div>
-      <p className="small muted" style={{ margin: 0 }}>
-        Flatten changes and strip comments before you send this document.
-      </p>
-    </div>
+    <ViewHeader
+      title="Clean copy"
+      subtitle="Flatten changes and strip comments before you send this document."
+      action={
+        <div className="row" style={{ gap: 4, alignItems: "center" }}>
+          {canRefresh && (
+            <IconButton label="Rescan the document" onClick={() => void refresh()}>
+              <RefreshIcon size={14} />
+            </IconButton>
+          )}
+          <InfoTip text="Prepare a send-ready copy: accept every tracked change and remove every comment, so no internal note or unresolved edit travels with the file. Word's Undo (Ctrl+Z) reverses it. Counts refresh automatically as you edit." />
+        </div>
+      }
+    />
   );
 
   if (phase.status === "scanning") {

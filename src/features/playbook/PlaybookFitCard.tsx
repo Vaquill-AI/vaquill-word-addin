@@ -1,11 +1,9 @@
 import { Badge } from "@/ui/primitives";
 import type { PlaybookFitResult } from "@/api/playbook-fit";
 import type { PlaybookPosition } from "@/api/playbooks";
+import { humanize } from "@/lib/strings";
 import { fitVerdictLabel, fitVerdictTone } from "./status";
 
-function humanize(clauseType: string): string {
-  return clauseType.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
-}
 
 /**
  * Which ladder row the contract matched, derived from the verdict and the short

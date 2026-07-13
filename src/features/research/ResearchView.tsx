@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from "react";
+import { ViewHeader } from "@/ui/ViewHeader";
 import type { ReactNode } from "react";
 import { Badge, Banner, Button, Field, SegmentedControl, Spinner, IconButton } from "@/ui/primitives";
-import { InfoTip } from "@/ui/InfoTip";
 import { CheckIcon, CopyIcon, ArrowLeftIcon } from "@/ui/icons";
-import { ApiError, friendlyMessage } from "@/api/errors";
+import { errorMessage } from "@/api/errors";
 import { insertPassageAtCursor } from "@/office/richInsert";
 import { insertCitationFootnote } from "@/office/citations";
 import { CaseBrief } from "./CaseBrief";
@@ -97,7 +97,7 @@ export function ResearchView() {
       if ((e as Error).name === "AbortError") return;
       setState({
         status: "error",
-        error: e instanceof ApiError ? friendlyMessage(e) : (e as Error).message,
+        error: errorMessage(e),
       });
     }
   }
@@ -109,10 +109,10 @@ export function ResearchView() {
   return (
     <div className="stack research">
       <div className="stack" style={{ gap: 8 }}>
-        <div className="row" style={{ justifyContent: "space-between", alignItems: "flex-start" }}>
-          <h1 className="view-title">Legal research</h1>
-          <InfoTip text="Search the US statute corpus (USC, CFR, state codes) or look up a case and generate an IRAC brief, then drop it into your document, without leaving Word. Always confirm authority is current before relying on it." />
-        </div>
+        <ViewHeader
+        title="Legal research"
+        info="Search the US statute corpus (USC, CFR, state codes) or look up a case and generate an IRAC brief, then drop it into your document, without leaving Word. Always confirm authority is current before relying on it."
+      />
         <SegmentedControl<ResearchMode>
           label="Research mode"
           options={MODE_OPTIONS}
@@ -258,7 +258,7 @@ function StatuteReader({ result, onBack }: { result: StatuteResult; onBack: () =
         if ((e as Error).name === "AbortError") return;
         setState({
           status: "error",
-          error: e instanceof ApiError ? friendlyMessage(e) : (e as Error).message,
+          error: errorMessage(e),
         });
       });
     return () => controller.abort();
@@ -406,7 +406,7 @@ function AskSection({ actId }: { actId: string }) {
       if ((e as Error).name === "AbortError") return;
       setState({
         status: "error",
-        error: e instanceof ApiError ? friendlyMessage(e) : (e as Error).message,
+        error: errorMessage(e),
       });
     }
   }

@@ -2,7 +2,7 @@ import { useRef, useState } from "react";
 import { Banner, Button, Field, IconButton } from "@/ui/primitives";
 import { CheckIcon, CopyIcon } from "@/ui/icons";
 import { Markdown } from "@/features/assistant/markdown";
-import { ApiError, friendlyMessage } from "@/api/errors";
+import { errorMessage } from "@/api/errors";
 import { insertHtmlAtCursor } from "@/office/richInsert";
 import { resolveCase, getCaseBrief, markdownToSafeHtml, type CaseMatch } from "@/api/research";
 
@@ -60,7 +60,7 @@ export function CaseBrief() {
       if ((e as Error).name === "AbortError") return;
       setResolveState({
         status: "error",
-        error: e instanceof ApiError ? friendlyMessage(e) : (e as Error).message,
+        error: errorMessage(e),
       });
     }
   }
@@ -83,7 +83,7 @@ export function CaseBrief() {
       if ((e as Error).name === "AbortError") return;
       setBriefState({
         status: "error",
-        error: e instanceof ApiError ? friendlyMessage(e) : (e as Error).message,
+        error: errorMessage(e),
       });
     }
   }

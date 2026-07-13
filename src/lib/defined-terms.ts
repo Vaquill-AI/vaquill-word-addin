@@ -15,6 +15,8 @@
  * exotic definition styles rather than emit noise.
  */
 
+import { snippetAroundValue, type ContextSnippet } from "./context-snippet";
+
 export type TermFindingKind = "undefined" | "duplicate" | "unused";
 
 export interface TermFinding {
@@ -24,6 +26,8 @@ export interface TermFinding {
   count: number;
   /** For duplicate: how many times it was defined. */
   definitionCount: number;
+  /** Text around the first occurrence, for an in-context preview. */
+  context?: ContextSnippet;
 }
 
 export interface DefinedTermsReport {
@@ -133,12 +137,24 @@ export function analyzeDefinedTerms(text: string): DefinedTermsReport {
   for (const [term, defCount] of defs) {
     const total = countTermOccurrences(text, term);
     if (defCount >= 2) {
-      duplicateF.push({ term, kind: "duplicate", count: total, definitionCount: defCount });
+      duplicateF.push({
+        term,
+        kind: "duplicate",
+        count: total,
+        definitionCount: defCount,
+        context: snippetAroundValue(text, term),
+      });
       continue;
     }
     // Defined once: "used" means it appears beyond its single definition site.
     if (total <= 1) {
-      unusedF.push({ term, kind: "unused", count: total, definitionCount: 1 });
+      unusedF.push({
+        term,
+        kind: "unused",
+        count: total,
+        definitionCount: 1,
+        context: snippetAroundValue(text, term),
+      });
     }
   }
 
@@ -149,7 +165,13 @@ export function analyzeDefinedTerms(text: string): DefinedTermsReport {
     const total = countTermOccurrences(text, token);
     const quotedCount = countQuotedOccurrences(text, token);
     if (total > quotedCount) {
-      undefinedF.push({ term: token, kind: "undefined", count: total, definitionCount: 0 });
+      undefinedF.push({
+        term: token,
+        kind: "undefined",
+        count: total,
+        definitionCount: 0,
+        context: snippetAroundValue(text, token),
+      });
     }
   }
 

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Combobox } from "@/ui/Combobox";
 import { listMyOrganizations, type Org } from "@/api/organizations";
 import { getActiveOrgId, setActiveOrgId } from "@/lib/org";
 
@@ -43,22 +44,16 @@ export function OrgSwitcher() {
   if (orgs.length <= 1) return null;
 
   return (
-    <select
-      className="org-switcher"
-      value={value}
-      onChange={(e) => {
-        const v = e.target.value;
-        setValue(v);
-        setActiveOrgId(v || null);
-      }}
-      title="Active organization"
-      aria-label="Active organization"
-    >
-      {orgs.map((o) => (
-        <option key={o.id} value={o.id}>
-          {o.name}
-        </option>
-      ))}
-    </select>
+    <div className="org-switcher">
+      <Combobox
+        value={value}
+        onChange={(v) => {
+          setValue(v);
+          setActiveOrgId(v || null);
+        }}
+        options={orgs.map((o) => ({ value: o.id, label: o.name }))}
+        ariaLabel="Active organization"
+      />
+    </div>
   );
 }

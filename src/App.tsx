@@ -3,11 +3,11 @@ import type { User } from "@supabase/supabase-js";
 import type { ReactNode } from "react";
 import { Header } from "@/ui/Header";
 import { Button, SegmentedControl } from "@/ui/primitives";
+import { Avatar } from "@/ui/Avatar";
 import {
   ReviewIcon,
   DraftIcon,
   AssistantIcon,
-  SettingsIcon,
   ArrowLeftIcon,
   ToolsIcon,
 } from "@/ui/icons";
@@ -150,10 +150,18 @@ function AppShell() {
               size="sm"
               onClick={() => setShowSettings((v) => !v)}
               aria-pressed={showSettings}
-              title="Settings"
-              aria-label="Settings"
+              title="Account and settings"
+              aria-label="Account and settings"
             >
-              <SettingsIcon size={15} />
+              <Avatar
+                name={
+                  (user.user_metadata?.full_name as string) ||
+                  (user.user_metadata?.name as string) ||
+                  user.email ||
+                  "Account"
+                }
+                size={22}
+              />
             </Button>
           </div>
         </header>

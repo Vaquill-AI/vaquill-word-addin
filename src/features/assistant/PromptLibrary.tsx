@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
 import { Badge, Banner, Button, Field, IconButton, Spinner } from "@/ui/primitives";
-import { XIcon } from "@/ui/icons";
+import { XIcon, EditIcon, TrashIcon } from "@/ui/icons";
 import { ScopedSearchList } from "@/ui/ScopedSearchList";
 import type { SegOption } from "@/ui/primitives";
 import { getActiveOrgId } from "@/lib/org";
-import { ApiError, friendlyMessage } from "@/api/errors";
+import { errorMessage } from "@/api/errors";
 import {
   createPrompt,
   deletePrompt,
@@ -24,7 +24,7 @@ type Load =
   | { status: "error"; message: string };
 
 function errMessage(e: unknown): string {
-  return e instanceof ApiError ? friendlyMessage(e) : (e as Error).message;
+  return errorMessage(e);
 }
 
 /**
@@ -241,12 +241,12 @@ function PromptRow({
           </div>
         ) : (
           <div className="row" style={{ gap: 4, flexShrink: 0 }}>
-            <Button variant="ghost" size="sm" onClick={onEdit}>
-              Edit
-            </Button>
-            <Button variant="ghost" size="sm" onClick={() => setConfirming(true)}>
-              Delete
-            </Button>
+            <IconButton label="Edit prompt" onClick={onEdit}>
+              <EditIcon size={14} />
+            </IconButton>
+            <IconButton label="Delete prompt" tone="red" onClick={() => setConfirming(true)}>
+              <TrashIcon size={14} />
+            </IconButton>
           </div>
         ))}
     </div>

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Button, Banner, Badge } from "@/ui/primitives";
 import { assessRisk, type RiskResult, type RiskFactor, type MitigationOption } from "@/api/clause-tools";
-import { ApiError, friendlyMessage } from "@/api/errors";
+import { errorMessage } from "@/api/errors";
 
 const MIN_CHARS = 50; // Backend requires documentText >= 50 chars.
 
@@ -84,7 +84,7 @@ export function RiskTool({ clauseText }: { clauseText: string }) {
     try {
       setResult(await assessRisk(clauseText));
     } catch (e) {
-      setError(e instanceof ApiError ? friendlyMessage(e) : (e as Error).message);
+      setError(errorMessage(e));
     } finally {
       setBusy(false);
     }

@@ -64,6 +64,12 @@ export async function triageChanges(
   const context =
     (positions ? `OUR PLAYBOOK POSITIONS:\n${positions}\n\n` : "") + `COUNTERPARTY CHANGES:\n${numbered}`;
 
+  // Keep BOTH the raw streamed deltas and the final answer. The final can be the
+  // pipeline's "corrected" text (citation / grounding gate), which reformats an
+  // answer that has no citations -- and our JSON array has none -- so it can
+  // mangle the very JSON we need. When that happens we fall back to the raw
+  // stream, which still holds the model's original JSON array.
+  let raw = "";
   let acc = "";
   let streamError: unknown = null;
   try {
@@ -73,6 +79,7 @@ export async function triageChanges(
       {
         signal,
         onDelta: (d) => {
+          raw += d;
           acc += d;
         },
         onFinal: (corrected) => {
@@ -89,7 +96,7 @@ export async function triageChanges(
     streamError = e;
   }
 
-  const parsed = parseVerdicts(acc);
+  const parsed = parseVerdicts(acc) ?? parseVerdicts(raw);
   if (!parsed) {
     if (streamError) throw streamError;
     throw new Error("The AI triage response could not be read. Please try again.");

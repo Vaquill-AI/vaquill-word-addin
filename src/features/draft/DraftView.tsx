@@ -1,8 +1,9 @@
 import { useCallback, useRef, useState } from "react";
+import { ViewHeader } from "@/ui/ViewHeader";
 import { Button, Banner, Badge, Field, Spinner, SegmentedControl, IconButton } from "@/ui/primitives";
 import { Combobox } from "@/ui/Combobox";
-import { InfoTip } from "@/ui/InfoTip";
-import { CheckIcon, CopyIcon, FillIcon, ArrowLeftIcon, WandIcon, TermsIcon } from "@/ui/icons";
+import { CheckIcon, CopyIcon, FillIcon, ArrowLeftIcon, TermsIcon } from "@/ui/icons";
+import { ImproveButton } from "@/ui/ImproveButton";
 import { improveDraftingPrompt } from "@/api/improve-prompt";
 import {
   generateDraft,
@@ -29,7 +30,7 @@ import { TransplantView } from "@/features/transplant/TransplantView";
 import { FillView } from "@/features/fill/FillView";
 import { ClauseLibraryView } from "@/features/clauses/ClauseLibraryView";
 import { type DraftMode } from "./mode";
-import { ApiError, friendlyMessage } from "@/api/errors";
+import { ApiError, errorMessage } from "@/api/errors";
 import "./draft.css";
 
 type Status = "idle" | "generating" | "done" | "error";
@@ -95,7 +96,7 @@ export function DraftView() {
         setImproveNote("This brief is already clear. No changes made.");
       }
     } catch (e) {
-      setImproveNote(e instanceof ApiError ? friendlyMessage(e) : (e as Error).message);
+      setImproveNote(errorMessage(e));
     } finally {
       setImproving(false);
     }
@@ -151,12 +152,12 @@ export function DraftView() {
           setStatus("done");
           return;
         } catch (e2) {
-          setError(e2 instanceof ApiError ? friendlyMessage(e2) : (e2 as Error).message);
+          setError(errorMessage(e2));
           setStatus("error");
           return;
         }
       }
-      setError(e instanceof ApiError ? friendlyMessage(e) : (e as Error).message);
+      setError(errorMessage(e));
       setStatus("error");
     } finally {
       abortRef.current = null;
@@ -343,10 +344,10 @@ export function DraftView() {
   return (
     <div className="stack draft-view">
       <div className="stack" style={{ gap: 4 }}>
-        <div className="row" style={{ justifyContent: "space-between", alignItems: "flex-start" }}>
-          <h1 className="view-title">Draft</h1>
-          <InfoTip text="Generates a first-draft agreement from your inputs and inserts it into the document. Treat it as a starting point, not a final draft: review the language, run it through Review, and get the required sign-off before you send it." />
-        </div>
+        <ViewHeader
+        title="Draft"
+        info="Generates a first-draft agreement from your inputs and inserts it into the document. Treat it as a starting point, not a final draft: review the language, run it through Review, and get the required sign-off before you send it."
+      />
         <p className="small muted" style={{ margin: 0 }}>
           Generate a first-draft agreement and insert it into this document.
         </p>
@@ -411,15 +412,11 @@ export function DraftView() {
       <Field
         label="Key terms and instructions"
         action={
-          <Button
-            variant="ghost"
-            size="sm"
+          <ImproveButton
+            improving={improving}
+            disabled={!instructions.trim()}
             onClick={improvePrompt}
-            loading={improving}
-            disabled={!instructions.trim() || improving}
-          >
-            <WandIcon size={13} /> Improve with AI
-          </Button>
+          />
         }
       >
         <textarea

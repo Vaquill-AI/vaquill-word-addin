@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { ViewHeader } from "@/ui/ViewHeader";
 import { Badge, Banner, Button, Field, SegmentedControl, Spinner } from "@/ui/primitives";
-import { InfoTip } from "@/ui/InfoTip";
 import { CheckIcon } from "@/ui/icons";
 import { WordIcon } from "@/ui/fileIcons";
-import { ApiError, friendlyMessage } from "@/api/errors";
+import { errorMessage } from "@/api/errors";
 import { insertDocxAtCursorOrDownload } from "@/office/export";
 import { listTemplates, getTemplateDocx, type Template } from "@/api/templates";
 import { DRAFT_MODE_OPTIONS, type DraftMode } from "./mode";
+import { humanize } from "@/lib/strings";
 import "./draft.css";
 
 const LIMIT = 30;
@@ -16,9 +17,6 @@ type ListState =
   | { status: "ready"; items: Template[]; total: number; hasMore: boolean }
   | { status: "error"; error: string };
 
-function humanize(s: string): string {
-  return s.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
-}
 
 /**
  * Browse the firm template library and insert a template into the open document.
@@ -58,7 +56,7 @@ export function TemplatesView({ mode, setMode }: { mode: DraftMode; setMode: (m:
       if ((e as Error).name === "AbortError") return;
       setState({
         status: "error",
-        error: e instanceof ApiError ? friendlyMessage(e) : (e as Error).message,
+        error: errorMessage(e),
       });
     } finally {
       setLoadingMore(false);
@@ -86,7 +84,7 @@ export function TemplatesView({ mode, setMode }: { mode: DraftMode; setMode: (m:
         setNote("This host can't insert files in place, so the template was downloaded instead.");
       }
     } catch (e) {
-      setNote(e instanceof ApiError ? friendlyMessage(e) : (e as Error).message);
+      setNote(errorMessage(e));
     } finally {
       setBusyId(null);
     }
@@ -96,10 +94,10 @@ export function TemplatesView({ mode, setMode }: { mode: DraftMode; setMode: (m:
 
   return (
     <div className="stack draft-view">
-      <div className="row" style={{ justifyContent: "space-between", alignItems: "flex-start" }}>
-        <h1 className="view-title">Draft</h1>
-        <InfoTip text="Browse your firm's template library and insert a template into the open document, preserving its formatting. Fill any bracketed placeholders after inserting (the Fill tool can help)." />
-      </div>
+      <ViewHeader
+        title="Draft"
+        info="Browse your firm's template library and insert a template into the open document, preserving its formatting. Fill any bracketed placeholders after inserting (the Fill tool can help)."
+      />
 
       <SegmentedControl<DraftMode>
         label="Draft mode"

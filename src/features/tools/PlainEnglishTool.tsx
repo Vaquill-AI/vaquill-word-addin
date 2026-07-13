@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { Button, Banner } from "@/ui/primitives";
+import { CommentIcon, CheckIcon } from "@/ui/icons";
 import { plainEnglish } from "@/api/clause-tools";
 import { insertCommentOnSelection } from "@/office/selection";
-import { ApiError, friendlyMessage } from "@/api/errors";
+import { errorMessage } from "@/api/errors";
 
 /** Summarize the selected text in plain English (legal-tools endpoint). */
 export function PlainEnglishTool({ clauseText }: { clauseText: string }) {
@@ -21,7 +22,7 @@ export function PlainEnglishTool({ clauseText }: { clauseText: string }) {
       const r = await plainEnglish(clauseText);
       setExplanation(r?.explanation ?? "");
     } catch (e) {
-      setError(e instanceof ApiError ? friendlyMessage(e) : (e as Error).message);
+      setError(errorMessage(e));
     } finally {
       setBusy(false);
     }
@@ -35,7 +36,7 @@ export function PlainEnglishTool({ clauseText }: { clauseText: string }) {
       await insertCommentOnSelection(explanation);
       setCommented(true);
     } catch (e) {
-      setError(e instanceof ApiError ? friendlyMessage(e) : (e as Error).message);
+      setError(errorMessage(e));
     } finally {
       setCommenting(false);
     }
@@ -66,7 +67,15 @@ export function PlainEnglishTool({ clauseText }: { clauseText: string }) {
               disabled={commented}
               loading={commenting}
             >
-              {commented ? "Added as comment" : "Add as Word comment"}
+              {commented ? (
+                <>
+                  <CheckIcon size={14} /> Added as comment
+                </>
+              ) : (
+                <>
+                  <CommentIcon size={14} /> Add as Word comment
+                </>
+              )}
             </Button>
           )}
         </div>

@@ -2,20 +2,9 @@ import { useEffect, useState } from "react";
 import { IconButton } from "@/ui/primitives";
 import { XIcon, TrashIcon } from "@/ui/icons";
 import { ScopedSearchList } from "@/ui/ScopedSearchList";
+import { formatRelativeTime, formatExactTime } from "@/lib/relativeTime";
 import { deleteConversation, listConversations, type Conversation } from "./chatHistoryStore";
 import "./chat-history.css";
-
-function relTime(ms: number): string {
-  const diff = Date.now() - ms;
-  const min = Math.floor(diff / 60000);
-  if (min < 1) return "just now";
-  if (min < 60) return `${min}m ago`;
-  const hr = Math.floor(min / 60);
-  if (hr < 24) return `${hr}h ago`;
-  const days = Math.floor(hr / 24);
-  if (days < 7) return `${days}d ago`;
-  return new Date(ms).toLocaleDateString();
-}
 
 /**
  * Past-conversation picker (device-local history). Reuses ScopedSearchList for
@@ -84,7 +73,12 @@ export function ChatHistory({
                 title="Open this chat"
               >
                 <span className="chat-history__title">{c.title}</span>
-                <span className="chat-history__meta small muted">{relTime(c.updatedAt)}</span>
+                <span
+                  className="chat-history__meta small muted"
+                  title={formatExactTime(c.updatedAt)}
+                >
+                  {formatRelativeTime(c.updatedAt)}
+                </span>
               </button>
               <IconButton label={`Delete chat "${c.title}"`} tone="red" onClick={() => remove(c.id)}>
                 <TrashIcon size={14} />

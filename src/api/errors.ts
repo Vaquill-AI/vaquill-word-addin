@@ -90,3 +90,13 @@ export function friendlyMessage(err: ApiError): string {
       return err.message || "Something went wrong. Please try again.";
   }
 }
+
+/**
+ * Normalize any thrown value into a user-facing string: a friendly message for
+ * our ApiError, otherwise the error's own message. This is the single home for
+ * the `e instanceof ApiError ? friendlyMessage(e) : (e as Error).message` idiom
+ * that was duplicated across dozens of catch blocks.
+ */
+export function errorMessage(e: unknown): string {
+  return e instanceof ApiError ? friendlyMessage(e) : (e as Error).message;
+}

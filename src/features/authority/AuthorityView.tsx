@@ -1,7 +1,8 @@
 import { useState } from "react";
+import { ViewHeader } from "@/ui/ViewHeader";
 import { Button, Banner, Spinner, LiveRegion } from "@/ui/primitives";
 import { FilterChips, type FilterChipOption } from "@/ui/FilterChips";
-import { InfoTip } from "@/ui/InfoTip";
+import { DistributionBar, type DistributionSegment } from "@/ui/DistributionBar";
 import { CheckIcon } from "@/ui/icons";
 import { useAuthorityScan } from "./useAuthorityScan";
 import { getExtractCoverage } from "./extract";
@@ -75,16 +76,11 @@ export function AuthorityView() {
   if (state.status === "idle") {
     return (
       <div className="stack authority-view">
-        <div className="stack" style={{ gap: 4 }}>
-          <div className="row" style={{ justifyContent: "space-between", alignItems: "flex-start" }}>
-            <h1 className="view-title">Authority check</h1>
-            <InfoTip text="Checks every case and statute citation in the document against Vaquill AI's US corpus. Found means a real matching authority exists, not that it is still good law, so confirm its current treatment before relying on it. No match can mean a hallucinated, mis-typed, or unreported citation, so confirm it yourself before you rely on it or file." />
-          </div>
-          <p className="small muted" style={{ margin: 0 }}>
-            Verify every case and statute citation in this document against Vaquill AI's US corpus.
-            Catch citations that do not resolve to a real authority before you file or send.
-          </p>
-        </div>
+        <ViewHeader
+        title="Authority check"
+        info="Checks every case and statute citation in the document against Vaquill AI's US corpus. Found means a real matching authority exists, not that it is still good law, so confirm its current treatment before relying on it. No match can mean a hallucinated, mis-typed, or unreported citation, so confirm it yourself before you rely on it or file."
+        subtitle="Verify every case and statute citation in this document against Vaquill AI's US corpus. Catch citations that do not resolve to a real authority before you file or send."
+      />
         <Button variant="primary" className="btn--cta" onClick={run}>
           Check citations
         </Button>
@@ -144,8 +140,19 @@ export function AuthorityView() {
           if (other) chips.push({ key: "other", label: "Unresolved", count: other, tone: "neutral" });
           const shown =
             filter.size === 0 ? state.results : state.results.filter((r) => filter.has(groupOf(r)));
+          const segments: DistributionSegment[] = [
+            { tone: "yellow", count: verified.length, label: "found" },
+            { tone: "neutral", count: other, label: "unresolved" },
+            { tone: "red", count: noMatch, label: "no match" },
+          ];
           return (
             <>
+              {chips.length > 1 && (
+                <DistributionBar
+                  segments={segments}
+                  ariaLabel={`${verified.length} found, ${other} unresolved, ${noMatch} no match`}
+                />
+              )}
               {chips.length > 1 && (
                 <FilterChips
                   options={chips}

@@ -1,7 +1,10 @@
 import { useState } from "react";
+import { ViewHeader } from "@/ui/ViewHeader";
 import { Badge, Banner, Button, Spinner } from "@/ui/primitives";
+import { Avatar } from "@/ui/Avatar";
 import { InfoTip } from "@/ui/InfoTip";
 import { CheckIcon } from "@/ui/icons";
+import { formatRelativeTime, formatExactTime } from "@/lib/relativeTime";
 import { lockVaquillControls } from "@/office/contentControls";
 import { stampVaquillReview } from "@/office/properties";
 import { useGovernance } from "./useGovernance";
@@ -13,21 +16,6 @@ const LEVEL_LABEL: Record<string, string> = {
   partner: "Partner",
   gc: "GC",
 };
-
-function fmt(iso?: string): string {
-  if (!iso) return "";
-  try {
-    return new Date(iso).toLocaleString(undefined, {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  } catch {
-    return iso;
-  }
-}
 
 function StatusBanner({ ledger }: { ledger: GovernanceLedger }) {
   if (ledger.status === "signed_off") {
@@ -41,7 +29,13 @@ function StatusBanner({ ledger }: { ledger: GovernanceLedger }) {
           <Badge tone="green">{ledger.signoffEnforced ? "Authority verified" : "Attested"}</Badge>
         </div>
         <p className="small" style={{ margin: "4px 0 0" }}>
-          {ledger.signedOffBy} on {fmt(ledger.signedOffAt)}.
+          {ledger.signedOffBy}
+          {ledger.signedOffAt && (
+            <span className="muted" title={formatExactTime(ledger.signedOffAt)}>
+              {" · "}
+              {formatRelativeTime(ledger.signedOffAt)}
+            </span>
+          )}
         </p>
         <p className="small muted" style={{ margin: "4px 0 0" }}>
           {ledger.signoffEnforced
@@ -101,8 +95,8 @@ function SignoffAction({
       {error && <Banner tone="danger">{error}</Banner>}
       <p className="small muted" style={{ margin: 0 }}>
         {enforced
-          ? "Vaquill AI checks your authority on the server before recording this. If your account is below the required level, the approval is blocked and nothing is stamped into the file."
-          : "This records your name and the required level as an attestation stamped into the file (tamper-evident, not enforced): the pane does not verify your authority. For an authority-checked approval that blocks on insufficient rank, save this contract to Vaquill AI first, then sign off."}
+          ? "Your authority is checked on the server before this is recorded."
+          : "Stamps your name and level as an attestation in the file (not authority-checked). Save to Vaquill AI first for an enforced approval."}
       </p>
     </div>
   );
@@ -230,19 +224,14 @@ export function GovernanceView() {
   if (state.status === "none" || !state.ledger) {
     return (
       <div className="stack governance-view">
-        <div className="stack" style={{ gap: 4 }}>
-          <div className="row" style={{ justifyContent: "space-between", alignItems: "flex-start" }}>
-            <h1 className="view-title">Sign-off</h1>
-            <InfoTip text="The approval record is stored inside this .docx, so it travels with the file even when it is emailed on. It is a tamper-EVIDENT attestation (it flags accidental edits, but the pane does not verify the signer's authority). Record your approval to attest that the required manager, partner, or GC sign-off was obtained; the authority-enforced approval lives in the Vaquill AI web app." />
-          </div>
-          <p className="small muted" style={{ margin: 0 }}>
-            This document has no sign-off record yet.
-          </p>
-        </div>
+        <ViewHeader
+        title="Sign-off"
+        info="The approval record is stored inside this .docx, so it travels with the file even when it is emailed on. It is a tamper-EVIDENT attestation (it flags accidental edits, but the pane does not verify the signer's authority). Record your approval to attest that the required manager, partner, or GC sign-off was obtained; the authority-enforced approval lives in the Vaquill AI web app."
+        subtitle="This document has no sign-off record yet."
+      />
         <Banner tone="info">
-          Run a review, then choose "Record sign-off in document". Vaquill AI stamps the required
-          approval into the file itself, so anyone who opens it, even after it is emailed out, sees
-          whether it still needs manager, partner, or GC sign-off.
+          Run a review, then "Record sign-off in document". The approval is stamped into the file, so
+          anyone who opens it sees whether it still needs sign-off.
         </Banner>
       </div>
     );
@@ -280,7 +269,9 @@ export function GovernanceView() {
 
       <div className="gov-meta small muted">
         {ledger.reviewedBy && <div>Reviewed by {ledger.reviewedBy}</div>}
-        {ledger.reviewedAt && <div>on {fmt(ledger.reviewedAt)}</div>}
+        {ledger.reviewedAt && (
+          <div title={formatExactTime(ledger.reviewedAt)}>{formatRelativeTime(ledger.reviewedAt)}</div>
+        )}
         {ledger.contractType && <div>Contract type: {ledger.contractType}</div>}
       </div>
 
@@ -312,13 +303,15 @@ export function GovernanceView() {
         <ol className="gov-history">
           {[...ledger.events].reverse().map((e, i) => (
             <li key={i}>
-              <span className="gov-history__dot" aria-hidden />
+              <Avatar name={e.actor || "Unknown"} size={22} />
               <div>
                 <div className="small">
                   <strong>{e.action === "signed_off" ? "Signed off" : "Review recorded"}</strong> by{" "}
                   {e.actor}
                 </div>
-                <div className="small muted">{fmt(e.at)}</div>
+                <div className="small muted" title={formatExactTime(e.at)}>
+                  {formatRelativeTime(e.at)}
+                </div>
                 {e.note && <div className="small gov-history__note">{e.note}</div>}
               </div>
             </li>

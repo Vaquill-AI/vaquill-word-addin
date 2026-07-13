@@ -34,7 +34,17 @@ export function SelectionTools({ initialTool }: { initialTool?: Tool } = {}) {
     if (initialTool) setTool(initialTool);
   }, [initialTool]);
 
-  if (!sel.hasSelection) return null;
+  if (!sel.hasSelection) {
+    // During normal chat, stay out of the way. But when the user explicitly
+    // opened a selection tool (shell handoff) with nothing selected, show the
+    // guidance empty state rather than a blank pane.
+    if (!initialTool) return null;
+    return (
+      <div className="selection-tools">
+        <SelectionPreview text="" words={0} hasSelection={false} loading={false} />
+      </div>
+    );
+  }
 
   return (
     <div className="selection-tools">

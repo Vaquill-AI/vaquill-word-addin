@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { ViewHeader } from "@/ui/ViewHeader";
 import { Button, Banner, Spinner, Badge, IconButton, Field, LiveRegion } from "@/ui/primitives";
-import { InfoTip } from "@/ui/InfoTip";
-import { LocateIcon, CheckIcon, XIcon } from "@/ui/icons";
+import { LocateIcon, CheckIcon, XIcon, PlusIcon, MinusIcon, EditIcon, AlertTriangleIcon } from "@/ui/icons";
 import {
   readDocumentChanges,
   resolveTrackedChangeAt,
@@ -22,22 +22,50 @@ import { CommentCard } from "./CommentCard";
 import { triageChanges, positionsSummary, type Verdict, type VerdictMap } from "./triage";
 import { draftCounterReply } from "./counter";
 import { usePlaybookDetails } from "@/features/playbook/usePlaybookDetails";
-import { ApiError, friendlyMessage } from "@/api/errors";
+import { errorMessage } from "@/api/errors";
 
 type LoadStatus = "loading" | "ready" | "error";
 type TriageStatus = "idle" | "running" | "done" | "error";
 
 function changeTypeBadge(type: string) {
   const t = type.toLowerCase();
-  if (t.includes("add") || t.includes("insert")) return <Badge tone="green">Added</Badge>;
-  if (t.includes("delet") || t.includes("remov")) return <Badge tone="red">Deleted</Badge>;
-  return <Badge tone="neutral">{type || "Change"}</Badge>;
+  if (t.includes("add") || t.includes("insert"))
+    return (
+      <Badge tone="green">
+        <PlusIcon size={11} /> Added
+      </Badge>
+    );
+  if (t.includes("delet") || t.includes("remov"))
+    return (
+      <Badge tone="red">
+        <MinusIcon size={11} /> Deleted
+      </Badge>
+    );
+  return (
+    <Badge tone="neutral">
+      <EditIcon size={11} /> {type || "Change"}
+    </Badge>
+  );
 }
 
 function verdictBadge(v: Verdict) {
-  if (v === "accept") return <Badge tone="green">Accept</Badge>;
-  if (v === "reject") return <Badge tone="red">Reject</Badge>;
-  return <Badge tone="yellow">Review</Badge>;
+  if (v === "accept")
+    return (
+      <Badge tone="green">
+        <CheckIcon size={11} /> Accept
+      </Badge>
+    );
+  if (v === "reject")
+    return (
+      <Badge tone="red">
+        <XIcon size={11} /> Reject
+      </Badge>
+    );
+  return (
+    <Badge tone="yellow">
+      <AlertTriangleIcon size={11} /> Review
+    </Badge>
+  );
 }
 
 export function ChangesView() {
@@ -159,7 +187,7 @@ export function ChangesView() {
       setDraftText(reply);
     } catch (e) {
       if ((e as Error).name === "AbortError") return;
-      setDraftError(e instanceof ApiError ? friendlyMessage(e) : (e as Error).message);
+      setDraftError(errorMessage(e));
     } finally {
       setDrafting(false);
     }
@@ -237,7 +265,7 @@ export function ChangesView() {
       setTriage("done");
     } catch (e) {
       if ((e as Error).name === "AbortError") return;
-      setTriageError(e instanceof ApiError ? friendlyMessage(e) : (e as Error).message);
+      setTriageError(errorMessage(e));
       setTriage("error");
     }
   }
@@ -341,15 +369,11 @@ export function ChangesView() {
 
   return (
     <div className="stack changes-view" ref={rootRef} tabIndex={-1}>
-      <div className="stack" style={{ gap: 4 }}>
-        <div className="row" style={{ justifyContent: "space-between", alignItems: "flex-start" }}>
-          <h1 className="view-title">Counterparty changes</h1>
-          <InfoTip text="Shows the other side's tracked changes and comments. AI triage classifies each change against your playbook as Accept, Review, or Reject with a reason, so you can auto-accept the safe ones and focus on the rest. Every action here edits Word's real tracked changes, so review before you accept in bulk." />
-        </div>
-        <p className="small muted" style={{ margin: 0 }}>
-          Accept, reject, or reply to the other side's tracked changes.
-        </p>
-      </div>
+      <ViewHeader
+        title="Counterparty changes"
+        info="Shows the other side's tracked changes and comments. AI triage classifies each change against your playbook as Accept, Review, or Reject with a reason, so you can auto-accept the safe ones and focus on the rest. Every action here edits Word's real tracked changes, so review before you accept in bulk."
+        subtitle="Accept, reject, or reply to the other side's tracked changes."
+      />
 
       {tcs.length === 0 && (
         <Banner tone="info">
@@ -367,14 +391,14 @@ export function ChangesView() {
             return (
               <div className="row" style={{ gap: 8, alignItems: "flex-end", flexWrap: "wrap" }}>
                 {hasPlaybooks && (
-                  <div style={{ flex: "1 1 150px", minWidth: 0 }}>
-                    <Field label="Triage against">
+                  <div style={{ flex: "1 1 100%", minWidth: 0 }}>
+                    <Field label="Playbook to triage against">
                       <select
                         value={pbId}
                         onChange={(e) => setPbId(e.target.value)}
                         disabled={anyBusy}
                       >
-                        <option value="">General legal judgment</option>
+                        <option value="">General legal judgment (no playbook)</option>
                         {pb.playbooks.map((p) => (
                           <option key={p.id} value={p.id}>
                             {p.name}
@@ -382,6 +406,10 @@ export function ChangesView() {
                         ))}
                       </select>
                     </Field>
+                    <span className="small muted" style={{ display: "block", marginTop: 4 }}>
+                      A playbook is your saved set of negotiation positions. Each change is graded
+                      against it, or against general legal judgment if none is chosen.
+                    </span>
                   </div>
                 )}
                 <Button
@@ -476,11 +504,20 @@ export function ChangesView() {
                       >
                         <XIcon size={13} /> Reject
                       </Button>
+                      {draftFor !== i && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => void startDraft(i, c.text)}
+                          disabled={anyBusy || drafting}
+                        >
+                          Draft reply
+                        </Button>
+                      )}
                     </div>
                   )}
-                  {canResolve && (
-                    draftFor === i ? (
-                      <div className="stack" style={{ gap: 6 }}>
+                  {canResolve && draftFor === i && (
+                    <div className="stack" style={{ gap: 6 }}>
                         {drafting ? (
                           <div className="row" style={{ gap: 8, alignItems: "center" }}>
                             <Spinner />
@@ -519,18 +556,7 @@ export function ChangesView() {
                           </>
                         )}
                         {draftError && <Banner tone="warn">{draftError}</Banner>}
-                      </div>
-                    ) : (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => void startDraft(i, c.text)}
-                        disabled={anyBusy || drafting}
-                        style={{ alignSelf: "flex-start" }}
-                      >
-                        Draft reply
-                      </Button>
-                    )
+                    </div>
                   )}
                 </div>
               );

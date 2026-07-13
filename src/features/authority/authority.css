@@ -68,3 +68,18 @@
   cursor: pointer;
   padding: 2px 0;
 }
+
+/* In-context preview: the cite shown inside its surrounding sentence, so the
+   reviewer sees where it sits without jumping to the document. */
+.authority__context {
+  margin: 6px 0 0;
+  line-height: 1.5;
+  word-break: break-word;
+}
+.authority__context-hit {
+  background: var(--brand-tint);
+  color: var(--brand);
+  border-radius: 3px;
+  padding: 0 2px;
+  font-weight: 600;
+}

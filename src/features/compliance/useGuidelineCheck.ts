@@ -1,7 +1,7 @@
 import { useCallback, useState } from "react";
 import { checkGuidelines, type GuidelineResult } from "@/api/guidelines";
 import { readStructuredDocumentText } from "@/office/document";
-import { ApiError, friendlyMessage } from "@/api/errors";
+import { errorMessage } from "@/api/errors";
 
 /** Backend requires a non-trivial document; guard before the network call. */
 const MIN_CHARS = 100;
@@ -54,7 +54,7 @@ export function useGuidelineCheck() {
     } catch (e) {
       setState({
         status: "error",
-        error: e instanceof ApiError ? friendlyMessage(e) : (e as Error).message,
+        error: errorMessage(e),
       });
     }
   }, []);

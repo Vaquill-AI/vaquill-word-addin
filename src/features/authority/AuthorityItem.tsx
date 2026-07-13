@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Badge, IconButton } from "@/ui/primitives";
 import { OverflowMenu, type OverflowMenuItem } from "@/ui/OverflowMenu";
-import { LocateIcon } from "@/ui/icons";
+import { LocateIcon, CheckIcon, XIcon, AlertTriangleIcon } from "@/ui/icons";
 import { selectClauseInDocument } from "@/office/navigate";
 import { commentOnCitation } from "@/office/citations";
 import { useAppNav } from "@/app/nav";
@@ -13,12 +13,24 @@ function verdictBadge(verdict: Verdict) {
     case "verified":
       // A corpus match confirms the case exists, not that it is still good
       // law, so this reads "Found" (not "Verified") with a caution tone.
-      return <Badge tone="yellow">Found</Badge>;
+      return (
+        <Badge tone="yellow">
+          <CheckIcon size={11} /> Found
+        </Badge>
+      );
     case "no_match":
-      return <Badge tone="red">No match</Badge>;
+      return (
+        <Badge tone="red">
+          <XIcon size={11} /> No match
+        </Badge>
+      );
     case "unrecognized":
       // U3: an unmatched / empty result is a warning, not a benign neutral.
-      return <Badge tone="yellow">Unresolved</Badge>;
+      return (
+        <Badge tone="yellow">
+          <AlertTriangleIcon size={11} /> Unresolved
+        </Badge>
+      );
     default:
       return <Badge tone="neutral">Not checked</Badge>;
   }
@@ -152,6 +164,14 @@ export function AuthorityItem({ result }: { result: AuthorityResult }) {
             goodLawBadge(result.goodLaw.status)}
         </div>
       </div>
+
+      {result.context && (
+        <p className="authority__context small muted">
+          {result.context.before}
+          <mark className="authority__context-hit">{result.raw}</mark>
+          {result.context.after}
+        </p>
+      )}
 
       {result.verdict === "verified" && isStatute && (
         <div className="stack" style={{ gap: 1 }}>

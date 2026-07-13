@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
+import { ViewHeader } from "@/ui/ViewHeader";
 import { Badge, Banner, Button, Spinner } from "@/ui/primitives";
-import { InfoTip } from "@/ui/InfoTip";
 import { LocateIcon } from "@/ui/icons";
 import { StatusGroup } from "@/ui/StatusGroup";
 import type { StatusTone } from "@/ui/status";
 import { readDocumentText } from "@/office/document";
 import { selectClauseInDocument } from "@/office/navigate";
+import { useDocumentAutoRefresh } from "@/lib/useDocumentAutoRefresh";
 import {
   analyzeDefinedTerms,
   type DefinedTermsReport,
@@ -58,6 +59,22 @@ export function DefinedTermsView() {
     void scan();
   }, [scan]);
 
+  // Silent re-scan: refresh the report in place when the document is edited while
+  // this view is open, without flashing the scanning spinner. Only replaces a
+  // ready report so it never disrupts the loading or error states.
+  const refresh = useCallback(async () => {
+    try {
+      const text = await readDocumentText();
+      const report = analyzeDefinedTerms(text);
+      setState((s) => (s.status === "ready" ? { status: "ready", report } : s));
+    } catch {
+      // Ignore transient read failures; the next change event or manual rescan recovers.
+    }
+  }, []);
+
+  // Auto-refresh: re-scan when the document changes while this view is open.
+  useDocumentAutoRefresh(refresh);
+
   async function find(term: string) {
     setNote(null);
     const ok = await selectClauseInDocument(term);
@@ -65,15 +82,11 @@ export function DefinedTermsView() {
   }
 
   const header = (
-    <div className="stack" style={{ gap: 4 }}>
-      <div className="row" style={{ justifyContent: "space-between", alignItems: "flex-start" }}>
-        <h1 className="view-title">Defined terms</h1>
-        <InfoTip text="Checks defined-term hygiene: terms used but never defined, defined more than once, or defined but never used. A drafting aid over the standard definition styles ('X' means..., (the 'X')); it flags the common defects rather than every possible one." />
-      </div>
-      <p className="small muted" style={{ margin: 0 }}>
-        Find defined-term gaps, duplicates, and dead definitions.
-      </p>
-    </div>
+    <ViewHeader
+        title="Defined terms"
+        info="Checks defined-term hygiene: terms used but never defined, defined more than once, or defined but never used. A drafting aid over the standard definition styles ('X' means..., (the 'X')); it flags the common defects rather than every possible one."
+        subtitle="Find defined-term gaps, duplicates, and dead definitions."
+      />
   );
 
   if (state.status === "scanning") {
@@ -145,6 +158,13 @@ export function DefinedTermsView() {
                   <div className="stack" style={{ gap: 0, minWidth: 0 }}>
                     <span className="terms-term">{f.term}</span>
                     <span className="small muted">{detail(f)}</span>
+                    {f.context && (
+                      <span className="ctx-line">
+                        {f.context.before}
+                        <mark className="ctx-hit">{f.term}</mark>
+                        {f.context.after}
+                      </span>
+                    )}
                   </div>
                   <Button
                     variant="ghost"

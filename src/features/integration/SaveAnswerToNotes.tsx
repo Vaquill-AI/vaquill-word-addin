@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/ui/primitives";
 import { listClients, createClientNote, type Client } from "@/api/platform";
-import { ApiError, friendlyMessage } from "@/api/errors";
+import { errorMessage } from "@/api/errors";
 
 /**
  * Save an assistant answer as a note on a Vaquill AI client. Lazy: it loads
@@ -39,7 +39,7 @@ export function SaveAnswerToNotes({
       setClients(c);
       if (c[0]) setClientId(c[0].id);
     } catch (e) {
-      setLoadError(e instanceof ApiError ? friendlyMessage(e) : (e as Error).message);
+      setLoadError(errorMessage(e));
     }
   }
 

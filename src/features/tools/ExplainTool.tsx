@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { Button, Banner } from "@/ui/primitives";
+import { CommentIcon, CheckIcon } from "@/ui/icons";
 import { explainClause, type ExplainResult } from "@/api/clause-tools";
 import { insertCommentOnSelection } from "@/office/selection";
-import { ApiError, friendlyMessage } from "@/api/errors";
+import { errorMessage } from "@/api/errors";
 
 function List({ title, items }: { title: string; items: string[] }) {
   if (items.length === 0) return null;
@@ -36,7 +37,7 @@ export function ExplainTool({ clauseText }: { clauseText: string }) {
     try {
       setResult(await explainClause(clauseText));
     } catch (e) {
-      setError(e instanceof ApiError ? friendlyMessage(e) : (e as Error).message);
+      setError(errorMessage(e));
     } finally {
       setBusy(false);
     }
@@ -50,7 +51,7 @@ export function ExplainTool({ clauseText }: { clauseText: string }) {
       await insertCommentOnSelection(result.explanation);
       setCommented(true);
     } catch (e) {
-      setError(e instanceof ApiError ? friendlyMessage(e) : (e as Error).message);
+      setError(errorMessage(e));
     } finally {
       setCommenting(false);
     }
@@ -77,7 +78,15 @@ export function ExplainTool({ clauseText }: { clauseText: string }) {
             disabled={commented}
             loading={commenting}
           >
-            {commented ? "Added as comment" : "Add as Word comment"}
+            {commented ? (
+              <>
+                <CheckIcon size={14} /> Added as comment
+              </>
+            ) : (
+              <>
+                <CommentIcon size={14} /> Add as Word comment
+              </>
+            )}
           </Button>
         </div>
       )}

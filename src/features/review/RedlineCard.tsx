@@ -7,6 +7,7 @@ import { GroundingBadge } from "./GroundingBadge";
 import { InlineDiff } from "./InlineDiff";
 import { SeverityBadge } from "./SeverityBadge";
 import { severityOf } from "@/lib/severity";
+import { toClauseTypeKey } from "@/lib/strings";
 import { applyVerifiedRedline, canApplyInPane, AnchorNotFoundError } from "@/office/redline";
 import { insertClauseFormatted } from "@/office/richInsert";
 import { selectClauseInDocument } from "@/office/navigate";
@@ -14,7 +15,7 @@ import { goToBookmark } from "@/office/bookmarks";
 import { rewriteClause } from "@/api/clause-tools";
 import { streamClauseFix } from "@/api/contract-review";
 import { recordRedlineFeedback } from "@/api/feedback";
-import { ApiError, friendlyMessage } from "@/api/errors";
+import { errorMessage } from "@/api/errors";
 import { AddToPlaybook } from "@/features/integration/AddToPlaybook";
 import { useAppNav } from "@/app/nav";
 import { CommentAction } from "./CommentAction";
@@ -188,19 +189,6 @@ export interface RedlineFixContext {
   playbookId?: string;
 }
 
-// Derive a clause-type key from the clause name (the review response has no
-// explicit type). Server-side this picks the playbook position; an imperfect
-// match still drafts against the default positions, so this is best-effort.
-function clauseTypeOf(clauseName: string): string {
-  return (
-    clauseName
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "_")
-      .replace(/^_+|_+$/g, "")
-      .slice(0, 80) || "general"
-  );
-}
-
 export function RedlineCard({
   redline,
   index,
@@ -366,7 +354,7 @@ export function RedlineCard({
       if (r.rewritten?.trim()) setDraft(r.rewritten.trim());
       else setNote("The AI refine returned nothing usable. Edit manually.");
     } catch (e) {
-      setNote(e instanceof ApiError ? friendlyMessage(e) : (e as Error).message);
+      setNote(errorMessage(e));
     } finally {
       setRefining(false);
     }
@@ -392,7 +380,7 @@ export function RedlineCard({
       if (next) setEdited(next);
       else setNote("Could not generate an alternative. Try again.");
     } catch (e) {
-      setNote(e instanceof ApiError ? friendlyMessage(e) : (e as Error).message);
+      setNote(errorMessage(e));
     } finally {
       setRegenerating(false);
     }
@@ -412,7 +400,7 @@ export function RedlineCard({
       await streamClauseFix(
         {
           clauseName: active.clauseName,
-          clauseType: clauseTypeOf(active.clauseName),
+          clauseType: toClauseTypeKey(active.clauseName),
           currentLanguage: active.currentLanguage,
           userSide: fixContext.userSide,
           paperSide: fixContext.paperSide,
@@ -435,7 +423,7 @@ export function RedlineCard({
       );
     } catch (e) {
       if ((e as Error).name === "AbortError") return;
-      setNote(e instanceof ApiError ? friendlyMessage(e) : (e as Error).message);
+      setNote(errorMessage(e));
     } finally {
       setFixing(false);
       setFixStep(null);
@@ -649,6 +637,13 @@ export function RedlineCard({
         ) : (
           <p className="small muted" style={{ margin: 0 }}>{rationale}</p>
         ))}
+
+      {active.fallbackPosition?.trim() && (
+        <p className="small redline__fallback" style={{ margin: 0 }}>
+          <strong>Fallback if rejected:</strong>{" "}
+          <span className="muted">{active.fallbackPosition.trim()}</span>
+        </p>
+      )}
 
       {fixing && (
         <div

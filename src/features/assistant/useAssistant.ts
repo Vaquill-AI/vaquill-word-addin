@@ -7,7 +7,7 @@ import {
 } from "@/api/chat";
 import { readFullDocumentText, readSelectionText } from "@/office/document";
 import { uuid } from "@/api/ids";
-import { ApiError, friendlyMessage } from "@/api/errors";
+import { errorMessage } from "@/api/errors";
 
 export type Scope = "document" | "selection";
 
@@ -219,7 +219,7 @@ export function useAssistant() {
           setState((s) => ({ ...s, streaming: false, thinking: null }));
           return;
         }
-        const error = e instanceof ApiError ? friendlyMessage(e) : (e as Error).message;
+        const error = errorMessage(e);
         setState((s) => ({
           ...s,
           streaming: false,

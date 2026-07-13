@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { readFullDocumentText } from "@/office/document";
 import { fillFromReference, type FillItem } from "@/api/fill";
-import { ApiError, friendlyMessage } from "@/api/errors";
+import { errorMessage } from "@/api/errors";
 import { detectPlaceholders } from "./detect";
 
 export type FillState =
@@ -42,7 +42,7 @@ export function useFill() {
     } catch (e) {
       setState({
         status: "error",
-        error: e instanceof ApiError ? friendlyMessage(e) : (e as Error).message,
+        error: errorMessage(e),
       });
     }
   }, []);

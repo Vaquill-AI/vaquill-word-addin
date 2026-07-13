@@ -1,7 +1,7 @@
 import { useCallback, useState } from "react";
 import { checkCompliance, type ComplianceResult } from "@/api/clause-tools";
 import { readStructuredDocumentText } from "@/office/document";
-import { ApiError, friendlyMessage } from "@/api/errors";
+import { errorMessage } from "@/api/errors";
 
 /** Backend requires documentText >= 100 chars; guard before the network call. */
 const MIN_CHARS = 100;
@@ -37,7 +37,7 @@ export function useCompliance() {
     } catch (e) {
       setState({
         status: "error",
-        error: e instanceof ApiError ? friendlyMessage(e) : (e as Error).message,
+        error: errorMessage(e),
       });
     }
   }, []);

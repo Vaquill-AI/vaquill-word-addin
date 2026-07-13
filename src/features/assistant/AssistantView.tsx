@@ -1,11 +1,57 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Banner, LiveRegion, Spinner } from "@/ui/primitives";
+import { Banner, Button, LiveRegion, Spinner } from "@/ui/primitives";
 import { ChevronIcon } from "@/ui/icons";
 import { MessageBubble } from "./MessageBubble";
 import { Composer, type ComposerHandle, type ComposerMode } from "./Composer";
-import { SuggestedPrompts } from "./SuggestedPrompts";
+import { SuggestedPrompts, detectContractType } from "./SuggestedPrompts";
 import { ChatHistory } from "./ChatHistory";
-import { deriveTitle, getConversation, saveConversation } from "./chatHistoryStore";
+import {
+  deriveTitle,
+  getConversation,
+  listConversations,
+  saveConversation,
+  type Conversation,
+} from "./chatHistoryStore";
+import { useWordSelection } from "./useWordSelection";
+import { classifyIntent, type Intent } from "./intent";
+import { selectClauseInDocument } from "@/office/navigate";
+import { acceptAllTrackedChanges } from "@/office/changes";
+import { insertCommentAnchored, deleteAllComments } from "@/office/comments";
+
+/** Actionable (non-ask) intents that get staged for an explicit confirm. */
+type ActionIntent = Exclude<Intent, { action: "ask" }>;
+
+/** Human-readable confirm prompt for a staged action. */
+function suggestLabel(i: ActionIntent): string {
+  switch (i.action) {
+    case "edit":
+      return "This looks like an edit. Redline the document for this?";
+    case "navigate":
+      return `Go to "${i.target}" in the document?`;
+    case "comment":
+      return `Add a comment on "${i.target}"?`;
+    case "accept":
+      return "Accept all tracked changes? Word's Undo reverses it.";
+    case "cleanCopy":
+      return "Make a clean copy (accept all changes, remove comments)? Word's Undo reverses it.";
+  }
+}
+
+/** Button label for a staged action. */
+function suggestCta(i: ActionIntent): string {
+  switch (i.action) {
+    case "edit":
+      return "Redline it";
+    case "navigate":
+      return "Take me there";
+    case "comment":
+      return "Add comment";
+    case "accept":
+      return "Accept all";
+    case "cleanCopy":
+      return "Make clean copy";
+  }
+}
 import { useAssistant, type AssistantMessage, type Scope } from "./useAssistant";
 import { useAttachments } from "./useAttachments";
 import { extractFileText } from "@/api/context";
@@ -16,29 +62,15 @@ import { uuid } from "@/api/ids";
 import { SelectionTools } from "@/features/tools/SelectionTools";
 import { QuotaBanner } from "@/features/usage/QuotaBanner";
 import { getReviewPrefs, subscribeReviewPrefs } from "@/lib/prefs";
+import { formatRelativeTime } from "@/lib/relativeTime";
 import { RedlineCard } from "@/features/review/RedlineCard";
-import { editDocument, type EditItem } from "@/api/edit";
+import { editDocument, editToRedline } from "@/api/edit";
 import { readFullDocumentText } from "@/office/document";
-import { ApiError, friendlyMessage } from "@/api/errors";
+import { errorMessage } from "@/api/errors";
 import type { RedlineSuggestion } from "@/api/types";
 import type { Decision } from "@/features/review/decisions";
 import type { AppIntent, SelectionToolKey } from "@/app/nav";
 import "./assistant.css";
-
-/** Map a backend edit to the RedlineSuggestion the review card renders + applies.
- *  The backend verified current_language is a literal substring, so grounding is
- *  "verified" (the card can apply it in place). Mirrors EditView. */
-function toRedline(e: EditItem): RedlineSuggestion {
-  return {
-    clauseName: e.label,
-    sectionReference: e.sectionReference || undefined,
-    currentLanguage: e.currentLanguage,
-    proposedLanguage: e.proposedLanguage,
-    rationale: e.rationale,
-    grounding: "verified",
-    isDealBreaker: false,
-  };
-}
 
 type EditState =
   | { status: "idle" }
@@ -62,6 +94,8 @@ function PlusGlyph() {
   );
 }
 
+/** Compact relative time for the recent-chats list ("2h", "3d", else a date). */
+
 export function AssistantView({
   intent,
   onIntentDone,
@@ -70,7 +104,7 @@ export function AssistantView({
   intent?: AppIntent | null;
   onIntentDone?: () => void;
 } = {}) {
-  const { state, send, stop, reset, truncateBefore, loadMessages, regenerate } = useAssistant();
+  const { state, send, stop, reset, truncateBefore, loadMessages } = useAssistant();
   // Chat attaches files as inline context: extract the text server-side and fold
   // it into the request context at send time.
   const attach = useAttachments(
@@ -91,6 +125,18 @@ export function AssistantView({
   // Ask (grounded chat) vs Edit (describe a change, get grounded redlines). The
   // tabs live in the composer so switching never leaves the input.
   const [mode, setMode] = useState<ComposerMode>("ask");
+  // A detected document action awaiting the user's confirm (Ask-mode intent
+  // routing). Null when the last message was a plain question.
+  const [pendingAction, setPendingAction] = useState<{ intent: ActionIntent; text: string } | null>(
+    null,
+  );
+  // A short "what I did" line shown after an action runs (auto-clears).
+  const [actionResult, setActionResult] = useState<string | null>(null);
+  useEffect(() => {
+    if (!actionResult) return;
+    const t = setTimeout(() => setActionResult(null), 6000);
+    return () => clearTimeout(t);
+  }, [actionResult]);
   const [editState, setEditState] = useState<EditState>({ status: "idle" });
   const [editDecisions, setEditDecisions] = useState<Record<number, Decision>>({});
   const editDecisionOf = (i: number): Decision => editDecisions[i] ?? "pending";
@@ -131,10 +177,6 @@ export function AssistantView({
     requestAnimationFrame(() => composerRef.current?.focus());
   }
 
-  function handleRegenerate(message: AssistantMessage) {
-    regenerate(message.id, scope, grounding, attach.contextFiles());
-  }
-
   // Edit mode: describe a change, get grounded redlines across the document.
   async function generateEdit(instruction: string) {
     const instr = instruction.trim();
@@ -143,12 +185,15 @@ export function AssistantView({
     setEditDecisions({});
     try {
       const text = await readFullDocumentText();
-      const edits = await editDocument(text, instr);
-      setEditState({ status: "review", redlines: edits.map(toRedline) });
+      // Detect the contract type so the server can gate each edit against the
+      // matching doc-type playbook (approval level + deal-breaker), like Review.
+      const contractType = detectContractType(text) ?? undefined;
+      const edits = await editDocument(text, instr, contractType);
+      setEditState({ status: "review", redlines: edits.map(editToRedline) });
     } catch (e) {
       setEditState({
         status: "error",
-        error: e instanceof ApiError ? friendlyMessage(e) : (e as Error).message,
+        error: errorMessage(e),
       });
     }
   }
@@ -159,7 +204,70 @@ export function AssistantView({
       void generateEdit(t);
       return;
     }
+    // Ask mode: if the message is really a document action (redline / navigate),
+    // offer to run it instead of just answering. Never acts silently.
+    const intent = classifyIntent(t);
+    if (intent.action !== "ask") {
+      setPendingAction({ intent, text: t });
+      return;
+    }
     send(t, scope, grounding, attach.contextFiles());
+  }
+
+  // Run the confirmed action against the open document. Edit routes into the rich
+  // Edit flow; the rest drive the Office helpers and report a short result.
+  async function runPendingAction() {
+    const pa = pendingAction;
+    if (!pa) return;
+    setPendingAction(null);
+    setActionResult(null);
+    try {
+      switch (pa.intent.action) {
+        case "edit":
+          setMode("edit");
+          void generateEdit(pa.text);
+          break;
+        case "navigate":
+          await selectClauseInDocument(pa.intent.target);
+          break;
+        case "comment": {
+          const r = await insertCommentAnchored(pa.intent.target, pa.intent.note);
+          setActionResult(
+            r === "inserted"
+              ? `Comment added on "${pa.intent.target}".`
+              : r === "not_found"
+                ? `Could not find "${pa.intent.target}" in the document.`
+                : "Word does not allow a comment in that location.",
+          );
+          break;
+        }
+        case "accept": {
+          const n = await acceptAllTrackedChanges();
+          setActionResult(
+            `Accepted ${n} tracked change${n === 1 ? "" : "s"}. Word's Undo reverses it.`,
+          );
+          break;
+        }
+        case "cleanCopy": {
+          const accepted = await acceptAllTrackedChanges();
+          const removed = await deleteAllComments();
+          setActionResult(
+            `Clean copy ready: accepted ${accepted} change${accepted === 1 ? "" : "s"}, removed ${removed} comment${removed === 1 ? "" : "s"}. Word's Undo reverses it.`,
+          );
+          break;
+        }
+      }
+    } catch (e) {
+      setActionResult((e as Error).message);
+    }
+  }
+
+  // The user declined the action: answer the message as a normal question.
+  function dismissToAnswer() {
+    const pa = pendingAction;
+    if (!pa) return;
+    setPendingAction(null);
+    send(pa.text, scope, grounding, attach.contextFiles());
   }
 
   // Switching mode clears the shared draft so leftover text from one mode does
@@ -260,6 +368,40 @@ export function AssistantView({
 
   const empty = state.messages.length === 0;
 
+  // The current Word selection (if any), so the empty state can offer to ask
+  // about the highlighted clause specifically.
+  const selectionText = useWordSelection();
+  // Best-effort client-side contract-type guess (tailors the starter chips).
+  const [docType, setDocType] = useState<string | null>(null);
+  useEffect(() => {
+    if (!empty) return;
+    let alive = true;
+    readFullDocumentText()
+      .then((text) => alive && setDocType(detectContractType(text)))
+      .catch(() => alive && setDocType(null));
+    return () => {
+      alive = false;
+    };
+  }, [empty]);
+
+  // Recent conversations to resume from the empty state (excluding this one).
+  const recentChats: Conversation[] = empty
+    ? listConversations()
+        .filter((c) => c.id !== convIdRef.current)
+        .slice(0, 2)
+    : [];
+
+  // Active grounding sources, shown as chips so "grounded in ..." is concrete
+  // and the composer's context badge count is legible.
+  const sourceChips: string[] = [
+    "This document",
+    ...(context.corpus ? ["US law"] : []),
+    ...(prefs.matterId && context.matterDocs ? ["Matter documents"] : []),
+    ...(context.web ? ["Web"] : []),
+  ];
+  // Only offer the selection when it's a meaningful span, not a stray caret/word.
+  const hasSelection = selectionText.length > 20;
+
   const canNewChat = !empty || convIdRef.current !== null;
 
   return (
@@ -337,8 +479,58 @@ export function AssistantView({
               <p className="assistant__greeting-sub">
                 Grounded in your document and US law, with checkable sources.
               </p>
+              <div className="assistant__sources">
+                {sourceChips.map((s) => (
+                  <span key={s} className="assistant__source">
+                    {s}
+                  </span>
+                ))}
+              </div>
             </div>
-            <SuggestedPrompts onPick={(p) => send(p, scope, grounding, attach.contextFiles())} />
+
+            {hasSelection && (
+              <button
+                type="button"
+                className="suggest-chip assistant__sel-chip"
+                onClick={() =>
+                  send(
+                    "Explain the selected clause: what it does, and any risk to me.",
+                    "selection",
+                    grounding,
+                    attach.contextFiles(),
+                  )
+                }
+              >
+                <span className="suggest-chip__icon" aria-hidden>
+                  <svg viewBox="0 0 24 24" width={14} height={14} fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                    <path d="M4 7V5a1 1 0 0 1 1-1h2M17 4h2a1 1 0 0 1 1 1v2M20 17v2a1 1 0 0 1-1 1h-2M7 20H5a1 1 0 0 1-1-1v-2" />
+                  </svg>
+                </span>
+                Ask about the selected text
+              </button>
+            )}
+
+            <SuggestedPrompts
+              contractType={docType}
+              onPick={(p) => send(p, scope, grounding, attach.contextFiles())}
+            />
+
+            {recentChats.length > 0 && (
+              <div className="assistant__recent">
+                <span className="small muted assistant__recent-label">Recent</span>
+                {recentChats.map((c) => (
+                  <button
+                    key={c.id}
+                    type="button"
+                    className="assistant__recent-item"
+                    onClick={() => loadChat(c.id)}
+                  >
+                    <span className="assistant__recent-title">{c.title}</span>
+                    <span className="small muted">{formatRelativeTime(c.updatedAt)}</span>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         ) : (
           <>
@@ -347,15 +539,17 @@ export function AssistantView({
                 key={m.id}
                 message={m}
                 onEdit={m.role === "user" && !state.streaming ? handleEdit : undefined}
-                onRegenerate={
-                  m.role === "assistant" && !state.streaming ? handleRegenerate : undefined
-                }
               />
             ))}
             {state.thinking && (
               <LiveRegion className="assistant__thinking">
                 <Spinner />
-                <span className="small muted">{state.thinking}...</span>
+                {/* Strip any trailing dots the label already carries so we never
+                    render a doubled ellipsis ("...statutes......"). */}
+                <span className="small muted">
+                  {state.thinking.replace(/[.…\s]+$/, "")}
+                  {"…"}
+                </span>
               </LiveRegion>
             )}
             {state.error && <Banner tone="danger">{state.error}</Banner>}
@@ -373,6 +567,35 @@ export function AssistantView({
         >
           <ChevronIcon size={16} />
         </button>
+      )}
+      {pendingAction && (
+        <div className="assistant__suggest">
+          <span className="small assistant__suggest-text">
+            {suggestLabel(pendingAction.intent)}
+          </span>
+          <div className="row" style={{ gap: 6, flexShrink: 0 }}>
+            <Button
+              variant={
+                pendingAction.intent.action === "accept" ||
+                pendingAction.intent.action === "cleanCopy"
+                  ? "danger"
+                  : "primary"
+              }
+              size="sm"
+              onClick={() => void runPendingAction()}
+            >
+              {suggestCta(pendingAction.intent)}
+            </Button>
+            <Button variant="ghost" size="sm" onClick={dismissToAnswer}>
+              Just answer
+            </Button>
+          </div>
+        </div>
+      )}
+      {!pendingAction && actionResult && (
+        <div className="assistant__action-result small muted" role="status">
+          {actionResult}
+        </div>
       )}
       <Composer
         ref={composerRef}

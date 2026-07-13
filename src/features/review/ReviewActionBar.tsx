@@ -5,7 +5,7 @@ import { downloadDocx } from "@/office/export";
 import { readDocumentText } from "@/office/document";
 import { applyVerifiedRedline, canApplyInPane } from "@/office/redline";
 import { insertClauseFormatted } from "@/office/richInsert";
-import { ApiError, friendlyMessage } from "@/api/errors";
+import { errorMessage } from "@/api/errors";
 import type { RedlineSuggestion, AcceptedRedline } from "@/api/types";
 import type { Decision } from "./decisions";
 
@@ -134,7 +134,7 @@ export function ReviewActionBar({
       });
       downloadDocx(base64, filename);
     } catch (e) {
-      setError(e instanceof ApiError ? friendlyMessage(e) : (e as Error).message);
+      setError(errorMessage(e));
     } finally {
       setDownloading(false);
     }

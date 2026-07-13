@@ -13,8 +13,8 @@
   gap: var(--space-s);
 }
 
-/* Each workflow group (Review / Revise / Send): a small caps-y label above its
-   cards, so the 10 tools read as three short groups rather than one long list. */
+/* Each workflow group (Check / Send): a small caps-y label above its cards, so
+   the tools read as short grouped sets rather than one long list. */
 .toolshub-group {
   gap: var(--space-s);
 }

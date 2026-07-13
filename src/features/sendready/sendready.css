@@ -8,22 +8,32 @@
 
 .sendready-row {
   display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  padding: 8px 2px;
+  align-items: center;
+  gap: 11px;
+  padding: 10px 2px;
 }
 
 .sendready-row + .sendready-row {
   border-top: 1px solid var(--border);
 }
 
-/* Status dot: a small colored disc, aligned to the label's first line. */
-.sendready-row__dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  margin-top: 5px;
+/* Status badge: a tone-tinted rounded tile carrying the check's icon (or a
+   check when the item has passed), so each row has a scannable identity and its
+   status in one glance instead of a bare dot. */
+.sendready-row__badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
   flex-shrink: 0;
+}
+
+/* Passed checks recede so attention lands on what still needs work. */
+.sendready-row--ok .sendready-row__label {
+  color: var(--text-muted);
+  font-weight: 500;
 }
 
 .sendready-row__label {

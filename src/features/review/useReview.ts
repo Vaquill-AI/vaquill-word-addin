@@ -6,7 +6,7 @@ import {
 } from "@/api/contract-review";
 import type { ContractReviewResponse } from "@/api/types";
 import { readSelectionText, readStructuredDocumentText } from "@/office/document";
-import { ApiError, friendlyMessage } from "@/api/errors";
+import { errorMessage } from "@/api/errors";
 import { sha256Hex } from "@/lib/hash";
 import { splitIntoSections, mergeReviews } from "@/lib/sections";
 import type { ReviewScope } from "./constants";
@@ -215,7 +215,7 @@ export function useReview() {
         setState((s) => ({ ...s, status: "done", progress: null, result: delivered, error: null }));
         return;
       }
-      const error = e instanceof ApiError ? friendlyMessage(e) : (e as Error).message;
+      const error = errorMessage(e);
       setState((s) => ({ ...s, status: "error", progress: null, result: null, error }));
     }
   }, []);
