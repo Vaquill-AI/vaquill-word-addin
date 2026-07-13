@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Badge, Banner, Button, Field, SegmentedControl, Spinner } from "@/ui/primitives";
 import { InfoTip } from "@/ui/InfoTip";
 import { CheckIcon } from "@/ui/icons";
+import { WordIcon } from "@/ui/fileIcons";
 import { ApiError, friendlyMessage } from "@/api/errors";
 import { insertDocxAtCursorOrDownload } from "@/office/export";
 import { listTemplates, getTemplateDocx, type Template } from "@/api/templates";
@@ -134,8 +135,12 @@ export function TemplatesView({ mode, setMode }: { mode: DraftMode; setMode: (m:
         <div className="stack" style={{ gap: 6 }}>
           {items.map((t) => (
             <div key={t.id} className="card template-card">
-              <div className="stack" style={{ gap: 2, minWidth: 0 }}>
-                <span className="template-card__title">{t.title}</span>
+              <div className="row" style={{ gap: 10, minWidth: 0, alignItems: "flex-start" }}>
+                <span style={{ flexShrink: 0, marginTop: 1 }}>
+                  <WordIcon size={26} />
+                </span>
+                <div className="stack" style={{ gap: 2, minWidth: 0 }}>
+                  <span className="template-card__title">{t.title}</span>
                 <span className="row" style={{ gap: 6, flexWrap: "wrap", alignItems: "center" }}>
                   {t.isSystem && <Badge tone="brand">Starter</Badge>}
                   <span className="small muted">{humanize(t.category)}</span>
@@ -146,9 +151,10 @@ export function TemplatesView({ mode, setMode }: { mode: DraftMode; setMode: (m:
                     </span>
                   )}
                 </span>
-                {t.description && (
-                  <span className="small muted template-card__desc">{t.description}</span>
-                )}
+                  {t.description && (
+                    <span className="small muted template-card__desc">{t.description}</span>
+                  )}
+                </div>
               </div>
               <Button
                 variant="default"

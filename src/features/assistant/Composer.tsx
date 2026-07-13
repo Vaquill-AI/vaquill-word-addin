@@ -30,12 +30,18 @@ function ArrowUpGlyph() {
   );
 }
 
+export type ComposerMode = "ask" | "edit";
+
 interface ComposerProps {
   value: string;
   onChange: (value: string) => void;
   onSend: (text: string) => void;
   onStop?: () => void;
   disabled: boolean;
+  /** Ask (chat) vs Edit (describe a change, get redlines). Tabs live in the
+   *  composer so switching never leaves the input. */
+  mode: ComposerMode;
+  onMode: (mode: ComposerMode) => void;
   scope: Scope;
   onScope: (scope: Scope) => void;
   context: ContextConfig;
@@ -44,6 +50,7 @@ interface ComposerProps {
   attachments: AttachedFile[];
   onAttach: (file: File) => void;
   onRemoveAttachment: (id: string) => void;
+  onOcrAttachment: (id: string) => void;
   atCap: boolean;
 }
 
@@ -59,6 +66,8 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
     onSend,
     onStop,
     disabled,
+    mode,
+    onMode,
     scope,
     onScope,
     context,
@@ -67,6 +76,7 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
     attachments,
     onAttach,
     onRemoveAttachment,
+    onOcrAttachment,
     atCap,
   },
   ref,
@@ -113,20 +123,55 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
           attachments={attachments}
           onAttach={onAttach}
           onRemoveAttachment={onRemoveAttachment}
+          onOcrAttachment={onOcrAttachment}
           atCap={atCap}
           onClose={() => setContextOpen(false)}
         />
       )}
       <div className="composer__box">
-        <FocusControl scope={scope} onScope={onScope} />
+        <div
+          role="tablist"
+          aria-label="Assistant mode"
+          style={{ display: "flex", gap: 4, marginBottom: 6 }}
+        >
+          {(["ask", "edit"] as const).map((m) => (
+            <button
+              key={m}
+              type="button"
+              role="tab"
+              aria-selected={mode === m}
+              onClick={() => onMode(m)}
+              style={{
+                border: "none",
+                background: mode === m ? "var(--fill-subtle-hover)" : "transparent",
+                color: mode === m ? "var(--text)" : "var(--text-muted)",
+                fontWeight: 600,
+                fontSize: 12,
+                padding: "3px 10px",
+                borderRadius: "var(--radius-sm)",
+                cursor: "pointer",
+              }}
+            >
+              {m === "ask" ? "Ask" : "Edit"}
+            </button>
+          ))}
+        </div>
+        {mode === "ask" && <FocusControl scope={scope} onScope={onScope} />}
         {attachments.length > 0 && (
-          <AttachmentChips files={attachments} onRemove={onRemoveAttachment} compact />
+          <AttachmentChips
+            files={attachments}
+            onRemove={onRemoveAttachment}
+            onOcr={onOcrAttachment}
+            compact
+          />
         )}
         <textarea
           ref={taRef}
           value={value}
-          aria-label="Ask about this contract"
-          placeholder="Ask about this contract..."
+          aria-label={mode === "edit" ? "Describe a change to the document" : "Ask about this contract"}
+          placeholder={
+            mode === "edit" ? "Describe a change to the document..." : "Ask about this contract..."
+          }
           rows={2}
           onChange={(e) => onChange(e.target.value)}
           onKeyDown={(e) => {

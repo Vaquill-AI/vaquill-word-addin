@@ -8,6 +8,7 @@ import { ApiError, friendlyMessage } from "@/api/errors";
 import {
   createPrompt,
   deletePrompt,
+  updatePrompt,
   listPrompts,
   type Prompt,
   type PromptInput,
@@ -47,6 +48,8 @@ export function PromptLibrary({
   const [scope, setScope] = useState<ScopeTab>("all");
   const [query, setQuery] = useState("");
   const [creating, setCreating] = useState(false);
+  // The prompt being edited (its own form), or null when not editing.
+  const [editing, setEditing] = useState<Prompt | null>(null);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -94,6 +97,16 @@ export function PromptLibrary({
     setCreating(false);
   }
 
+  async function handleUpdate(id: string, input: PromptInput) {
+    const updated = await updatePrompt(id, input);
+    setLoad((l) =>
+      l.status === "ready"
+        ? { status: "ready", prompts: l.prompts.map((p) => (p.id === id ? updated : p)) }
+        : l,
+    );
+    setEditing(null);
+  }
+
   async function handleDelete(id: string) {
     const prev = load;
     // Optimistic remove; restore on failure.
@@ -133,11 +146,16 @@ export function PromptLibrary({
         {load.status === "error" && <Banner tone="danger">{load.message}</Banner>}
 
         {load.status === "ready" &&
-          (creating ? (
-            <CreateForm
-              seedBody={seedBody}
-              onCancel={() => setCreating(false)}
-              onCreate={handleCreate}
+          (creating || editing ? (
+            <PromptForm
+              seedBody={editing ? undefined : seedBody}
+              initial={editing ?? undefined}
+              submitLabel={editing ? "Save changes" : "Save prompt"}
+              onCancel={() => {
+                setCreating(false);
+                setEditing(null);
+              }}
+              onSubmit={editing ? (input) => handleUpdate(editing.id, input) : handleCreate}
             />
           ) : (
             <ScopedSearchList
@@ -174,6 +192,7 @@ export function PromptLibrary({
                     onUse(p.body);
                     onClose();
                   }}
+                  onEdit={() => setEditing(p)}
                   onDelete={() => handleDelete(p.id)}
                 />
               ))}
@@ -192,10 +211,12 @@ function truncate(text: string, max = 140): string {
 function PromptRow({
   prompt,
   onUse,
+  onEdit,
   onDelete,
 }: {
   prompt: Prompt;
   onUse: () => void;
+  onEdit: () => void;
   onDelete: () => void;
 }) {
   const [confirming, setConfirming] = useState(false);
@@ -219,26 +240,36 @@ function PromptRow({
             </Button>
           </div>
         ) : (
-          <Button variant="ghost" size="sm" onClick={() => setConfirming(true)}>
-            Delete
-          </Button>
+          <div className="row" style={{ gap: 4, flexShrink: 0 }}>
+            <Button variant="ghost" size="sm" onClick={onEdit}>
+              Edit
+            </Button>
+            <Button variant="ghost" size="sm" onClick={() => setConfirming(true)}>
+              Delete
+            </Button>
+          </div>
         ))}
     </div>
   );
 }
 
-function CreateForm({
+function PromptForm({
   seedBody,
+  initial,
+  submitLabel,
   onCancel,
-  onCreate,
+  onSubmit,
 }: {
   seedBody?: string;
+  /** When set, the form edits this prompt (fields pre-filled) instead of creating. */
+  initial?: Prompt;
+  submitLabel: string;
   onCancel: () => void;
-  onCreate: (input: PromptInput) => Promise<void>;
+  onSubmit: (input: PromptInput) => Promise<void>;
 }) {
-  const [title, setTitle] = useState("");
-  const [body, setBody] = useState(seedBody?.trim() ?? "");
-  const [scope, setScope] = useState<PromptScope>("private");
+  const [title, setTitle] = useState(initial?.title ?? "");
+  const [body, setBody] = useState(initial?.body ?? seedBody?.trim() ?? "");
+  const [scope, setScope] = useState<PromptScope>(initial?.scope ?? "private");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const hasOrg = !!getActiveOrgId();
@@ -248,7 +279,7 @@ function CreateForm({
     setBusy(true);
     setError(null);
     try {
-      await onCreate({ title: title.trim(), body: body.trim(), scope });
+      await onSubmit({ title: title.trim(), body: body.trim(), scope });
     } catch (e) {
       setError(errMessage(e));
       setBusy(false);
@@ -289,7 +320,7 @@ function CreateForm({
           onClick={save}
           disabled={!title.trim() || !body.trim()}
         >
-          Save prompt
+          {submitLabel}
         </Button>
         <Button variant="ghost" size="sm" onClick={onCancel}>
           Cancel

@@ -59,7 +59,7 @@ export function ExplainTool({ clauseText }: { clauseText: string }) {
   return (
     <div className="stack">
       <Button variant="primary" className="btn--cta" onClick={run} loading={busy}>
-        Explain in plain English
+        Explain this clause
       </Button>
 
       {error && <Banner tone="danger">{error}</Banner>}

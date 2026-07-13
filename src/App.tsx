@@ -7,8 +7,6 @@ import {
   ReviewIcon,
   DraftIcon,
   AssistantIcon,
-  ResearchIcon,
-  PlaybookIcon,
   SettingsIcon,
   ArrowLeftIcon,
   ToolsIcon,
@@ -20,9 +18,7 @@ import { ChangesView } from "@/features/review/ChangesView";
 import { CompareView } from "@/features/compare/CompareView";
 import { AuthorityView } from "@/features/authority/AuthorityView";
 import { AssistantTab } from "@/features/assistant/AssistantTab";
-import { ResearchView } from "@/features/research/ResearchView";
 import { DraftView } from "@/features/draft/DraftView";
-import { PlaybookView } from "@/features/playbook/PlaybookView";
 import { ToolsHub } from "@/features/toolshub/ToolsHub";
 import { ReviewProvider } from "@/features/review/ReviewProvider";
 import { SettingsView } from "@/features/settings/SettingsView";
@@ -32,20 +28,18 @@ import { subscribeActiveOrg } from "@/lib/org";
 import "./styles/app.css";
 
 /**
- * Six primary modes. Home is a cockpit that orients the user and routes into the
- * others; reviewing a document is one hub with a sub-nav; the document utilities
- * (Compliance, Redact, Fill) are folded under a single Tools launcher.
+ * Four primary modes, each a job you do to the document open in front of you:
+ * Review (read + mark up), Draft (write new language), Assistant (ask the doc),
+ * Tools (finalize / QA utilities). Everything that does not need the open
+ * document (case-law research, playbook + template + draft libraries) lives on
+ * the web app and is reached by a deep-link, not a tab.
  */
 // Order leads with the primary in-document jobs (Review is the flagship and the
-// most frequent task for an in-house transactional user), then the launcher and
-// secondary surfaces. Home/Research/Playbook are slated to slim or deep-link out
-// in the IA consolidation; this is the interim reorder.
+// most frequent task for an in-house transactional user), then the utilities.
 const TABS: { id: AppTab; label: string; icon: (p: { size?: number }) => ReactNode }[] = [
   { id: "review", label: "Review", icon: ReviewIcon },
   { id: "draft", label: "Draft", icon: DraftIcon },
   { id: "assistant", label: "Assistant", icon: AssistantIcon },
-  { id: "research", label: "Research", icon: ResearchIcon },
-  { id: "playbook", label: "Playbook", icon: PlaybookIcon },
   { id: "tools", label: "Tools", icon: ToolsIcon },
 ];
 
@@ -60,7 +54,7 @@ export function App() {
 }
 
 function AppShell() {
-  const { tab, setTab, reviewSub, setReviewSub, intent, navigate, clearIntent } = useAppNav();
+  const { tab, setTab, reviewSub, setReviewSub, intent, clearIntent } = useAppNav();
   const [user, setUser] = useState<User | null>(null);
   // Bumped whenever the active organization changes, to remount the data views
   // (matters/drafts/playbooks/clients) so they refetch under the new org.
@@ -180,7 +174,7 @@ function AppShell() {
         </div>
       )}
 
-      {user && !showSettings && <ContextBar onOpenSettings={() => setShowSettings(true)} />}
+      {user && !showSettings && <ContextBar />}
 
       <div
         className="app-body"
@@ -224,18 +218,6 @@ function AppShell() {
           <AssistantTab
             intent={tab === "assistant" ? intent : null}
             onIntentDone={clearIntent}
-          />
-        ) : tab === "research" ? (
-          <ResearchView />
-        ) : tab === "playbook" ? (
-          <PlaybookView
-            onRunPlaybook={(pb) =>
-              navigate("review", {
-                kind: "runPlaybook",
-                playbookId: pb.id,
-                contractType: pb.contractType,
-              })
-            }
           />
         ) : (
           <ToolsHub intent={tab === "tools" ? intent : null} onIntentDone={clearIntent} />

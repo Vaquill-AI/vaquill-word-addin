@@ -352,6 +352,15 @@ export function ReviewView({
                   onDecision={setDecision}
                   applyBusy={applyBusy}
                   setApplyBusy={setApplyBusy}
+                  fixContext={
+                    params
+                      ? {
+                          userSide: params.userSide,
+                          paperSide: params.paperSide,
+                          playbookId: params.playbookId,
+                        }
+                      : undefined
+                  }
                 />
               ))}
             </div>

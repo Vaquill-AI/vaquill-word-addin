@@ -5,10 +5,10 @@ import { PlaybookPicker } from "./PlaybookPicker";
 import {
   CONTRACT_TYPES,
   USER_SIDES,
-  JURISDICTIONS,
   labelOf,
   type ReviewScope,
 } from "./constants";
+import { config } from "@/config";
 import { getReviewPrefs } from "@/lib/prefs";
 import { readDocumentText } from "@/office/document";
 import { classifyContract } from "@/api/contract-review";
@@ -201,6 +201,13 @@ export function ReviewForm({
             <PlaybookPicker contractType={contractType} value={playbookId} onChange={setPlaybookId} />
           </div>
 
+          <p className="small muted" style={{ margin: 0 }}>
+            <a href={`${config.appBase}/playbooks`} target="_blank" rel="noreferrer">
+              Manage playbooks
+            </a>{" "}
+            in Vaquill AI.
+          </p>
+
           <div className="field">
             <label>Scope</label>
             <SegmentedControl label="Scope" options={SCOPE_OPTIONS} value={scope} onChange={setScope} />
@@ -249,11 +256,6 @@ export function ReviewForm({
           onChange={(e) => setInstructions(e.target.value)}
         />
       </Field>
-
-      <p className="small muted" style={{ margin: 0 }}>
-        Reviewing as {labelOf(JURISDICTIONS, prefs.jurisdiction)}
-        {prefs.matterId ? " · grounded in your matter" : ""}. Change in Settings.
-      </p>
 
       <Button type="submit" variant="primary" className="btn--cta" loading={busy}>
         Review this contract

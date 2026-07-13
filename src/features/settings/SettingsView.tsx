@@ -50,7 +50,7 @@ function UsageSection({ state }: { state: UsageState }) {
   const manageLink = (
     <a
       className="settings-usage__link small"
-      href={`${config.appBase}/pricing`}
+      href={`${config.appBase}/settings/billing`}
       target="_blank"
       rel="noreferrer"
     >

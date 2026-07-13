@@ -44,7 +44,7 @@ export function PlainEnglishTool({ clauseText }: { clauseText: string }) {
   return (
     <div className="stack">
       <Button variant="primary" className="btn--cta" onClick={run} loading={busy}>
-        Explain in plain English
+        Summarize in plain English
       </Button>
 
       {error && <Banner tone="danger">{error}</Banner>}

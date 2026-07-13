@@ -53,6 +53,7 @@ export function ContextMenu({
   attachments,
   onAttach,
   onRemoveAttachment,
+  onOcrAttachment,
   atCap,
   onClose,
 }: {
@@ -63,6 +64,8 @@ export function ContextMenu({
   attachments: AttachedFile[];
   onAttach: (file: File) => void;
   onRemoveAttachment: (id: string) => void;
+  /** Run the opt-in OCR pass for a scanned attachment. */
+  onOcrAttachment: (id: string) => void;
   /** True when the attachment count cap is reached (attach control disabled). */
   atCap: boolean;
   onClose: () => void;
@@ -121,7 +124,11 @@ export function ContextMenu({
             <span className="small muted">Upload documents to ground this question</span>
           </div>
 
-          <AttachmentChips files={attachments} onRemove={onRemoveAttachment} />
+          <AttachmentChips
+            files={attachments}
+            onRemove={onRemoveAttachment}
+            onOcr={onOcrAttachment}
+          />
 
           <label className={`attach__add${atCap ? " attach__add--disabled" : ""}`}>
             <input

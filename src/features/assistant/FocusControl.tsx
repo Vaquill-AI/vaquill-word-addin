@@ -1,5 +1,4 @@
 import { useEffect, useRef } from "react";
-import { LiveRegion } from "@/ui/primitives";
 import { useSelection } from "@/features/tools/useSelection";
 import type { Scope } from "./useAssistant";
 import "./focus-control.css";
@@ -62,34 +61,43 @@ export function FocusControl({
   const focusingSelection = scope === "selection" && hasSelection;
   // The toggle can only "Focus selection" when there is a selection to focus.
   const toggleDisabled = !focusingSelection && !hasSelection;
+  const label = focusingSelection ? `Selection · ${words}w` : "Whole doc";
 
+  // A subtle chip, not a full sentence: icon + short scope + a quiet toggle. The
+  // whole chip is the toggle; aria-live announces scope changes for a11y.
   return (
-    <div className={`focus-control${focusingSelection ? " focus-control--selection" : ""}`}>
-      <span className="focus-control__icon" aria-hidden>
+    <button
+      type="button"
+      onClick={() => onScope(focusingSelection ? "document" : "selection")}
+      disabled={toggleDisabled}
+      title={
+        focusingSelection
+          ? "Answering about your selection. Click to use the whole document."
+          : "Answering about the whole document. Select text to focus it."
+      }
+      aria-label={
+        focusingSelection
+          ? `Answering about the selection, ${words} words. Activate to use the whole document.`
+          : "Answering about the whole document. Select text to focus it."
+      }
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 5,
+        alignSelf: "flex-start",
+        border: "none",
+        background: "transparent",
+        padding: "2px 2px",
+        color: focusingSelection ? "var(--brand)" : "var(--text-muted)",
+        cursor: toggleDisabled ? "default" : "pointer",
+      }}
+    >
+      <span aria-hidden style={{ display: "inline-flex" }}>
         {focusingSelection ? <SelectionGlyph /> : <DocGlyph />}
       </span>
-      <LiveRegion className="focus-control__label">
-        <span className="small">
-          {focusingSelection ? (
-            <>
-              Focusing on the <strong>selected text</strong>
-              {words > 0 ? ` · ${words} word${words === 1 ? "" : "s"}` : ""}
-            </>
-          ) : (
-            <>
-              Focusing on the <strong>whole document</strong>
-            </>
-          )}
-        </span>
-      </LiveRegion>
-      <button
-        type="button"
-        className="focus-control__toggle"
-        onClick={() => onScope(focusingSelection ? "document" : "selection")}
-        disabled={toggleDisabled}
-      >
-        {focusingSelection ? "Use whole document" : "Focus selection"}
-      </button>
-    </div>
+      <span className="small" aria-live="polite">
+        {label}
+      </span>
+    </button>
   );
 }

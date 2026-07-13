@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { Banner, Button, Field } from "@/ui/primitives";
+import { Banner, Button, Field, IconButton } from "@/ui/primitives";
 import { CheckIcon, CopyIcon } from "@/ui/icons";
 import { Markdown } from "@/features/assistant/markdown";
 import { ApiError, friendlyMessage } from "@/api/errors";
@@ -198,17 +198,12 @@ export function CaseBrief() {
                     "Insert brief into document"
                   )}
                 </Button>
-                <Button variant="default" onClick={() => void copy(resolveState.match, briefState.brief)}>
-                  {copied ? (
-                    <>
-                      <CheckIcon size={14} /> Copied
-                    </>
-                  ) : (
-                    <>
-                      <CopyIcon size={14} /> Copy
-                    </>
-                  )}
-                </Button>
+                <IconButton
+                  label={copied ? "Copied" : "Copy"}
+                  onClick={() => void copy(resolveState.match, briefState.brief)}
+                >
+                  {copied ? <CheckIcon size={14} /> : <CopyIcon size={14} />}
+                </IconButton>
               </div>
               {note && <span className="small muted">{note}</span>}
               <p className="small muted" style={{ margin: 0 }}>

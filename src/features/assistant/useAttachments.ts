@@ -11,7 +11,9 @@ import { ApiError, friendlyMessage } from "@/api/errors";
 export interface AttachedFile {
   id: string;
   name: string;
-  status: "reading" | "ready" | "error";
+  /** `needs_ocr` = extraction found no text but the file can be OCR'd on demand;
+   *  `ocr` = an OCR pass is running. */
+  status: "reading" | "ready" | "error" | "needs_ocr" | "ocr";
   /** Character/word count to show on the chip (ready only). */
   chars?: number;
   truncated?: boolean;
@@ -22,8 +24,12 @@ export interface AttachedFile {
   error?: string;
 }
 
-/** What an uploader resolves to once a file has been processed on the backend. */
-export type UploadResult = Pick<AttachedFile, "text" | "chars" | "truncated" | "refId">;
+/** What an uploader resolves to once a file has been processed on the backend.
+ *  `needsOcr` signals the file extracted to nothing but can be recovered with an
+ *  opt-in OCR pass (the caller must supply an `onOcr` resolver). */
+export type UploadResult = Pick<AttachedFile, "text" | "chars" | "truncated" | "refId"> & {
+  needsOcr?: boolean;
+};
 export type Uploader = (file: File) => Promise<UploadResult>;
 
 /** Cap on how many files can be attached at once (matches competitor limits). */
@@ -36,11 +42,15 @@ export const MAX_ATTACHMENTS = 5;
  * truth; callers read `ready` files via `contextFiles()` (inline text) or
  * `refIds()` (reference-doc ids) at send time.
  */
-export function useAttachments(upload: Uploader) {
+export function useAttachments(upload: Uploader, onOcr?: Uploader) {
   const [files, setFiles] = useState<AttachedFile[]>([]);
   // Track name+size keys already added so a repeat pick is ignored, without
   // waiting on a state read.
   const seen = useRef<Set<string>>(new Set());
+  // Retain the File for any attachment that reported needsOcr, so an opt-in OCR
+  // pass can run later without re-picking. Kept out of render state and cleared
+  // once resolved or removed.
+  const pending = useRef<Map<string, File>>(new Map());
 
   const patch = useCallback((id: string, next: Partial<AttachedFile>) => {
     setFiles((list) => list.map((f) => (f.id === id ? { ...f, ...next } : f)));
@@ -66,16 +76,43 @@ export function useAttachments(upload: Uploader) {
       setFiles((list) => [...list, { id, name: file.name, status: "reading" }]);
       try {
         const res = await upload(file);
-        patch(id, { status: "ready", ...res });
+        // Empty extraction on an OCR-able file: hold the File and let the user
+        // opt into OCR from the chip, rather than silently attaching nothing.
+        if (res.needsOcr && onOcr) {
+          pending.current.set(id, file);
+          patch(id, { status: "needs_ocr" });
+        } else {
+          patch(id, { status: "ready", ...res });
+        }
       } catch (e) {
         const error = e instanceof ApiError ? friendlyMessage(e) : (e as Error).message;
         patch(id, { status: "error", error });
       }
     },
-    [patch, upload],
+    [patch, upload, onOcr],
+  );
+
+  // Run the opt-in OCR pass for an attachment the extractor could not read.
+  const ocr = useCallback(
+    async (id: string) => {
+      const file = pending.current.get(id);
+      if (!file || !onOcr) return;
+      patch(id, { status: "ocr", error: undefined });
+      try {
+        const res = await onOcr(file);
+        pending.current.delete(id);
+        if (res.text?.trim()) patch(id, { status: "ready", ...res });
+        else patch(id, { status: "error", error: "OCR could not read this document." });
+      } catch (e) {
+        const error = e instanceof ApiError ? friendlyMessage(e) : (e as Error).message;
+        patch(id, { status: "error", error });
+      }
+    },
+    [patch, onOcr],
   );
 
   const remove = useCallback((id: string) => {
+    pending.current.delete(id);
     setFiles((list) => {
       const gone = list.find((f) => f.id === id);
       if (gone) seen.current.delete(`${gone.name}`); // best-effort; size unknown here
@@ -85,6 +122,7 @@ export function useAttachments(upload: Uploader) {
 
   const clear = useCallback(() => {
     seen.current.clear();
+    pending.current.clear();
     setFiles([]);
   }, []);
 
@@ -111,6 +149,7 @@ export function useAttachments(upload: Uploader) {
     add,
     remove,
     clear,
+    ocr,
     contextFiles,
     refIds,
     readyCount,

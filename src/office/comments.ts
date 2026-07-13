@@ -84,19 +84,35 @@ export async function insertCommentAnchored(
 }
 
 /**
- * Locate a comment by its stable id in the document's comment collection. Ids
- * (not list indices) survive comments being added/resolved between a read and an
- * action, so they are the safe handle for resolve/reply. Comments are WordApi
- * 1.4 (GA). Returns null when the comment is gone (already deleted).
+ * Locate a comment by its stable id in the body's comment collection. Ids (not
+ * list indices) survive comments being added/resolved between a read and an
+ * action, so they are the safe handle for resolve/reply. Uses `body.getComments`
+ * (WordApi 1.5, cross-platform), NOT `document.comments` (WordApiDesktop 1.4,
+ * which throws ApiNotFound on Word on the web). Returns null when gone.
  */
 async function findComment(
   context: Word.RequestContext,
   id: string,
 ): Promise<Word.Comment | null> {
-  const comments = context.document.comments;
+  const comments = context.document.body.getComments();
   comments.load("id");
   await context.sync();
   return comments.items.find((c) => c.id === id) ?? null;
+}
+
+/**
+ * Scroll to a comment and select the text it is anchored on, so the reviewer can
+ * jump from the pane to the comment in the document. `Comment.getRange()` is
+ * WordApi 1.4 (cross-platform). Returns false when the comment is gone.
+ */
+export async function locateComment(id: string): Promise<boolean> {
+  return runWord(async (context) => {
+    const comment = await findComment(context, id);
+    if (!comment) return false;
+    comment.getRange().select();
+    await context.sync();
+    return true;
+  });
 }
 
 /**
@@ -115,14 +131,15 @@ export async function resolveComment(id: string, resolved = true): Promise<boole
 }
 
 /**
- * Count every comment in the document (whole-document scope: main story plus
- * headers, footers, and footnotes). Matches the scope of `deleteAllComments` so
- * a pre-scan count and the delete count agree, unlike `body.getComments()` which
- * only sees the main story. Comments are WordApi 1.4 (GA).
+ * Count the document's comments. Uses `body.getComments()` (main story, WordApi
+ * 1.5, cross-platform) rather than `document.comments` (WordApiDesktop 1.4, which
+ * throws ApiNotFound on Word on the web). Matches `deleteAllComments`' scope so
+ * the pre-scan count and the delete count agree. Header/footnote comments (rare)
+ * are out of scope, the price of working on the web.
  */
 export async function countDocumentComments(): Promise<number> {
   return runWord(async (context) => {
-    const comments = context.document.comments;
+    const comments = context.document.body.getComments();
     comments.load("id");
     await context.sync();
     return comments.items.length;
@@ -130,14 +147,15 @@ export async function countDocumentComments(): Promise<number> {
 }
 
 /**
- * Delete EVERY comment in the document, to produce a send-ready clean copy.
- * Comments (and their replies) travel inside the .docx, so any internal note
- * would otherwise reach the counterparty. Returns the number deleted. Word's
- * native Undo still reverses it. Comments are WordApi 1.4 (GA).
+ * Delete the document's comments, to produce a send-ready clean copy. Comments
+ * (and their replies) travel inside the .docx, so any internal note would
+ * otherwise reach the counterparty. Uses `body.getComments()` (main story,
+ * WordApi 1.5, cross-platform), NOT `document.comments` (WordApiDesktop 1.4,
+ * ApiNotFound on the web). Returns the number deleted; Word's Undo reverses it.
  */
 export async function deleteAllComments(): Promise<number> {
   return runWord(async (context) => {
-    const comments = context.document.comments;
+    const comments = context.document.body.getComments();
     comments.load("id");
     await context.sync();
     const items = comments.items;

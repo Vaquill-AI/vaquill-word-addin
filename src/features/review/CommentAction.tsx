@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Banner, Button } from "@/ui/primitives";
+import { Banner, Button, IconButton } from "@/ui/primitives";
 import { CheckIcon, CopyIcon } from "@/ui/icons";
 import { insertCommentOnSelection } from "@/office/selection";
 import { selectClauseInDocument } from "@/office/navigate";
@@ -243,17 +243,9 @@ export function CommentAction({
                 <CommentGlyph /> Insert as comment
               </Button>
             )}
-            <Button variant="ghost" size="sm" onClick={copyDraft} disabled={inserting}>
-              {copied ? (
-                <>
-                  <CheckIcon size={13} /> Copied
-                </>
-              ) : (
-                <>
-                  <CopyIcon size={13} /> Copy
-                </>
-              )}
-            </Button>
+            <IconButton label={copied ? "Copied" : "Copy"} onClick={copyDraft}>
+              {copied ? <CheckIcon size={13} /> : <CopyIcon size={13} />}
+            </IconButton>
             <Button variant="ghost" size="sm" onClick={dismissDraft} disabled={inserting}>
               Dismiss
             </Button>

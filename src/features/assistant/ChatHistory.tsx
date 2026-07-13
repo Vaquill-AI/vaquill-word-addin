@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { Button, IconButton } from "@/ui/primitives";
-import { XIcon } from "@/ui/icons";
+import { IconButton } from "@/ui/primitives";
+import { XIcon, TrashIcon } from "@/ui/icons";
 import { ScopedSearchList } from "@/ui/ScopedSearchList";
 import { deleteConversation, listConversations, type Conversation } from "./chatHistoryStore";
 import "./chat-history.css";
@@ -86,9 +86,9 @@ export function ChatHistory({
                 <span className="chat-history__title">{c.title}</span>
                 <span className="chat-history__meta small muted">{relTime(c.updatedAt)}</span>
               </button>
-              <Button variant="ghost" size="sm" onClick={() => remove(c.id)}>
-                Delete
-              </Button>
+              <IconButton label={`Delete chat "${c.title}"`} tone="red" onClick={() => remove(c.id)}>
+                <TrashIcon size={14} />
+              </IconButton>
             </div>
           ))}
         </ScopedSearchList>

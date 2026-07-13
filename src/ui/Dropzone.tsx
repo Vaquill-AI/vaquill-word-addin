@@ -1,5 +1,6 @@
 import { useId, useState } from "react";
 import { XIcon } from "@/ui/icons";
+import { FileTypeIcon } from "@/ui/fileIcons";
 import { Spinner, LiveRegion } from "@/ui/primitives";
 import "./dropzone.css";
 
@@ -71,6 +72,7 @@ export function Dropzone({
       <div className="dropzone dropzone--status">
         {file && (
           <div className="dropzone__chip">
+            <FileTypeIcon name={file.name} size={18} />
             <span className="dropzone__chip-name small">{file.name}</span>
           </div>
         )}
@@ -89,6 +91,7 @@ export function Dropzone({
     return (
       <div className="dropzone dropzone--status">
         <div className="dropzone__chip">
+          <FileTypeIcon name={file.name} size={18} />
           <span className="dropzone__chip-name small">{file.name}</span>
           <button
             type="button"

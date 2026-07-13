@@ -243,7 +243,7 @@ export function CompareView() {
         </span>
         <Button
           type="button"
-          variant="ghost"
+          variant="default"
           size="sm"
           onClick={() =>
             setDirection(direction === "docIsRevised" ? "docIsOriginal" : "docIsRevised")

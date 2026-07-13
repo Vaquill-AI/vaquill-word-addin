@@ -181,11 +181,6 @@ export function SaveToVaquill(props: Props) {
   return (
     <div className="card doc-tools">
       <h2 className="small muted" style={{ margin: 0 }}>Save to Vaquill AI</h2>
-      {matterId && (
-        <p className="small muted" style={{ margin: 0 }}>
-          Files under your matter (set in Settings).
-        </p>
-      )}
       <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
         <Button variant="default" size="sm" onClick={saveDraft} loading={busy === "draft"} disabled={!!busy}>
           {draftLabel}

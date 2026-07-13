@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Badge, Button, IconButton } from "@/ui/primitives";
 import { OverflowMenu, type OverflowMenuItem } from "@/ui/OverflowMenu";
 import { SplitButton } from "@/ui/SplitButton";
-import { LocateIcon, CheckIcon, XIcon, UndoIcon, CopyIcon, EditIcon, WandIcon, ChevronIcon, AssistantIcon } from "@/ui/icons";
+import { LocateIcon, CheckIcon, XIcon, UndoIcon, CopyIcon, EditIcon, WandIcon, ChevronIcon, AssistantIcon, ShieldCheckIcon } from "@/ui/icons";
 import { GroundingBadge } from "./GroundingBadge";
 import { InlineDiff } from "./InlineDiff";
 import { SeverityBadge } from "./SeverityBadge";
@@ -12,6 +12,7 @@ import { insertClauseFormatted } from "@/office/richInsert";
 import { selectClauseInDocument } from "@/office/navigate";
 import { goToBookmark } from "@/office/bookmarks";
 import { rewriteClause } from "@/api/clause-tools";
+import { streamClauseFix } from "@/api/contract-review";
 import { recordRedlineFeedback } from "@/api/feedback";
 import { ApiError, friendlyMessage } from "@/api/errors";
 import { AddToPlaybook } from "@/features/integration/AddToPlaybook";
@@ -178,6 +179,28 @@ function distillIntent(rationale: string, clauseName: string): string | null {
 
 type ProposedView = "redline" | "final";
 
+/** The review setup a "Draft a stronger fix" needs to draft against the right
+ *  playbook position. Supplied only on the Review surface; when absent the
+ *  agentic-fix action is hidden (the card is being reused elsewhere). */
+export interface RedlineFixContext {
+  userSide?: string;
+  paperSide?: "own" | "counterparty";
+  playbookId?: string;
+}
+
+// Derive a clause-type key from the clause name (the review response has no
+// explicit type). Server-side this picks the playbook position; an imperfect
+// match still drafts against the default positions, so this is best-effort.
+function clauseTypeOf(clauseName: string): string {
+  return (
+    clauseName
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "_")
+      .replace(/^_+|_+$/g, "")
+      .slice(0, 80) || "general"
+  );
+}
+
 export function RedlineCard({
   redline,
   index,
@@ -185,6 +208,7 @@ export function RedlineCard({
   onDecision,
   applyBusy,
   setApplyBusy,
+  fixContext,
 }: {
   redline: RedlineSuggestion;
   index: number;
@@ -194,6 +218,8 @@ export function RedlineCard({
    *  concurrently. Defaults keep the card usable outside the review surface. */
   applyBusy?: boolean;
   setApplyBusy?: (b: boolean) => void;
+  /** Present on the Review surface: enables "Draft a stronger fix". */
+  fixContext?: RedlineFixContext;
 }) {
   const { navigate } = useAppNav();
   const [busy, setBusy] = useState(false);
@@ -213,6 +239,20 @@ export function RedlineCard({
   const [regenerating, setRegenerating] = useState(false);
   const [feedback, setFeedback] = useState<Feedback | null>(null);
 
+  // Agentic "Draft a stronger fix": the improved, grounded, gated redline the
+  // loop produces replaces the displayed suggestion in-card. `fixStep` carries
+  // the live reasoning phase; `fixCtl` lets the user cancel the stream.
+  const [improved, setImproved] = useState<RedlineSuggestion | null>(null);
+  const [fixing, setFixing] = useState(false);
+  const [fixStep, setFixStep] = useState<{ message: string; progress: number } | null>(null);
+  const fixCtl = useRef<AbortController | null>(null);
+  useEffect(() => () => fixCtl.current?.abort(), []);
+
+  // The suggestion the card actually shows and applies: the agentic improvement
+  // if one was drafted, else the original. Everything below renders from this so
+  // the grounding badge, rationale, and approval level reflect the real content.
+  const active = improved ?? redline;
+
   // Keep keyboard focus in the card after it resolves/restores instead of
   // dropping to <body> (WCAG 2.4.3). `actedRef` ensures we only move focus for
   // a decision the user made here, not for a bulk "Apply all" from the action bar.
@@ -230,14 +270,14 @@ export function RedlineCard({
     if (editing) editRef.current?.focus();
   }, [editing]);
 
-  const isInsertion = redline.grounding === "insertion";
-  const applicable = isInsertion || canApplyInPane(redline);
+  const isInsertion = active.grounding === "insertion";
+  const applicable = isInsertion || canApplyInPane(active);
   const style = { animationDelay: `${Math.min(index, 10) * 28}ms` };
 
   // The language we will actually apply / copy: the user's edit if any, else
-  // the original suggestion.
-  const proposed = edited ?? redline.proposedLanguage;
-  const isEdited = edited !== null && edited !== redline.proposedLanguage;
+  // the active (possibly improved) suggestion.
+  const proposed = edited ?? active.proposedLanguage;
+  const isEdited = edited !== null && edited !== active.proposedLanguage;
 
   function decide(next: Decision) {
     actedRef.current = true;
@@ -251,7 +291,7 @@ export function RedlineCard({
       // Prefer the bookmark anchor if one was placed for this clause: it survives
       // edits that would defeat a text search. Falls back to searching the text.
       if (await goToBookmark(`Vaquill_clause_${index + 1}`)) return;
-      const found = await selectClauseInDocument(redline.currentLanguage);
+      const found = await selectClauseInDocument(active.currentLanguage);
       if (!found) setNote("Could not locate this clause in the document.");
     } catch (e) {
       setNote((e as Error).message);
@@ -269,8 +309,8 @@ export function RedlineCard({
     setApplyBusy?.(true);
     setNote(null);
     try {
-      if (isInsertion) await insertClauseFormatted(redline.clauseName, proposed, { tracked });
-      else await applyVerifiedRedline({ ...redline, proposedLanguage: proposed }, { tracked });
+      if (isInsertion) await insertClauseFormatted(active.clauseName, proposed, { tracked });
+      else await applyVerifiedRedline({ ...active, proposedLanguage: proposed }, { tracked });
       decide("accepted");
     } catch (e) {
       setNote(
@@ -358,6 +398,51 @@ export function RedlineCard({
     }
   }
 
+  // ---- Agentic "Draft a stronger fix" -----------------------------------
+  // Stream the plan->draft->validate->repair->critique->gate loop and adopt its
+  // grounded, gated result in-card. Only offered when fixContext is present.
+  async function runDraftFix() {
+    if (fixing || !fixContext) return;
+    const ctl = new AbortController();
+    fixCtl.current = ctl;
+    setFixing(true);
+    setFixStep(null);
+    setNote(null);
+    try {
+      await streamClauseFix(
+        {
+          clauseName: active.clauseName,
+          clauseType: clauseTypeOf(active.clauseName),
+          currentLanguage: active.currentLanguage,
+          userSide: fixContext.userSide,
+          paperSide: fixContext.paperSide,
+          playbookId: fixContext.playbookId,
+        },
+        {
+          signal: ctl.signal,
+          onThinking: (t) => setFixStep({ message: t.message, progress: t.progress }),
+          onResult: (out) => {
+            if (out.noChangeNeeded) {
+              setNote("This clause already meets your playbook position. No change needed.");
+              return;
+            }
+            // Adopt the improved redline; drop any stale manual edit so the card
+            // shows the drafted language verbatim.
+            setEdited(null);
+            setImproved(out.redline);
+          },
+        },
+      );
+    } catch (e) {
+      if ((e as Error).name === "AbortError") return;
+      setNote(e instanceof ApiError ? friendlyMessage(e) : (e as Error).message);
+    } finally {
+      setFixing(false);
+      setFixStep(null);
+      fixCtl.current = null;
+    }
+  }
+
   // Optimistic local toggle, plus a fire-and-forget POST so the rating persists.
   // We only record when the thumb is turned ON (not when toggled back off), and
   // swallow any failure: a failed POST must never disrupt the review.
@@ -384,8 +469,10 @@ export function RedlineCard({
         <span className="redline__resolved-icon redline__resolved-icon--ok">
           <CheckIcon />
         </span>
-        <span className="redline__resolved-name">{redline.clauseName}</span>
-        <span className="small muted">{isEdited ? "Applied (edited)" : "Applied"}</span>
+        <span className="redline__resolved-name">{active.clauseName}</span>
+        <span className="small muted">
+          {isEdited ? "Applied (edited)" : improved ? "Applied (stronger fix)" : "Applied"}
+        </span>
         {!isInsertion && (
           <IconButton label="Find in document" onClick={locate}>
             <LocateIcon size={14} />
@@ -398,7 +485,7 @@ export function RedlineCard({
   if (decision === "rejected") {
     return (
       <div className="card redline redline--rejected" ref={focusRef} tabIndex={-1}>
-        <span className="redline__resolved-name muted">{redline.clauseName}</span>
+        <span className="redline__resolved-name muted">{active.clauseName}</span>
         <span className="small muted">Dismissed</span>
         <Button variant="ghost" size="sm" onClick={() => decide("pending")}>
           <UndoIcon size={13} /> Restore
@@ -407,9 +494,9 @@ export function RedlineCard({
     );
   }
 
-  const rationale = redline.rationale?.trim();
+  const rationale = active.rationale?.trim();
   const collapseRationale = (rationale?.length ?? 0) > RATIONALE_INLINE_MAX;
-  const intent = distillIntent(rationale ?? "", redline.clauseName);
+  const intent = distillIntent(rationale ?? "", active.clauseName);
 
   // Secondary actions live behind the kebab so the primary row stays scannable
   // (Accept + Dismiss + kebab). Edit and Revert moved in here too, since the
@@ -425,6 +512,15 @@ export function RedlineCard({
   if (applicable) {
     overflowItems.push({ label: "Copy proposed", icon: <CopyIcon size={14} />, onSelect: copyProposed });
   }
+  // The agentic fix is a strictly stronger engine than "Regenerate" (which uses
+  // the plain rewrite). Offered first, and only on the Review surface.
+  if (fixContext) {
+    overflowItems.push({
+      label: improved ? "Draft another strong fix" : "Draft a stronger fix (AI)",
+      icon: <ShieldCheckIcon size={14} />,
+      onSelect: () => void runDraftFix(),
+    });
+  }
   overflowItems.push({
     label: "Regenerate suggestion",
     icon: <WandIcon size={14} />,
@@ -436,7 +532,7 @@ export function RedlineCard({
     onSelect: () =>
       navigate("assistant", {
         kind: "assistantAsk",
-        prompt: `Should I accept the proposed change to the "${redline.clauseName}" clause? Briefly explain the risk it addresses and the tradeoff of accepting versus rejecting it.`,
+        prompt: `Should I accept the proposed change to the "${active.clauseName}" clause? Briefly explain the risk it addresses and the tradeoff of accepting versus rejecting it.`,
         autoSend: true,
       }),
   });
@@ -457,7 +553,7 @@ export function RedlineCard({
         <div className="row" style={{ gap: 6, flexWrap: "wrap", alignItems: "flex-start" }}>
           <span className="redline__num">{index + 1}</span>
           <div className="redline__titlewrap">
-            <strong>{redline.clauseName}</strong>
+            <strong>{active.clauseName}</strong>
             {intent && <span className="redline__intent">{intent}</span>}
           </div>
         </div>
@@ -469,16 +565,17 @@ export function RedlineCard({
       </div>
 
       <div className="row" style={{ gap: 4, flexWrap: "wrap" }}>
-        <SeverityBadge severity={severityOf(redline)} />
-        {redline.isDealBreaker && <Badge tone="red">Deal-breaker</Badge>}
-        {redline.approvalLevel && redline.approvalLevel !== "none" && (
-          <Badge tone="yellow">{APPROVAL_LABEL[redline.approvalLevel] ?? redline.approvalLevel}</Badge>
+        <SeverityBadge severity={severityOf(active)} />
+        {active.isDealBreaker && <Badge tone="red">Deal-breaker</Badge>}
+        {active.approvalLevel && active.approvalLevel !== "none" && (
+          <Badge tone="yellow">{APPROVAL_LABEL[active.approvalLevel] ?? active.approvalLevel}</Badge>
         )}
-        <GroundingBadge grounding={redline.grounding} />
+        <GroundingBadge grounding={active.grounding} />
+        {improved && <Badge tone="green">Stronger fix</Badge>}
         {isEdited && <Badge tone="brand">Edited</Badge>}
       </div>
 
-      {redline.sectionReference && <p className="small muted redline__ref">{redline.sectionReference}</p>}
+      {active.sectionReference && <p className="small muted redline__ref">{active.sectionReference}</p>}
 
       {editing ? (
         <div className="redline__edit">
@@ -528,7 +625,7 @@ export function RedlineCard({
           {isInsertion || view === "final" ? (
             <p className="redline__text redline__text--ins">{proposed}</p>
           ) : (
-            <InlineDiff before={redline.currentLanguage} after={proposed} />
+            <InlineDiff before={active.currentLanguage} after={proposed} />
           )}
         </>
       )}
@@ -553,6 +650,26 @@ export function RedlineCard({
           <p className="small muted" style={{ margin: 0 }}>{rationale}</p>
         ))}
 
+      {fixing && (
+        <div
+          className="redline__fixing row"
+          style={{ gap: 8, alignItems: "center" }}
+          role="status"
+          aria-live="polite"
+        >
+          <span className="streaming__pulse" aria-hidden />
+          <span className="small">{fixStep?.message ?? "Drafting a stronger fix..."}</span>
+          <Button
+            variant="ghost"
+            size="sm"
+            style={{ marginLeft: "auto" }}
+            onClick={() => fixCtl.current?.abort()}
+          >
+            Cancel
+          </Button>
+        </div>
+      )}
+
       {!editing && (
         <div className="redline__actions">
           {applicable ? (
@@ -561,7 +678,7 @@ export function RedlineCard({
               icon={<CheckIcon size={14} />}
               onClick={accept}
               loading={busy}
-              disabled={applyBusy && !busy}
+              disabled={(applyBusy && !busy) || fixing}
               menuLabel="More apply options"
               items={[
                 {
@@ -590,7 +707,11 @@ export function RedlineCard({
           {overflowItems.length > 0 && <OverflowMenu label="More actions" items={overflowItems} />}
           {!applicable && <span className="small muted">Verify manually</span>}
           {regenerating && <span className="small muted">Generating an alternative...</span>}
-          {!regenerating && feedback && <span className="small muted">Feedback noted. Thank you.</span>}
+          {!regenerating && feedback && (
+            <span className="small muted row" style={{ gap: 4 }}>
+              <CheckIcon size={12} /> Noted
+            </span>
+          )}
           {note && (
             <span className={`small ${note.includes("Could not") ? "redline__note--err" : "muted"}`}>
               {note}
@@ -601,7 +722,7 @@ export function RedlineCard({
 
       {!editing && (
         <CommentAction
-          redline={redline}
+          redline={active}
           index={index}
           proposed={proposed}
           allowCounterparty={!isInsertion}
@@ -609,7 +730,7 @@ export function RedlineCard({
       )}
 
       <div className="redline__foot">
-        <AddToPlaybook redline={redline} />
+        <AddToPlaybook redline={active} />
       </div>
     </div>
   );

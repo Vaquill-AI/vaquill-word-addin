@@ -3,7 +3,7 @@ import { createContext, useCallback, useContext, useMemo, useState, type ReactNo
 /**
  * App-level navigation + intent bus.
  *
- * The add-in's five surfaces are organized by feature, but a lawyer's task
+ * The add-in's surfaces are organized by feature, but a lawyer's task
  * crosses them ("this clause is risky -> what's my position -> redline it").
  * This bus is the connective tissue: any surface can `navigate` to another tab
  * AND hand it a typed `intent` (a pre-filled next step), so results in one place
@@ -13,7 +13,7 @@ import { createContext, useCallback, useContext, useMemo, useState, type ReactNo
  * it has applied it, so an intent fires exactly once.
  */
 
-export type AppTab = "review" | "draft" | "assistant" | "research" | "playbook" | "tools";
+export type AppTab = "review" | "draft" | "assistant" | "tools";
 export type ReviewSub = "redlines" | "changes" | "compare" | "citations";
 export type SelectionToolKey = "rewrite" | "explain" | "plain" | "risk" | "compliance";
 export type ToolKey =

@@ -111,3 +111,13 @@
 .redline__why-chev--open {
   transform: rotate(180deg);
 }
+
+/* Agentic "Draft a stronger fix" progress banner. Subtle brand-tinted strip
+   while the plan->draft->validate->repair->critique->gate loop streams. */
+.redline__fixing {
+  margin-top: 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--brand-border, #d6e0f5);
+  border-radius: 8px;
+  background: var(--brand-tint, #f4f7fe);
+}

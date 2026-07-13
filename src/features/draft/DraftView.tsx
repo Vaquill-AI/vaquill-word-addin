@@ -1,8 +1,9 @@
 import { useCallback, useRef, useState } from "react";
-import { Button, Banner, Badge, Field, Spinner, SegmentedControl } from "@/ui/primitives";
+import { Button, Banner, Badge, Field, Spinner, SegmentedControl, IconButton } from "@/ui/primitives";
 import { Combobox } from "@/ui/Combobox";
 import { InfoTip } from "@/ui/InfoTip";
-import { CheckIcon, CopyIcon, FillIcon, ArrowLeftIcon } from "@/ui/icons";
+import { CheckIcon, CopyIcon, FillIcon, ArrowLeftIcon, WandIcon, TermsIcon } from "@/ui/icons";
+import { improveDraftingPrompt } from "@/api/improve-prompt";
 import {
   generateDraft,
   generateDraftQueued,
@@ -23,11 +24,11 @@ import { insertDraftFormatted } from "@/office/richInsert";
 import { JURISDICTIONS, labelOf } from "@/features/review/constants";
 import { getReviewPrefs } from "@/lib/prefs";
 import { SaveToVaquill } from "@/features/integration/SaveToVaquill";
-import { TemplatesView } from "./TemplatesView";
-import { SavedDraftsView } from "./SavedDraftsView";
+import { config } from "@/config";
 import { TransplantView } from "@/features/transplant/TransplantView";
 import { FillView } from "@/features/fill/FillView";
-import { DRAFT_MODE_OPTIONS, type DraftMode } from "./mode";
+import { ClauseLibraryView } from "@/features/clauses/ClauseLibraryView";
+import { type DraftMode } from "./mode";
 import { ApiError, friendlyMessage } from "@/api/errors";
 import "./draft.css";
 
@@ -50,6 +51,10 @@ export function DraftView() {
   const [jurisdiction, setJurisdiction] = useState(getReviewPrefs().jurisdiction || "");
   const [tone, setTone] = useState("balanced");
   const [instructions, setInstructions] = useState("");
+  // One-click "Improve": rewrites the brief into a sharper instruction (cheap,
+  // does not consume the draft quota). `improveNote` reports a no-op or an error.
+  const [improving, setImproving] = useState(false);
+  const [improveNote, setImproveNote] = useState<string | null>(null);
 
   // Reference documents ground the draft: upload each to /upload-reference and
   // pass the returned ids to generate. The backend injects their text into every
@@ -73,6 +78,28 @@ export function DraftView() {
   // Lets us abort the local poll and stop the backend worker on Cancel.
   const abortRef = useRef<AbortController | null>(null);
   const draftIdRef = useRef<string | null>(null);
+
+  // Sharpen the brief in place. Preserves the user's facts and leaves anything
+  // missing as bracketed placeholders (the backend is instructed not to invent).
+  async function improvePrompt() {
+    const base = instructions.trim();
+    if (!base || improving) return;
+    setImproving(true);
+    setImproveNote(null);
+    try {
+      const r = await improveDraftingPrompt(base);
+      if (r.changed && r.improved.trim()) {
+        setInstructions(r.improved.trim());
+        setImproveNote(r.notes?.trim() || "Brief sharpened. Review the bracketed placeholders.");
+      } else {
+        setImproveNote("This brief is already clear. No changes made.");
+      }
+    } catch (e) {
+      setImproveNote(e instanceof ApiError ? friendlyMessage(e) : (e as Error).message);
+    } finally {
+      setImproving(false);
+    }
+  }
 
   async function generate() {
     setStatus("generating");
@@ -182,18 +209,9 @@ export function DraftView() {
     refs.clear();
   }
 
-  // Templates and Saved are self-contained surfaces; each renders its own mode
-  // toggle, so we delegate wholesale. Checked before the "done" branch so a user
-  // can switch modes even while a generated draft is on screen.
-  if (mode === "templates") {
-    return <TemplatesView mode={mode} setMode={setMode} />;
-  }
-  if (mode === "saved") {
-    return <SavedDraftsView mode={mode} setMode={setMode} />;
-  }
-  // Transplant and Fill are secondary "bring content in" surfaces. They keep
-  // their own titles, so Draft just adds a back control to return to Generate.
-  if (mode === "transplant" || mode === "fill") {
+  // Transplant, Fill, and Clauses are secondary "bring content in" surfaces. They
+  // keep their own titles, so Draft just adds a back control to return to Generate.
+  if (mode === "transplant" || mode === "fill" || mode === "clauses") {
     return (
       <div className="stack draft-view">
         <Button
@@ -205,7 +223,13 @@ export function DraftView() {
         >
           <ArrowLeftIcon size={14} /> Draft
         </Button>
-        {mode === "transplant" ? <TransplantView /> : <FillView />}
+        {mode === "transplant" ? (
+          <TransplantView />
+        ) : mode === "fill" ? (
+          <FillView />
+        ) : (
+          <ClauseLibraryView />
+        )}
       </div>
     );
   }
@@ -303,17 +327,9 @@ export function DraftView() {
               "Insert into document"
             )}
           </Button>
-          <Button variant="default" onClick={copy}>
-            {copied ? (
-              <>
-                <CheckIcon size={14} /> Copied
-              </>
-            ) : (
-              <>
-                <CopyIcon size={14} /> Copy
-              </>
-            )}
-          </Button>
+          <IconButton label={copied ? "Copied" : "Copy"} onClick={copy}>
+            {copied ? <CheckIcon size={14} /> : <CopyIcon size={14} />}
+          </IconButton>
         </div>
 
         {error && <Banner tone="danger">{error}</Banner>}
@@ -334,14 +350,17 @@ export function DraftView() {
         <p className="small muted" style={{ margin: 0 }}>
           Generate a first-draft agreement and insert it into this document.
         </p>
+        <p className="small muted" style={{ margin: 0 }}>
+          <a href={`${config.appBase}/templates`} target="_blank" rel="noreferrer">
+            Browse templates
+          </a>{" "}
+          or{" "}
+          <a href={`${config.appBase}/drafting`} target="_blank" rel="noreferrer">
+            open your saved drafts
+          </a>{" "}
+          in Vaquill AI.
+        </p>
       </div>
-
-      <SegmentedControl<DraftMode>
-        label="Draft mode"
-        options={DRAFT_MODE_OPTIONS}
-        value={mode}
-        onChange={setMode}
-      />
 
       <div className="form-grid">
         <Field label="Document type">
@@ -391,6 +410,18 @@ export function DraftView() {
           placeholder="e.g. Parties: Acme Inc. (Disclosing) and Beta LLC (Receiving). Mutual, 3-year term, carve-outs for independently developed information."
           onChange={(e) => setInstructions(e.target.value)}
         />
+        <div className="row" style={{ gap: 8, alignItems: "center", marginTop: 6 }}>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={improvePrompt}
+            loading={improving}
+            disabled={!instructions.trim() || improving}
+          >
+            <WandIcon size={13} /> Improve with AI
+          </Button>
+          {improveNote && <span className="small muted">{improveNote}</span>}
+        </div>
       </Field>
 
       <div className="attach">
@@ -488,6 +519,9 @@ export function DraftView() {
             </Button>
             <Button variant="default" size="sm" onClick={() => setMode("fill")}>
               <FillIcon size={14} /> Fill placeholders
+            </Button>
+            <Button variant="default" size="sm" onClick={() => setMode("clauses")}>
+              <TermsIcon size={14} /> Clause library
             </Button>
           </div>
         </div>

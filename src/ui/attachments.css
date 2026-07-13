@@ -137,3 +137,18 @@
 .attach__hint {
   margin: 0 2px;
 }
+
+/* Scanned attachment: opt-in OCR prompt on the chip. */
+.attach__ocr {
+  color: var(--text-muted);
+}
+.attach__ocr-btn {
+  border: none;
+  background: none;
+  padding: 0;
+  color: var(--brand-fg);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+}

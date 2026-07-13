@@ -59,3 +59,18 @@
   margin-top: 2px;
   justify-content: center;
 }
+
+/* Leading brand-tinted badge so each playbook reads as a rich, real object
+   rather than a bare text row. Matches the file-icon system's colored-badge look. */
+.playbook-row__badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  margin-left: 6px;
+  border-radius: 8px;
+  background: var(--brand-tint, #eef2fb);
+  color: var(--brand, #2b579a);
+}

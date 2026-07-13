@@ -9,7 +9,12 @@ import {
   acceptTrackedChanges,
   type DocChanges,
 } from "@/office/changes";
-import { resolveComment, replyToComment, insertCommentAnchored } from "@/office/comments";
+import {
+  resolveComment,
+  replyToComment,
+  insertCommentAnchored,
+  locateComment,
+} from "@/office/comments";
 import { selectClauseInDocument } from "@/office/navigate";
 import { triageChanges, positionsSummary, type Verdict, type VerdictMap } from "./triage";
 import { draftCounterReply } from "./counter";
@@ -98,6 +103,16 @@ export function ChangesView() {
       setActionError((e as Error).message);
     } finally {
       setCommentBusy(null);
+    }
+  }
+
+  async function onLocateComment(id: string) {
+    setActionError(null);
+    try {
+      const ok = await locateComment(id);
+      if (!ok) setActionError("Could not locate that comment (it may have been deleted).");
+    } catch (e) {
+      setActionError((e as Error).message);
     }
   }
 
@@ -559,10 +574,17 @@ export function ChangesView() {
           <h2 className="small muted">Comments ({comments.length})</h2>
           {comments.map((c) => (
             <div key={c.id} className="card change-item">
+              <div className="change-item__head">
+                <span className="small muted">
+                  {c.resolved ? "Resolved comment" : "Comment"}
+                </span>
+                <IconButton label="Find in document" onClick={() => void onLocateComment(c.id)}>
+                  <LocateIcon size={13} />
+                </IconButton>
+              </div>
               <p className="change-item__text">
                 {c.author ? <strong>{c.author}: </strong> : null}
                 {c.text}
-                {c.resolved ? <span className="small muted"> (resolved)</span> : null}
               </p>
               {c.replies.length > 0 && (
                 <div className="comment-replies">

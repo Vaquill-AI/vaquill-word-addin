@@ -1,6 +1,6 @@
 import { Badge, Button } from "@/ui/primitives";
 import { ScopedSearchList } from "@/ui/ScopedSearchList";
-import { PlaybookIcon } from "@/ui/icons";
+import { PlaybookIcon, PlayIcon } from "@/ui/icons";
 import type { PlaybookDetail } from "@/api/playbooks";
 
 function humanize(s: string): string {
@@ -44,6 +44,9 @@ function PlaybookRow({
   const modified = relativeTime(playbook.updatedAt);
   return (
     <div className="playbook-row" role="listitem">
+      <span className="playbook-row__badge" aria-hidden>
+        <PlaybookIcon size={16} />
+      </span>
       <button type="button" className="playbook-row__main" onClick={onOpen}>
         <span className="playbook-row__name">
           {playbook.name}
@@ -56,8 +59,8 @@ function PlaybookRow({
         </span>
       </button>
       {onRun && (
-        <Button variant="ghost" size="sm" onClick={onRun}>
-          Run
+        <Button variant="default" size="sm" onClick={onRun} title="Run this playbook against the open document">
+          <PlayIcon size={12} /> Run
         </Button>
       )}
     </div>

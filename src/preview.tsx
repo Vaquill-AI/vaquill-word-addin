@@ -317,6 +317,8 @@ function AssistantPreview() {
             onChange={() => {}}
             onSend={() => {}}
             disabled={false}
+            mode="ask"
+            onMode={() => {}}
             scope={scope}
             onScope={setScope}
             context={{ web: false, matterDocs: true, corpus: true }}
@@ -325,6 +327,7 @@ function AssistantPreview() {
             attachments={[]}
             onAttach={() => {}}
             onRemoveAttachment={() => {}}
+            onOcrAttachment={() => {}}
             atCap={false}
           />
         </div>

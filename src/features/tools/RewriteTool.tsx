@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Button, Banner, Badge, SegmentedControl } from "@/ui/primitives";
+import { Button, Banner, Badge, SegmentedControl, IconButton } from "@/ui/primitives";
 import { CheckIcon, CopyIcon } from "@/ui/icons";
 import { InlineDiff } from "@/features/review/InlineDiff";
 import {
@@ -166,17 +166,9 @@ export function RewriteTool({ clauseText }: { clauseText: string }) {
             >
               <CheckIcon size={14} /> {applied ? "Applied" : "Apply as tracked change"}
             </Button>
-            <Button variant="ghost" size="sm" onClick={copy}>
-              {copied ? (
-                <>
-                  <CheckIcon size={14} /> Copied
-                </>
-              ) : (
-                <>
-                  <CopyIcon size={14} /> Copy
-                </>
-              )}
-            </Button>
+            <IconButton label={copied ? "Copied" : "Copy"} onClick={copy}>
+              {copied ? <CheckIcon size={14} /> : <CopyIcon size={14} />}
+            </IconButton>
           </div>
           {copyNote && <span className="small muted">{copyNote}</span>}
         </div>
