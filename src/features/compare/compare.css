@@ -1,5 +1,8 @@
 .compare-view {
   gap: 12px;
+  /* A directly-rendered Review sub-tab, so it pads itself to the standard 14px
+     (it used to inherit padding from the Tools launcher wrapper). */
+  padding: 14px;
 }
 
 .compare-summary {

@@ -46,12 +46,18 @@ export function MatterPicker({
     <Field label={label}>
       <select value={value} onChange={(e) => onChange(e.target.value)}>
         <option value="">{emptyLabel}</option>
-        {list.map((m) => (
-          <option key={m.id} value={m.id}>
-            {m.name}
-            {m.clientName ? ` (${m.clientName})` : ""}
-          </option>
-        ))}
+        {list.map((m) => {
+          // The auto-created "General" matter carries the user's own name as its
+          // client, which reads as noise ("General (Jane Doe)"), so drop the
+          // client suffix for it. Real named matters keep it for disambiguation.
+          const isGeneral = m.name.trim().toLowerCase() === "general";
+          return (
+            <option key={m.id} value={m.id}>
+              {m.name}
+              {m.clientName && !isGeneral ? ` (${m.clientName})` : ""}
+            </option>
+          );
+        })}
       </select>
     </Field>
   );

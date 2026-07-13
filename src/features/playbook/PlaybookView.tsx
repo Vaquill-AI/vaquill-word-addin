@@ -5,8 +5,8 @@ import { ArrowLeftIcon } from "@/ui/icons";
 import { usePlaybookDetails } from "./usePlaybookDetails";
 import { LadderCard } from "./LadderCard";
 import { PlaybookFit } from "./PlaybookFit";
-import { TemplatePicker } from "./TemplatePicker";
-import { PlaybookLibrary, NewPlaybookButton } from "./PlaybookLibrary";
+import { PlaybookLibrary } from "./PlaybookLibrary";
+import { config } from "@/config";
 import type { PlaybookDetail } from "@/api/playbooks";
 import "./playbook.css";
 import "./playbook-library.css";
@@ -28,9 +28,11 @@ export function PlaybookView({
   const [openId, setOpenId] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [clauseFilter, setClauseFilter] = useState("");
-  const [showPicker, setShowPicker] = useState(false);
   // When true (in the detail view), show the fit report for the open playbook.
   const [showFit, setShowFit] = useState(false);
+  // Playbook management (create / edit / delete) lives in the web app; the pane
+  // is for USING a playbook on the open document.
+  const manageHref = `${config.appBase}/playbooks`;
 
   if (state.status === "loading") {
     return (
@@ -53,21 +55,6 @@ export function PlaybookView({
 
   const playbooks = state.playbooks;
   const open = openId ? playbooks.find((p) => p.id === openId) ?? null : null;
-
-  if (showPicker) {
-    return (
-      <div className="stack playbook-view">
-        <TemplatePicker
-          onClose={() => setShowPicker(false)}
-          onCreated={(p) => {
-            setShowPicker(false);
-            setOpenId(p.id);
-            void state.reload();
-          }}
-        />
-      </div>
-    );
-  }
 
   // ---- Fit report: evaluate the open contract against this playbook ------
   if (open && showFit) {
@@ -150,7 +137,8 @@ export function PlaybookView({
           <InfoTip side="left" text="Your negotiation playbooks: per-clause preferred positions, a fallback ladder to step down to, and the walk-away floor. Open one to insert any rung into the document as a tracked change. Guidance, not legal advice." />
         </div>
         <p className="small muted" style={{ margin: 0 }}>
-          Open a playbook to browse its clause positions and insert them as tracked changes.
+          Open a playbook to browse its clause positions and insert them as tracked changes, or run
+          one against the open document.
         </p>
       </div>
 
@@ -159,8 +147,7 @@ export function PlaybookView({
         query={query}
         onQuery={setQuery}
         onOpen={setOpenId}
-        onNew={() => setShowPicker(true)}
-        reload={state.reload}
+        manageHref={manageHref}
         onRun={
           onRunPlaybook
             ? (id) => {
@@ -169,7 +156,6 @@ export function PlaybookView({
               }
             : undefined
         }
-        action={<NewPlaybookButton onClick={() => setShowPicker(true)} />}
       />
     </div>
   );

@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Badge, Banner, Button, Field, Spinner, LiveRegion, SegmentedControl } from "@/ui/primitives";
 import { InfoTip } from "@/ui/InfoTip";
 import { ElapsedSeconds } from "@/ui/ElapsedSeconds";
@@ -6,7 +6,8 @@ import { DistributionBar, type DistributionSegment } from "@/ui/DistributionBar"
 import { FilterChips, type FilterChipOption } from "@/ui/FilterChips";
 import { StatusGroup } from "@/ui/StatusGroup";
 import type { ComplianceRequirement, ComplianceStatusValue } from "@/api/clause-tools";
-import { REGULATIONS, regulationLabel } from "./regulations";
+import { REGULATIONS, regulationLabel, suggestRegulation } from "./regulations";
+import { readDocumentText } from "@/office/document";
 import { coerceStatus, scoreTone, statusHeading, statusTone, STATUS_ORDER } from "./status";
 import { RequirementCard } from "./RequirementCard";
 import { useCompliance, type ComplianceState } from "./useCompliance";
@@ -78,13 +79,40 @@ function RegulationMode() {
   const [regulation, setRegulation] = useState(REGULATIONS[0]?.value ?? "ccpa");
   // Statuses the user has hidden via the filter chips (empty = show all).
   const [hidden, setHidden] = useState<ReadonlySet<string>>(new Set());
+  // Zero-config: detect the relevant regulation from the document and collapse
+  // the picker under "Adjust" so the default is one click.
+  const [showPicker, setShowPicker] = useState(false);
+  const [detected, setDetected] = useState<string | null>(null);
+  const [detecting, setDetecting] = useState(true);
+
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        const text = await readDocumentText();
+        if (!alive) return;
+        const guess = suggestRegulation(text);
+        if (guess) {
+          setRegulation(guess);
+          setDetected(guess);
+        }
+      } catch {
+        // Best-effort; keep the default regulation.
+      } finally {
+        if (alive) setDetecting(false);
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   function start() {
     setHidden(new Set());
     void run(regulation);
   }
 
-  // ---- Idle: pick a regulation and run -----------------------------------
+  // ---- Idle: confirm the (detected) regulation and run -------------------
   if (state.status === "idle") {
     const blurb = REGULATIONS.find((r) => r.value === regulation)?.blurb;
     return (
@@ -94,15 +122,54 @@ function RegulationMode() {
           or missing.
         </p>
 
-        <Field label="Regulation">
-          <select value={regulation} onChange={(e) => setRegulation(e.target.value)}>
-            {REGULATIONS.map((r) => (
-              <option key={r.value} value={r.value}>
-                {r.label}
-              </option>
-            ))}
-          </select>
-        </Field>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 8,
+            padding: "9px 11px",
+            border: "1px solid var(--border)",
+            borderRadius: "var(--radius-md)",
+            background: "var(--fill-subtle)",
+          }}
+        >
+          {detecting ? (
+            <span className="row small muted" style={{ gap: 8, alignItems: "center" }}>
+              <Spinner /> Detecting the relevant regulation...
+            </span>
+          ) : (
+            <span className="small">
+              Checking against <strong>{regulationLabel(regulation)}</strong>
+              {detected === regulation && (
+                <span className="muted" style={{ marginLeft: 6, fontStyle: "italic" }}>
+                  (detected)
+                </span>
+              )}
+            </span>
+          )}
+          <Button type="button" variant="ghost" size="sm" onClick={() => setShowPicker((v) => !v)}>
+            {showPicker ? "Done" : "Adjust"}
+          </Button>
+        </div>
+
+        {showPicker && (
+          <Field label="Regulation">
+            <select
+              value={regulation}
+              onChange={(e) => {
+                setRegulation(e.target.value);
+                setDetected(null);
+              }}
+            >
+              {REGULATIONS.map((r) => (
+                <option key={r.value} value={r.value}>
+                  {r.label}
+                </option>
+              ))}
+            </select>
+          </Field>
+        )}
         {blurb && <p className="small muted" style={{ margin: 0 }}>{blurb}</p>}
 
         <Button variant="primary" className="btn--cta" onClick={start}>

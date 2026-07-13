@@ -1,4 +1,5 @@
 import { postStream } from "./sse";
+import { request } from "./http";
 import { requestBinary } from "./http";
 import { ApiError } from "./errors";
 import type {
@@ -9,6 +10,18 @@ import type {
 
 const REVIEW_STREAM = "/api/v1/legal-tools/contract-review/stream";
 const EXPORT_CORRECTED = "/api/v1/legal-tools/export-corrected";
+const CLASSIFY = "/api/v1/legal-tools/contract-review/classify";
+
+/**
+ * Auto-detect the contract type from the document so the Review form can pre-fill
+ * it instead of asking the user. Fast, cheap, non-streaming. `contractType` is
+ * null when nothing clearly fits, so the caller keeps its remembered default.
+ */
+export async function classifyContract(
+  documentText: string,
+): Promise<{ contractType: string | null; confidence: number }> {
+  return request(CLASSIFY, { method: "POST", body: { documentText } });
+}
 
 /** Hard client-side cap mirrored from the backend ContractReviewRequest. */
 export const MAX_DOCUMENT_CHARS = 200_000;

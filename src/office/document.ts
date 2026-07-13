@@ -1,14 +1,24 @@
-import { runWord } from "./run";
+import { OfficeError, runWord } from "./run";
 import { sha256Hex } from "@/lib/hash";
 
-/** Read the whole document body as plain text. */
+/** Read the whole document body as plain text. Every whole-document read builds
+ *  on this, so an extremely large document (Office's single-sync data cap can
+ *  make `body.text` fail) surfaces a size-aware hint with a next step. */
 export async function readDocumentText(): Promise<string> {
-  return runWord(async (context) => {
-    const body = context.document.body;
-    body.load("text");
-    await context.sync();
-    return body.text;
-  });
+  try {
+    return await runWord(async (context) => {
+      const body = context.document.body;
+      body.load("text");
+      await context.sync();
+      return body.text;
+    });
+  } catch (e) {
+    const message = (e as Error).message || "Could not read the document.";
+    throw new OfficeError(
+      `${message} If the document is very large, try reviewing a selection instead.`,
+      (e as { code?: string }).code,
+    );
+  }
 }
 
 /**

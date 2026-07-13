@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
-import { Badge, Banner, Button, Field, Spinner } from "@/ui/primitives";
+import { Badge, Button, Field, Spinner } from "@/ui/primitives";
+import { Combobox } from "@/ui/Combobox";
 import { clearSession, getUser } from "@/auth/session";
 import { getActiveOrgId } from "@/lib/org";
 import { listMyOrganizations } from "@/api/organizations";
-import { fetchUsageSnapshot, type QuotaSnapshot, type UsageMetric } from "@/api/usage";
+import { fetchUsageSnapshot, type QuotaSnapshot } from "@/api/usage";
+import { config } from "@/config";
 import { MatterPicker } from "@/features/integration/MatterPicker";
 import { OrgSwitcher } from "@/features/org/OrgSwitcher";
 import {
@@ -14,6 +16,14 @@ import {
 } from "@/lib/prefs";
 import { JURISDICTIONS } from "@/features/review/constants";
 import "./settings.css";
+
+// Footer links on the marketing site (www.vaquill.ai, the domain the manifest
+// declares). Support matches the manifest's SupportUrl; confirm privacy/terms paths.
+const SUPPORT_URL = "https://www.vaquill.ai/support";
+const PRIVACY_URL = "https://www.vaquill.ai/privacy";
+const TERMS_URL = "https://www.vaquill.ai/terms";
+// Shown for support/debugging. Keep in sync with package.json "version".
+const APP_VERSION = "0.1.0";
 
 /**
  * Account / settings panel. Read-only account context (signed-in user, active
@@ -30,58 +40,24 @@ type UsageState =
   | { status: "ready"; snapshot: QuotaSnapshot }
   | { status: "unavailable" };
 
-interface UsageRow {
-  label: string;
-  metric: UsageMetric | null;
-}
-
-function usageRows(snapshot: QuotaSnapshot): UsageRow[] {
-  return [
-    { label: "Chat messages", metric: snapshot.messages },
-    { label: "Deep research", metric: snapshot.deepSearches },
-    { label: "Legal tools", metric: snapshot.legalTools },
-    { label: "Full drafts", metric: snapshot.fullDrafts },
-  ];
-}
-
-function MeterRow({ label, metric }: UsageRow) {
-  if (!metric) {
-    return (
-      <div className="settings-meter">
-        <div className="row settings-meter__head">
-          <span>{label}</span>
-          <span className="small muted">Unlimited</span>
-        </div>
-      </div>
-    );
-  }
-  const pct = Math.max(0, Math.min(100, metric.percentage));
-  return (
-    <div className="settings-meter">
-      <div className="row settings-meter__head">
-        <span>{label}</span>
-        <span className="small muted">
-          {metric.current} / {metric.limit}
-        </span>
-      </div>
-      <div
-        className="settings-meter__track"
-        role="progressbar"
-        aria-valuenow={Math.round(pct)}
-        aria-valuemin={0}
-        aria-valuemax={100}
-        aria-label={label}
-      >
-        <span
-          className={`settings-meter__fill${pct >= 90 ? " settings-meter__fill--high" : ""}`}
-          style={{ width: `${pct}%` }}
-        />
-      </div>
-    </div>
-  );
-}
-
+/**
+ * Compact plan + usage line. The full per-metric breakdown and billing live in
+ * the web app (this is a thin client), so the pane shows the plan, a one-line
+ * message-quota glance, and a deep-link out to manage it. The reactive
+ * QuotaBanner still warns in-flow when a limit is close.
+ */
 function UsageSection({ state }: { state: UsageState }) {
+  const manageLink = (
+    <a
+      className="settings-usage__link small"
+      href={`${config.appBase}/pricing`}
+      target="_blank"
+      rel="noreferrer"
+    >
+      Manage your plan
+    </a>
+  );
+
   if (state.status === "loading") {
     return (
       <div className="row muted small">
@@ -90,26 +66,32 @@ function UsageSection({ state }: { state: UsageState }) {
     );
   }
   if (state.status === "unavailable") {
-    return <Banner tone="info">Usage is unavailable right now. Try again later.</Banner>;
-  }
-  const { snapshot } = state;
-  const rows = usageRows(snapshot);
-  const hasAnyMetric = rows.some((r) => r.metric);
-  return (
-    <div className="stack settings-usage">
-      <div className="row settings-usage__tier">
-        <span className="small muted">Plan</span>
-        <Badge tone="brand">{snapshot.tierName || snapshot.tier || "Unknown"}</Badge>
+    return (
+      <div className="stack settings-usage" style={{ gap: 6 }}>
+        <p className="small muted" style={{ margin: 0 }}>
+          Usage is unavailable right now.
+        </p>
+        {manageLink}
       </div>
-      {hasAnyMetric ? (
-        <div className="form-grid">
-          {rows.map((r) => (
-            <MeterRow key={r.label} label={r.label} metric={r.metric} />
-          ))}
+    );
+  }
+
+  const { snapshot } = state;
+  const messages = snapshot.messages;
+  return (
+    <div className="stack settings-usage" style={{ gap: 6 }}>
+      <div className="row settings-usage__tier" style={{ justifyContent: "space-between", gap: 8 }}>
+        <div className="row" style={{ gap: 6, alignItems: "center", minWidth: 0 }}>
+          <Badge tone="brand">{snapshot.tierName || snapshot.tier || "Plan"}</Badge>
+          <span className="small muted">
+            {messages ? `${messages.current} / ${messages.limit} messages` : "Unlimited messages"}
+          </span>
         </div>
-      ) : (
-        <p className="small muted">No metered limits on your plan.</p>
-      )}
+        {manageLink}
+      </div>
+      <p className="small muted" style={{ margin: 0 }}>
+        Full usage and billing are in the Vaquill AI web app.
+      </p>
     </div>
   );
 }
@@ -122,6 +104,9 @@ export function SettingsView() {
   const displayName = typeof rawName === "string" && rawName.trim() ? rawName.trim() : "";
 
   const [orgName, setOrgName] = useState<string | null>(null);
+  // Org count decides whether the organization row is a switcher (multi-org) or
+  // static text (single-org), so the active org is not shown twice.
+  const [orgCount, setOrgCount] = useState(0);
   const [usage, setUsage] = useState<UsageState>({ status: "loading" });
   const [prefs, setPrefs] = useState<ReviewPrefs>(getReviewPrefs());
 
@@ -137,6 +122,7 @@ export function SettingsView() {
         const activeId = getActiveOrgId();
         const match = activeId ? orgs.find((o) => o.id === activeId) : undefined;
         setOrgName(match?.name ?? (orgs.length > 0 ? orgs[0]?.name ?? null : null));
+        setOrgCount(orgs.length);
       })
       .catch(() => {
         if (alive) setOrgName(null);
@@ -173,13 +159,17 @@ export function SettingsView() {
           <div className="stack settings-account">
             {displayName && <span className="settings-account__name">{displayName}</span>}
             <span className="small muted">{email || "Not signed in"}</span>
+            {/* One organization row: a switcher when the user owns more than one
+                workspace, otherwise static text (so the active org is not shown
+                twice). */}
             <div className="row settings-account__org">
               <span className="small muted">Organization</span>
-              <span className="small">{orgName ?? "Default workspace"}</span>
+              {orgCount > 1 ? (
+                <OrgSwitcher />
+              ) : (
+                <span className="small">{orgName ?? "Personal"}</span>
+              )}
             </div>
-            {/* Switch active workspace, when the user owns more than one. Self-hides
-                at <= 1 org. */}
-            <OrgSwitcher />
           </div>
           <Button variant="ghost" size="sm" onClick={clearSession}>
             Sign out
@@ -188,7 +178,7 @@ export function SettingsView() {
       </div>
 
       <div className="card settings-card">
-        <h2 className="settings-heading">Usage this month</h2>
+        <h2 className="settings-heading">Plan &amp; usage</h2>
         <UsageSection state={usage} />
       </div>
 
@@ -207,18 +197,33 @@ export function SettingsView() {
             showWhenEmpty
           />
           <Field label="Default jurisdiction">
-            <select
+            <Combobox
               value={prefs.jurisdiction}
-              onChange={(e) => setReviewPrefs({ jurisdiction: e.target.value })}
-            >
-              {JURISDICTIONS.map((o) => (
-                <option key={o.value || "general"} value={o.value}>
-                  {o.label}
-                </option>
-              ))}
-            </select>
+              onChange={(v) => setReviewPrefs({ jurisdiction: v })}
+              options={JURISDICTIONS}
+              ariaLabel="Default jurisdiction"
+            />
           </Field>
         </div>
+      </div>
+
+      <div className="settings-footer">
+        <a className="settings-footer__link" href={SUPPORT_URL} target="_blank" rel="noreferrer">
+          Help &amp; support
+        </a>
+        <span className="settings-footer__dot" aria-hidden>
+          ·
+        </span>
+        <a className="settings-footer__link" href={PRIVACY_URL} target="_blank" rel="noreferrer">
+          Privacy
+        </a>
+        <span className="settings-footer__dot" aria-hidden>
+          ·
+        </span>
+        <a className="settings-footer__link" href={TERMS_URL} target="_blank" rel="noreferrer">
+          Terms
+        </a>
+        <span className="settings-footer__ver">v{APP_VERSION}</span>
       </div>
     </div>
   );

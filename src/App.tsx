@@ -4,7 +4,6 @@ import type { ReactNode } from "react";
 import { Header } from "@/ui/Header";
 import { Button, SegmentedControl } from "@/ui/primitives";
 import {
-  HomeIcon,
   ReviewIcon,
   DraftIcon,
   AssistantIcon,
@@ -16,7 +15,6 @@ import {
 } from "@/ui/icons";
 import { subscribe } from "@/auth/session";
 import { LoginView } from "@/features/auth/LoginView";
-import { HomeView } from "@/features/home/HomeView";
 import { ReviewView } from "@/features/review/ReviewView";
 import { ChangesView } from "@/features/review/ChangesView";
 import { CompareView } from "@/features/compare/CompareView";
@@ -46,7 +44,6 @@ const TABS: { id: AppTab; label: string; icon: (p: { size?: number }) => ReactNo
   { id: "review", label: "Review", icon: ReviewIcon },
   { id: "draft", label: "Draft", icon: DraftIcon },
   { id: "assistant", label: "Assistant", icon: AssistantIcon },
-  { id: "home", label: "Home", icon: HomeIcon },
   { id: "research", label: "Research", icon: ResearchIcon },
   { id: "playbook", label: "Playbook", icon: PlaybookIcon },
   { id: "tools", label: "Tools", icon: ToolsIcon },
@@ -98,12 +95,12 @@ function AppShell() {
       ) : (
         <header className="appbar">
           <a
-            href="https://vaquill.ai"
+            href="https://www.vaquill.ai"
             target="_blank"
             rel="noreferrer"
             className="appbar__brand"
             title="Vaquill AI"
-            aria-label="Open vaquill.ai in your browser"
+            aria-label="Open the Vaquill AI website in your browser"
           >
             <img
               src="/assets/icon-80.png"
@@ -207,8 +204,6 @@ function AppShell() {
             </Button>
             <SettingsView />
           </div>
-        ) : tab === "home" ? (
-          <HomeView />
         ) : tab === "review" ? (
           reviewSub === "redlines" ? (
             <ReviewView

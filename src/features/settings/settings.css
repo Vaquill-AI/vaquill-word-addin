@@ -50,29 +50,38 @@
 .settings-usage__tier {
   justify-content: space-between;
 }
+.settings-usage__link {
+  flex: 0 0 auto;
+  color: var(--brand);
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.settings-usage__link:hover {
+  text-decoration: underline;
+}
 
-.settings-meter {
+/* Footer: support + legal links and the app version, muted and unobtrusive. */
+.settings-footer {
   display: flex;
-  flex-direction: column;
-  gap: var(--space-xs);
+  align-items: center;
+  gap: var(--space-s);
+  flex-wrap: wrap;
+  padding: 2px 2px var(--space-s);
+  font-size: var(--fs-caption);
+  color: var(--text-muted);
 }
-.settings-meter__head {
-  justify-content: space-between;
-  font-size: var(--fs-body);
+.settings-footer__link {
+  color: var(--text-muted);
+  text-decoration: none;
 }
-.settings-meter__track {
-  height: 6px;
-  border-radius: 999px;
-  background: var(--surface-muted);
-  overflow: hidden;
+.settings-footer__link:hover {
+  color: var(--brand);
+  text-decoration: underline;
 }
-.settings-meter__fill {
-  display: block;
-  height: 100%;
-  border-radius: 999px;
-  background: var(--brand);
-  transition: width 0.2s ease;
+.settings-footer__dot {
+  color: var(--border-strong);
 }
-.settings-meter__fill--high {
-  background: var(--warning);
+.settings-footer__ver {
+  margin-left: auto;
 }

@@ -1,3 +1,9 @@
+/* Directly-rendered tab view: pad it to the standard 14px so its content does
+   not sit flush against the pane edges (matches Review / Draft / Playbook). */
+.research {
+  padding: 14px;
+}
+
 .research-result {
   width: 100%;
   text-align: left;

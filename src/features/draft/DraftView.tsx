@@ -1,5 +1,6 @@
 import { useCallback, useRef, useState } from "react";
 import { Button, Banner, Badge, Field, Spinner, SegmentedControl } from "@/ui/primitives";
+import { Combobox } from "@/ui/Combobox";
 import { InfoTip } from "@/ui/InfoTip";
 import { CheckIcon, CopyIcon, FillIcon, ArrowLeftIcon } from "@/ui/icons";
 import {
@@ -9,7 +10,6 @@ import {
   isGenerationCancelled,
   uploadDraftReference,
   DRAFT_CATEGORIES,
-  DRAFT_CATEGORY_GROUPS,
   DRAFT_TONES,
   type DraftParams,
   type DraftResult,
@@ -345,17 +345,12 @@ export function DraftView() {
 
       <div className="form-grid">
         <Field label="Document type">
-          <select value={category} onChange={(e) => setCategory(e.target.value)}>
-            {DRAFT_CATEGORY_GROUPS.map((g) => (
-              <optgroup key={g.label} label={g.label}>
-                {g.options.map((o) => (
-                  <option key={o.value} value={o.value}>
-                    {o.label}
-                  </option>
-                ))}
-              </optgroup>
-            ))}
-          </select>
+          <Combobox
+            value={category}
+            onChange={setCategory}
+            options={DRAFT_CATEGORIES}
+            ariaLabel="Document type"
+          />
         </Field>
 
         <Field label="Title">
@@ -367,13 +362,12 @@ export function DraftView() {
         </Field>
 
         <Field label="Governing law">
-          <select value={jurisdiction} onChange={(e) => setJurisdiction(e.target.value)}>
-            {JURISDICTIONS.map((o) => (
-              <option key={o.value} value={o.value}>
-                {o.label}
-              </option>
-            ))}
-          </select>
+          <Combobox
+            value={jurisdiction}
+            onChange={setJurisdiction}
+            options={JURISDICTIONS}
+            ariaLabel="Governing law"
+          />
         </Field>
 
         {/* Tone is a short, fixed enum (Protective / Balanced / Permissive), so it

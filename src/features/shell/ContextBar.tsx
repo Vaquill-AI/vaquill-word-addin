@@ -3,6 +3,7 @@ import { useAppNav } from "@/app/nav";
 import { useSelection } from "@/features/tools/useSelection";
 import { getReviewPrefs, subscribeReviewPrefs } from "@/lib/prefs";
 import { JURISDICTIONS, labelOf } from "@/features/review/constants";
+import { listMatters, type Matter } from "@/api/platform";
 import "./context-bar.css";
 
 /**
@@ -23,30 +24,40 @@ export function ContextBar({ onOpenSettings }: { onOpenSettings: () => void }) {
   const { tab, navigate } = useAppNav();
   const sel = useSelection();
   const [prefs, setPrefs] = useState(getReviewPrefs());
+  const [matters, setMatters] = useState<Matter[] | null>(null);
   useEffect(() => subscribeReviewPrefs(setPrefs), []);
+  useEffect(() => {
+    let alive = true;
+    listMatters()
+      .then((m) => alive && setMatters(m))
+      .catch(() => alive && setMatters([]));
+    return () => {
+      alive = false;
+    };
+  }, []);
 
-  const hasContext = Boolean(prefs.jurisdiction || prefs.matterId);
-  // The Assistant tab has richer inline selection tools; Home is a cockpit. Show
-  // selection verbs on the working tabs (review / draft / playbook / tools).
-  const showSelection = sel.hasSelection && tab !== "assistant" && tab !== "home";
+  // The standing context always resolves to something, so it is always shown:
+  // the general workspace defaults to "General matter" (matterId ""), and a
+  // chosen matter shows its real name (not the literal word "matter").
+  const matter = prefs.matterId ? matters?.find((m) => m.id === prefs.matterId) : null;
+  const matterLabel = prefs.matterId ? matter?.name ?? "Matter" : "General matter";
 
-  if (!hasContext && !showSelection) return null;
+  // The Assistant tab has richer inline selection tools. Show selection verbs on
+  // the other working tabs (review / draft / research / playbook / tools).
+  const showSelection = sel.hasSelection && tab !== "assistant";
 
   return (
     <div className="context-bar">
-      {hasContext && (
-        <button
-          type="button"
-          className="context-bar__ctx"
-          onClick={onOpenSettings}
-          title="Change in Settings"
-        >
-          <span className="context-bar__ctx-label">
-            {labelOf(JURISDICTIONS, prefs.jurisdiction)}
-            {prefs.matterId ? " · matter" : ""}
-          </span>
-        </button>
-      )}
+      <button
+        type="button"
+        className="context-bar__ctx"
+        onClick={onOpenSettings}
+        title="Change in Settings"
+      >
+        <span className="context-bar__ctx-label">
+          {labelOf(JURISDICTIONS, prefs.jurisdiction)} · {matterLabel}
+        </span>
+      </button>
 
       {showSelection && (
         <div className="context-bar__sel">

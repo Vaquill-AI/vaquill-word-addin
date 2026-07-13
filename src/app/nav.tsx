@@ -13,7 +13,7 @@ import { createContext, useCallback, useContext, useMemo, useState, type ReactNo
  * it has applied it, so an intent fires exactly once.
  */
 
-export type AppTab = "home" | "review" | "draft" | "assistant" | "research" | "playbook" | "tools";
+export type AppTab = "review" | "draft" | "assistant" | "research" | "playbook" | "tools";
 export type ReviewSub = "redlines" | "changes" | "compare" | "citations";
 export type SelectionToolKey = "rewrite" | "explain" | "plain" | "risk" | "compliance";
 export type ToolKey =
@@ -55,7 +55,7 @@ export function useAppNav(): AppNav {
 }
 
 export function AppNavProvider({ children }: { children: ReactNode }) {
-  const [tab, setTab] = useState<AppTab>("home");
+  const [tab, setTab] = useState<AppTab>("review");
   const [reviewSub, setReviewSub] = useState<ReviewSub>("redlines");
   const [intent, setIntent] = useState<AppIntent | null>(null);
 

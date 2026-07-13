@@ -21,7 +21,10 @@ const WORD_SEARCH_LIMIT = 255;
 
 export class AnchorNotFoundError extends OfficeError {
   constructor(clauseName: string) {
-    super(`Could not locate "${clauseName}" verbatim in the document.`, "anchor_not_found");
+    super(
+      `Could not locate "${clauseName}" verbatim in the document. If this clause is inside a text box or shape, it cannot be located automatically; apply it manually.`,
+      "anchor_not_found",
+    );
     this.name = "AnchorNotFoundError";
   }
 }

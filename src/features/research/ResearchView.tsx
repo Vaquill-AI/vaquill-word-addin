@@ -21,12 +21,6 @@ import "./research.css";
 
 type CorpusFilter = "" | StatuteCorpus;
 
-const CORPUS_OPTIONS: { value: CorpusFilter; label: string }[] = [
-  { value: "", label: "All" },
-  { value: "usc", label: "USC" },
-  { value: "cfr", label: "CFR" },
-  { value: "state", label: "State" },
-];
 
 type SearchState =
   | { status: "idle" }
@@ -75,7 +69,9 @@ const MODE_OPTIONS: { value: ResearchMode; label: string }[] = [
 export function ResearchView() {
   const [mode, setMode] = useState<ResearchMode>("statutes");
   const [query, setQuery] = useState("");
-  const [corpus, setCorpus] = useState<CorpusFilter>("");
+  // Corpus scoping is inferred from the query itself (a citation like "18 USC
+  // 1030" already targets USC), so we search All and drop the upfront filter.
+  const corpus: CorpusFilter = "";
   const [state, setState] = useState<SearchState>({ status: "idle" });
   const [selected, setSelected] = useState<StatuteResult | null>(null);
   const abortRef = useRef<AbortController | null>(null);
@@ -134,8 +130,6 @@ export function ResearchView() {
         <StatuteSearch
           query={query}
           setQuery={setQuery}
-          corpus={corpus}
-          setCorpus={setCorpus}
           state={state}
           onSearch={() => void run(query)}
           onSelect={setSelected}
@@ -148,16 +142,12 @@ export function ResearchView() {
 function StatuteSearch({
   query,
   setQuery,
-  corpus,
-  setCorpus,
   state,
   onSearch,
   onSelect,
 }: {
   query: string;
   setQuery: (q: string) => void;
-  corpus: CorpusFilter;
-  setCorpus: (c: CorpusFilter) => void;
   state: SearchState;
   onSearch: () => void;
   onSelect: (r: StatuteResult) => void;
@@ -185,15 +175,6 @@ function StatuteSearch({
             onChange={(e) => setQuery(e.target.value)}
           />
         </Field>
-        <div className="field">
-          <label>Corpus</label>
-          <SegmentedControl<CorpusFilter>
-            label="Corpus"
-            options={CORPUS_OPTIONS}
-            value={corpus}
-            onChange={setCorpus}
-          />
-        </div>
         <Button type="submit" variant="primary" className="btn--cta" loading={state.status === "searching"} disabled={!query.trim()}>
           Search
         </Button>

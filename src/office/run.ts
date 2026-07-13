@@ -70,14 +70,47 @@ export function isProtectionError(e: unknown): boolean {
   return looksProtected(err?.code ?? "", err?.message ?? "");
 }
 
+// Bits in DocumentProperties.security that mean the document blocks editing:
+// 2 = always-open-read-only, 4 = read-only on disk, 8 = restrict-edit. (0 =
+// read/write; bit 1 = encrypted, which alone does not block an open document.)
+const SECURITY_EDIT_BLOCKED = 2 | 4 | 8;
+
+/**
+ * Best-effort, LANGUAGE-INDEPENDENT protection check: read the document's own
+ * `security` state (WordApi 1.3, below our floor). The error-text match above is
+ * English-only, so on a non-English Word a protected document throws a localized
+ * GeneralException that "looksProtected" misses; this confirms it from the
+ * document state instead. Reading a property is allowed even on a protected doc.
+ * Never throws.
+ */
+async function documentLooksProtected(): Promise<boolean> {
+  try {
+    return await Word.run(async (context) => {
+      const props = context.document.properties;
+      props.load("security");
+      await context.sync();
+      return (props.security & SECURITY_EDIT_BLOCKED) !== 0;
+    });
+  } catch {
+    return false;
+  }
+}
+
 export async function runWord<T>(fn: (context: Word.RequestContext) => Promise<T>): Promise<T> {
   try {
     return await Word.run(fn);
   } catch (e) {
+    // Preserve our own typed errors (AnchorNotFoundError, no_selection, etc.):
+    // re-wrapping them would lose the subclass that callers switch on, and there
+    // is no point probing the document's security state for an error we threw.
+    if (e instanceof OfficeError) throw e;
+
     const err = e as { message?: string; code?: string };
     const code = err.code ?? "";
     const message = err.message ?? "";
-    if (looksProtected(code, message)) {
+    // Confirm protection from the error text, then (for a localized / opaque
+    // GeneralException) from the document's own security state.
+    if (looksProtected(code, message) || (await documentLooksProtected())) {
       throw new OfficeError(PROTECTED_DOC_MESSAGE, err.code);
     }
     throw new OfficeError(message || "Word could not complete that action.", err.code);

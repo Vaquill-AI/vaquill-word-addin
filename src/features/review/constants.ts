@@ -83,7 +83,7 @@ export const USER_SIDES: Option[] = [
  * when the supported set changes.
  */
 export const JURISDICTIONS: Option[] = [
-  { value: "", label: "United States (general)" },
+  { value: "", label: "Federal / multi-state" },
   { value: "al", label: "Alabama" },
   { value: "az", label: "Arizona" },
   { value: "ca", label: "California" },

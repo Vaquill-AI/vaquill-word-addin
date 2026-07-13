@@ -39,7 +39,7 @@ function sanitize(raw: unknown): ReviewPrefs {
     // Lowercase on load: jurisdiction codes are lowercase (matching the backend
     // `state` payload and JURISDICTIONS options). An older build persisted
     // uppercase ("CA"), which would no longer match the lowercase <option> and
-    // silently read as "United States (general)".
+    // silently read as the general "Federal / multi-state" option.
     jurisdiction:
       typeof obj.jurisdiction === "string" ? obj.jurisdiction.toLowerCase() : "",
     contractType: typeof obj.contractType === "string" ? obj.contractType : "",

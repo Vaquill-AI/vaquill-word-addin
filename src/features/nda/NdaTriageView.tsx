@@ -58,6 +58,9 @@ export function NdaTriageView() {
   const { state, run, reset } = useNdaTriage();
   const [counterparty, setCounterparty] = useState("");
   const [context, setContext] = useState("");
+  // Both inputs are optional, so keep them off the default surface: one-click
+  // "Screen NDA", with an "Add context" disclosure for the rare case it helps.
+  const [showContext, setShowContext] = useState(false);
 
   const header = (
     <div className="stack" style={{ gap: 4 }}>
@@ -106,20 +109,36 @@ export function NdaTriageView() {
   return (
     <div className="stack nda-view">
       {header}
-      <Field label="Counterparty (optional)">
-        <input
-          value={counterparty}
-          placeholder="e.g. Acme Inc."
-          onChange={(e) => setCounterparty(e.target.value)}
-        />
-      </Field>
-      <Field label="Business context (optional)">
-        <textarea
-          value={context}
-          placeholder="e.g. Evaluating Acme as a data-processing vendor; they will receive our customer PII."
-          onChange={(e) => setContext(e.target.value)}
-        />
-      </Field>
+
+      {showContext ? (
+        <div className="stack" style={{ gap: 12 }}>
+          <Field label="Counterparty (optional)">
+            <input
+              value={counterparty}
+              placeholder="e.g. Acme Inc."
+              onChange={(e) => setCounterparty(e.target.value)}
+            />
+          </Field>
+          <Field label="Business context (optional)">
+            <textarea
+              value={context}
+              placeholder="e.g. Evaluating Acme as a data-processing vendor; they will receive our customer PII."
+              onChange={(e) => setContext(e.target.value)}
+            />
+          </Field>
+        </div>
+      ) : (
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={() => setShowContext(true)}
+          style={{ alignSelf: "flex-start" }}
+        >
+          Add context (optional)
+        </Button>
+      )}
+
       <Button
         variant="primary"
         className="btn--cta"

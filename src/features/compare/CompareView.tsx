@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Badge, Banner, Button, Spinner, SegmentedControl } from "@/ui/primitives";
+import { Badge, Banner, Button, Spinner } from "@/ui/primitives";
 import { Dropzone } from "@/ui/Dropzone";
 import { InfoTip } from "@/ui/InfoTip";
 import { CheckIcon, DownloadIcon } from "@/ui/icons";
@@ -11,11 +11,6 @@ import "./compare.css";
 // A comparison side must be one of these (the backend SourceRef accepts only
 // docx/doc/pdf; rtf/odt would upload but then fail the run).
 const ACCEPT = ".docx,.doc,.pdf";
-
-const DIRECTION_OPTIONS: { value: CompareDirection; label: string }[] = [
-  { value: "docIsRevised", label: "Newer" },
-  { value: "docIsOriginal", label: "Older" },
-];
 
 /**
  * Document Compare: diff the open document against a reference version and get a
@@ -230,29 +225,33 @@ export function CompareView() {
     <div className="stack compare-view">
       {header}
 
-      <div className="stack" style={{ gap: 6 }}>
-        <span className="small" style={{ fontWeight: 600 }}>
-          This document is the...
-        </span>
-        <SegmentedControl<CompareDirection>
-          label="Which version is the open document"
-          options={DIRECTION_OPTIONS}
-          value={direction}
-          onChange={setDirection}
-        />
-        <span className="small muted">
-          {direction === "docIsRevised"
-            ? "The redline shows what changed from the reference to this document."
-            : "The redline shows what changed from this document to the reference."}
-        </span>
-      </div>
-
       <Dropzone
         accept={ACCEPT}
         label="Reference version to compare against"
         hint="Word or PDF."
         onFile={(f) => void start(f, direction)}
       />
+
+      {/* The common case (open doc = the newer version the counterparty sent back)
+          is assumed, so we do not make the user affirm it. A quiet swap covers the
+          reverse case. */}
+      <div className="row" style={{ justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+        <span className="small muted">
+          {direction === "docIsRevised"
+            ? "This document is the newer version; attach the one you sent."
+            : "This document is the older version; attach the newer one."}
+        </span>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={() =>
+            setDirection(direction === "docIsRevised" ? "docIsOriginal" : "docIsRevised")
+          }
+        >
+          Swap direction
+        </Button>
+      </div>
 
       {state.phase === "error" && state.error && (
         <div className="stack" style={{ gap: 8 }}>

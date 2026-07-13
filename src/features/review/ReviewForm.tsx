@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Button, Field, SegmentedControl, Toggle } from "@/ui/primitives";
+import { useEffect, useState } from "react";
+import { Button, Field, SegmentedControl, Toggle, Spinner } from "@/ui/primitives";
 import { Combobox } from "@/ui/Combobox";
 import { PlaybookPicker } from "./PlaybookPicker";
 import {
@@ -10,6 +10,8 @@ import {
   type ReviewScope,
 } from "./constants";
 import { getReviewPrefs } from "@/lib/prefs";
+import { readDocumentText } from "@/office/document";
+import { classifyContract } from "@/api/contract-review";
 import type { RunParams } from "./useReview";
 
 type MarkupLevel = "light" | "standard" | "firm";
@@ -47,6 +49,9 @@ const SCOPE_OPTIONS: { value: ReviewScope; label: string }[] = [
   { value: "selection", label: "Selection" },
 ];
 
+/** Below this length there is not enough text to classify; keep the default. */
+const CLASSIFY_MIN_CHARS = 100;
+
 export function ReviewForm({
   onRun,
   busy,
@@ -66,6 +71,44 @@ export function ReviewForm({
   const [includeExtras, setIncludeExtras] = useState(false);
   const [markupLevel, setMarkupLevel] = useState<MarkupLevel>("standard");
   const [paperSide, setPaperSide] = useState<PaperSide>("");
+
+  // Zero-config entry: everything is inferred or defaulted, and the details live
+  // under "Adjust". `detecting` gates the chip while we classify; `detected`
+  // records the auto-detected type so we can show it was inferred, not guessed.
+  const [showOptions, setShowOptions] = useState(false);
+  const [detecting, setDetecting] = useState(!initial?.contractType);
+  const [detected, setDetected] = useState<string | null>(null);
+
+  // Auto-detect the contract type from the open document on mount, so the user
+  // does not have to pick it. A "Run this playbook" handoff already carries the
+  // type, so respect it and skip detection. Best-effort: any failure keeps the
+  // remembered default.
+  useEffect(() => {
+    if (initial?.contractType) return;
+    let alive = true;
+    (async () => {
+      try {
+        const text = await readDocumentText();
+        if (!alive) return;
+        if (text.trim().length >= CLASSIFY_MIN_CHARS) {
+          const { contractType: t, confidence } = await classifyContract(text);
+          if (alive && t && confidence >= 0.5) {
+            setContractType(t);
+            setDetected(t);
+          }
+        }
+      } catch {
+        // Keep the default; detection is a convenience, not a requirement.
+      } finally {
+        if (alive) setDetecting(false);
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [initial?.contractType]);
+
+  const markupLabel = MARKUP_OPTIONS.find((o) => o.value === markupLevel)?.label ?? "Standard";
 
   return (
     <form
@@ -90,74 +133,112 @@ export function ReviewForm({
         });
       }}
     >
-      {/* Contract type is the document's identity: full-width, top slot. A
-          searchable combobox since the list is long (37 types). */}
-      <Field label="Contract type">
-        <Combobox
-          value={contractType}
-          onChange={setContractType}
-          options={CONTRACT_TYPES}
-          ariaLabel="Contract type"
-        />
-      </Field>
-
-      {/* Two genuinely long lists, paired 2-col; they flow to one column when
-          the pane is narrow. */}
-      <div className="form-grid">
-        <Field label="I represent the">
-          <Combobox
-            value={userSide}
-            onChange={setUserSide}
-            options={USER_SIDES}
-            ariaLabel="I represent the"
-          />
-        </Field>
-
-        <PlaybookPicker contractType={contractType} value={playbookId} onChange={setPlaybookId} />
+      {/* One-glance summary of what will be reviewed. Everything is inferred or
+          defaulted; "Adjust" reveals the overrides. */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 8,
+          padding: "9px 11px",
+          border: "1px solid var(--border)",
+          borderRadius: "var(--radius-md)",
+          background: "var(--fill-subtle)",
+        }}
+      >
+        {detecting ? (
+          <span className="row small muted" style={{ gap: 8, alignItems: "center", minWidth: 0 }}>
+            <Spinner /> Detecting contract type...
+          </span>
+        ) : (
+          <span className="small" style={{ minWidth: 0 }}>
+            <strong>{labelOf(CONTRACT_TYPES, contractType)}</strong>
+            <span className="muted">
+              {" · representing "}
+              {labelOf(USER_SIDES, userSide)}
+              {" · "}
+              {markupLabel.toLowerCase()} markup
+            </span>
+            {detected === contractType && (
+              <span className="muted" style={{ marginLeft: 6, fontStyle: "italic" }}>
+                (auto-detected)
+              </span>
+            )}
+          </span>
+        )}
+        <Button type="button" variant="ghost" size="sm" onClick={() => setShowOptions((v) => !v)}>
+          {showOptions ? "Done" : "Adjust"}
+        </Button>
       </div>
 
-      {/* Short enumerations: segmented, full-width rows (not dropdowns). */}
-      <div className="field">
-        <label>Scope</label>
-        <SegmentedControl
-          label="Scope"
-          options={SCOPE_OPTIONS}
-          value={scope}
-          onChange={setScope}
-        />
-      </div>
+      {/* Overrides, collapsed by default. Opening them is the rare case where the
+          reviewer disagrees with an inferred value or wants a non-default. */}
+      {showOptions && (
+        <div className="stack" style={{ gap: 12 }}>
+          <Field label="Contract type">
+            <Combobox
+              value={contractType}
+              onChange={(v) => {
+                setContractType(v);
+                setDetected(null);
+              }}
+              options={CONTRACT_TYPES}
+              ariaLabel="Contract type"
+            />
+          </Field>
 
-      <div className="field">
-        <label>Whose paper</label>
-        <SegmentedControl
-          label="Whose paper"
-          options={PAPER_OPTIONS}
-          value={paperSide}
-          onChange={setPaperSide}
-        />
-        <span className="small muted">{PAPER_CAPTION[paperSide]}</span>
-      </div>
+          <div className="form-grid">
+            <Field label="I represent the">
+              <Combobox
+                value={userSide}
+                onChange={setUserSide}
+                options={USER_SIDES}
+                ariaLabel="I represent the"
+              />
+            </Field>
 
-      <div className="field">
-        <label>Markup level</label>
-        <SegmentedControl
-          label="Markup level"
-          options={MARKUP_OPTIONS}
-          value={markupLevel}
-          onChange={setMarkupLevel}
-        />
-        <span className="small muted">{MARKUP_CAPTION[markupLevel]}</span>
-      </div>
+            <PlaybookPicker contractType={contractType} value={playbookId} onChange={setPlaybookId} />
+          </div>
 
-      {scope === "document" && (
-        <div className="row" style={{ gap: 8, alignItems: "center" }}>
-          <Toggle
-            checked={includeExtras}
-            onChange={setIncludeExtras}
-            label="Include footnotes and headers/footers"
-            size="sm"
-          />
-          <span className="small">Include footnotes and headers/footers</span>
+          <div className="field">
+            <label>Scope</label>
+            <SegmentedControl label="Scope" options={SCOPE_OPTIONS} value={scope} onChange={setScope} />
+          </div>
+
+          <div className="field">
+            <label>Whose paper</label>
+            <SegmentedControl
+              label="Whose paper"
+              options={PAPER_OPTIONS}
+              value={paperSide}
+              onChange={setPaperSide}
+            />
+            <span className="small muted">{PAPER_CAPTION[paperSide]}</span>
+          </div>
+
+          <div className="field">
+            <label>Markup level</label>
+            <SegmentedControl
+              label="Markup level"
+              options={MARKUP_OPTIONS}
+              value={markupLevel}
+              onChange={setMarkupLevel}
+            />
+            <span className="small muted">{MARKUP_CAPTION[markupLevel]}</span>
+          </div>
+
+          {scope === "document" && (
+            <div className="row" style={{ gap: 8, alignItems: "center" }}>
+              <Toggle
+                checked={includeExtras}
+                onChange={setIncludeExtras}
+                label="Include footnotes and headers/footers"
+                size="sm"
+              />
+              <span className="small">Include footnotes and headers/footers</span>
+            </div>
+          )}
         </div>
       )}
 
