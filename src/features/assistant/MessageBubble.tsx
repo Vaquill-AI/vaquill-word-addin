@@ -1,9 +1,9 @@
-import { useState } from "react";
-import { Markdown } from "./markdown";
+import { useRef, useState } from "react";
+import { Markdown, type CitationCtx } from "./markdown";
 import { IconButton } from "@/ui/primitives";
-import { OverflowMenu, type OverflowMenuItem } from "@/ui/OverflowMenu";
 import { CopyIcon, EditIcon, CheckIcon } from "@/ui/icons";
 import { insertClauseTracked } from "@/office/richInsert";
+import { config } from "@/config";
 import type { AssistantMessage } from "./useAssistant";
 import type { ChatSource } from "@/api/chat";
 
@@ -18,17 +18,19 @@ function InsertGlyph() {
 }
 
 /**
- * Overflow actions for an assistant answer (Copy / Insert into document), hidden
- * until the message is hovered so the transcript stays calm.
+ * Primary actions for an assistant answer. Copy and Insert are first-class
+ * buttons (not hidden behind a kebab) so the two things a user most wants to do
+ * with an answer are one click away.
  */
 function AssistantActions({ message }: { message: AssistantMessage }) {
   const [note, setNote] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
 
   async function copy() {
     try {
       await navigator.clipboard.writeText(message.content);
-      setNote("Copied");
-      setTimeout(() => setNote(null), 1200);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1200);
     } catch {
       // Clipboard blocked; ignore (non-destructive).
     }
@@ -45,17 +47,22 @@ function AssistantActions({ message }: { message: AssistantMessage }) {
     }
   }
 
-  const items: OverflowMenuItem[] = [
-    { label: "Copy", icon: <CopyIcon size={14} />, onSelect: copy },
-    { label: "Insert into document", icon: <InsertGlyph />, onSelect: insert },
-  ];
-
   return (
     <div className="msg__actions msg__actions--assistant">
-      <div className="msg__actions-row">
-        <OverflowMenu items={items} label="Answer actions" />
-        {note && <span className="small muted msg__actions-note">{note}</span>}
-      </div>
+      <button type="button" className="msg__action-btn" onClick={copy} title="Copy answer">
+        {copied ? <CheckIcon size={14} /> : <CopyIcon size={14} />}
+        {copied ? "Copied" : "Copy"}
+      </button>
+      <button
+        type="button"
+        className="msg__action-btn"
+        onClick={insert}
+        title="Insert into the document as a tracked change"
+      >
+        <InsertGlyph />
+        Insert
+      </button>
+      {note && <span className="small muted msg__actions-note">{note}</span>}
     </div>
   );
 }
@@ -71,29 +78,53 @@ function sourceLabel(s: ChatSource): string {
   );
 }
 
-// A source becomes a link only when the payload carries a real http(s) URL.
-// Today the backend sends label-only sources (no URL), so these render as plain
-// text; the moment it starts sending url/link, they light up as links with no
-// further change here.
+// Resolve a source to a clickable URL. Absolute http(s) links (external case-law
+// mirrors, signed file URLs) open directly; relative viewer paths (the corpus
+// pdf_url the backend rewrites relative) are resolved against the web app origin
+// so they open the document viewer in a browser. Backend keys vary by source
+// type (external_url / url / file_url / pdf_url), so we check them all.
 function sourceUrl(s: ChatSource): string | null {
-  for (const c of [s.url, s.sourceUrl, s.source_url, s.link, s.href]) {
+  const absolute = [s.external_url, s.url, s.sourceUrl, s.source_url, s.link, s.href, s.file_url];
+  for (const c of absolute) {
     if (typeof c === "string" && /^https?:\/\//i.test(c)) return c;
+  }
+  // Relative viewer/file paths -> resolve against the web app.
+  for (const c of [s.pdf_url, s.file_url]) {
+    if (typeof c === "string" && c.startsWith("/")) return `${config.appBase}${c}`;
   }
   return null;
 }
 
-function Sources({ sources }: { sources: ChatSource[] }) {
+function Sources({
+  sources,
+  open,
+  onToggle,
+  anchorId,
+}: {
+  sources: ChatSource[];
+  open: boolean;
+  onToggle: (open: boolean) => void;
+  /** DOM id for the Nth source (1-based), so an inline [N] can scroll to it. */
+  anchorId: (n: number) => string;
+}) {
   return (
-    <details className="msg__sources">
+    <details
+      className="msg__sources"
+      open={open}
+      onToggle={(e) => onToggle((e.currentTarget as HTMLDetailsElement).open)}
+    >
       <summary>
         {sources.length} source{sources.length === 1 ? "" : "s"}
       </summary>
-      <ul>
-        {sources.slice(0, 8).map((s, i) => {
+      {/* Numbered so an inline [N] maps to a visible item. The backend orders
+          sources by citation number (citation N == source N), so a plain 1..N
+          ordered list is the correct mapping. */}
+      <ol className="msg__source-list">
+        {sources.map((s, i) => {
           const url = sourceUrl(s);
           const label = sourceLabel(s);
           return (
-            <li key={i}>
+            <li key={i} id={anchorId(i + 1)} className="msg__source">
               {url ? (
                 <a href={url} target="_blank" rel="noreferrer">
                   {label}
@@ -104,7 +135,7 @@ function Sources({ sources }: { sources: ChatSource[] }) {
             </li>
           );
         })}
-      </ul>
+      </ol>
     </details>
   );
 }
@@ -163,6 +194,11 @@ export function MessageBubble({
   /** Enables Copy/Edit on a user message (edit-and-re-run). */
   onEdit?: (message: AssistantMessage) => void;
 }) {
+  // Sources panel open state + a wrapper ref, so an inline [N] click can open the
+  // panel and scroll its item into view.
+  const [sourcesOpen, setSourcesOpen] = useState(false);
+  const bodyRef = useRef<HTMLDivElement>(null);
+
   if (message.role === "user") {
     return (
       <div className="msg msg--user">
@@ -172,15 +208,33 @@ export function MessageBubble({
     );
   }
 
+  const sources = message.sources ?? [];
+  const anchorId = (n: number) => `cite-${message.id}-${n}`;
+  const citations: CitationCtx | undefined = sources.length
+    ? {
+        labelOf: (n) => (sources[n - 1] ? sourceLabel(sources[n - 1]) : undefined),
+        onCite: (n) => {
+          if (n < 1 || n > sources.length) return;
+          setSourcesOpen(true);
+          requestAnimationFrame(() => {
+            const el = bodyRef.current?.querySelector<HTMLElement>(`#${CSS.escape(anchorId(n))}`);
+            el?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+            el?.classList.add("msg__source--flash");
+            setTimeout(() => el?.classList.remove("msg__source--flash"), 1200);
+          });
+        },
+      }
+    : undefined;
+
   return (
-    <div className="msg msg--assistant">
+    <div className="msg msg--assistant" ref={bodyRef}>
       <div className="msg__ident">
         <img src="/assets/icon-80.png" className="msg__ident-avatar" alt="" aria-hidden />
         <span className="msg__ident-name">Vaquill AI</span>
       </div>
       {message.content && (
         <div className="msg__body">
-          <Markdown text={message.content} />
+          <Markdown text={message.content} citations={citations} />
           {/* Trailing type-cursor while the answer streams. Not shown before any
               content arrives (the "Searching..." spinner covers that phase), so
               there is no lone caret floating above the thinking line. */}
@@ -190,7 +244,14 @@ export function MessageBubble({
       {message.steps && message.steps.length > 0 && !message.pending && (
         <StepsTrace steps={message.steps} />
       )}
-      {message.sources && message.sources.length > 0 && <Sources sources={message.sources} />}
+      {sources.length > 0 && (
+        <Sources
+          sources={sources}
+          open={sourcesOpen}
+          onToggle={setSourcesOpen}
+          anchorId={anchorId}
+        />
+      )}
       {message.content && !message.pending && <AssistantActions message={message} />}
     </div>
   );

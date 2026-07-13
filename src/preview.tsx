@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { AutoTextarea } from "@/ui/AutoTextarea";
 import { createRoot } from "react-dom/client";
 import { Header } from "./ui/Header";
 import { Badge, Banner, Button } from "./ui/primitives";
@@ -384,7 +385,7 @@ function GovernancePreview() {
           <div className="gov-action stack">
             <div className="field">
               <label>Add a note (optional)</label>
-              <textarea placeholder="e.g. Approved the New York to Delaware change." />
+              <AutoTextarea placeholder="e.g. Approved the New York to Delaware change." />
             </div>
             <Button variant="primary" block>Record my sign-off</Button>
             <p className="small muted" style={{ margin: 0 }}>

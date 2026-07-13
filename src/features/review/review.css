@@ -156,6 +156,23 @@
 .redline__foot {
   margin-top: 2px;
 }
+/* Status badges, stacked under the clause title inside the header. */
+.redline__badges {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  margin-top: 3px;
+}
+/* Comment + Add to playbook share one row to keep the card compact; each expands
+   in place, wrapping to a new line when it needs the width. */
+.redline__secondary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 6px 14px;
+  margin-top: 2px;
+}
 @keyframes cardIn {
   from {
     opacity: 0;
@@ -205,6 +222,14 @@
 .redline__text--ins {
   background: var(--green-tint);
   color: var(--success);
+}
+/* "Final" view: the clean finished clause, rendered FLAT like plain document
+   text (no box, no tint), so it reads as the after-accept result rather than
+   "everything is an insertion". Flush with the card content below it. */
+.redline__text--final {
+  background: transparent;
+  color: var(--text);
+  padding: 2px 0;
 }
 .redline__actions {
   display: flex;

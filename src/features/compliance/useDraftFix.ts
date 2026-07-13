@@ -91,7 +91,7 @@ export function useDraftFix(req: ComplianceRequirement) {
           : prev,
       );
     } catch (e) {
-      const message = (e as Error).message || "Could not insert into the document.";
+      const message = errorMessage(e) || "Could not insert into the document.";
       setState((prev) =>
         prev.status === "ready" ? { ...prev, inserting: false, insertError: message } : prev,
       );

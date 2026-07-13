@@ -42,13 +42,37 @@ function searchWindow(query: string): string {
 }
 
 interface SearchVariant {
-  readonly options: Word.SearchOptions | { matchCase: boolean; ignorePunct?: boolean; ignoreSpace?: boolean };
+  readonly options:
+    | Word.SearchOptions
+    | { matchCase: boolean; ignorePunct?: boolean; ignoreSpace?: boolean; matchWildcards?: boolean };
+  /** Optional per-variant needle rewrite (the wildcard pass rebuilds the needle). */
+  readonly transform?: (query: string) => string;
+}
+
+/**
+ * Wildcard fallback needle: replace every character the earlier passes can still
+ * trip over - straight vs curly quotes (" " ' '), en/em dashes, non-breaking
+ * spaces, and stray "garbled" glyphs that document extraction and the model
+ * normalize differently - with `?`, Word's single-character wildcard. Word's
+ * ignorePunct only ignores ASCII punctuation, so it does NOT reconcile Unicode
+ * smart quotes; this does. Letters, digits, and spaces stay literal (and need no
+ * escaping in wildcard mode), so the alphanumeric text anchors the match while
+ * the exact punctuation no longer has to agree.
+ */
+function toWildcardNeedle(query: string): string {
+  let out = "";
+  for (const ch of query) out += /[A-Za-z0-9 ]/.test(ch) ? ch : "?";
+  return out;
 }
 
 const VARIANTS: readonly SearchVariant[] = [
   { options: { matchCase: true } },
   { options: { matchCase: true, ignorePunct: true, ignoreSpace: true } },
   { options: { matchCase: false, ignorePunct: true, ignoreSpace: true } },
+  // Last resort: wildcard the punctuation so a smart-quote / garbled-character
+  // clause (which ignorePunct cannot reconcile for Unicode punctuation) still
+  // anchors. The >1-match guard in callers keeps this from mis-anchoring.
+  { options: { matchCase: false, matchWildcards: true }, transform: toWildcardNeedle },
 ];
 
 /** Run the tolerance ladder across one or more search scopes (Body objects).
@@ -60,8 +84,9 @@ async function searchScopes(
   query: string,
 ): Promise<Word.Range[]> {
   for (const variant of VARIANTS) {
+    const needle = variant.transform ? variant.transform(query) : query;
     try {
-      const resultSets = scopes.map((s) => s.search(query, variant.options));
+      const resultSets = scopes.map((s) => s.search(needle, variant.options));
       for (const r of resultSets) r.load("items");
       await context.sync();
       const items = resultSets.flatMap((r) => r.items);

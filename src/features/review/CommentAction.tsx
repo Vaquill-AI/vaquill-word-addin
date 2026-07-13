@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Banner, Button, IconButton } from "@/ui/primitives";
-import { CheckIcon, CopyIcon } from "@/ui/icons";
+import { CheckIcon, CopyIcon, XIcon } from "@/ui/icons";
 import { insertCommentOnSelection } from "@/office/selection";
 import { selectClauseInDocument } from "@/office/navigate";
 import { goToBookmark } from "@/office/bookmarks";
@@ -231,7 +231,7 @@ export function CommentAction({
 
           <p className="cmt__draft-body">{draft.text}</p>
 
-          <div className="row" style={{ gap: 6, flexWrap: "wrap" }}>
+          <div className="row" style={{ gap: 6, flexWrap: "wrap", alignItems: "center" }}>
             {!isInternal && (
               <Button
                 variant="primary"
@@ -243,12 +243,14 @@ export function CommentAction({
                 <CommentGlyph /> Insert as comment
               </Button>
             )}
-            <IconButton label={copied ? "Copied" : "Copy"} onClick={copyDraft}>
-              {copied ? <CheckIcon size={13} /> : <CopyIcon size={13} />}
-            </IconButton>
-            <Button variant="ghost" size="sm" onClick={dismissDraft} disabled={inserting}>
-              Dismiss
-            </Button>
+            <div className="row" style={{ gap: 4, marginLeft: "auto" }}>
+              <IconButton label={copied ? "Copied" : "Copy"} onClick={copyDraft}>
+                {copied ? <CheckIcon size={13} /> : <CopyIcon size={13} />}
+              </IconButton>
+              <IconButton label="Dismiss" tone="red" onClick={dismissDraft}>
+                <XIcon size={13} />
+              </IconButton>
+            </div>
           </div>
 
           {isInternal && (

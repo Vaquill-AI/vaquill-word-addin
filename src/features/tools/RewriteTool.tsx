@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { AutoTextarea } from "@/ui/AutoTextarea";
 import { Button, Banner, Badge, SegmentedControl, IconButton } from "@/ui/primitives";
 import { CheckIcon, CopyIcon } from "@/ui/icons";
 import { InlineDiff } from "@/features/review/InlineDiff";
@@ -91,7 +92,7 @@ export function RewriteTool({ clauseText }: { clauseText: string }) {
       await replaceSelectionTracked(result.rewritten);
       setApplied(true);
     } catch (e) {
-      setError((e as Error).message);
+      setError(errorMessage(e));
     } finally {
       setBusy(false);
     }
@@ -128,7 +129,7 @@ export function RewriteTool({ clauseText }: { clauseText: string }) {
             onClick={() => void guide.improve()}
           />
         </div>
-        <textarea
+        <AutoTextarea
           value={instruction}
           placeholder="e.g. Cap liability at fees paid in the prior 12 months."
           onChange={(e) => setInstruction(e.target.value)}

@@ -51,20 +51,17 @@ export async function insertDocxAtCursorOrDownload(
   }
 }
 
-/** Trigger a browser download of the returned .docx as a fallback to inserting it. */
-export function downloadDocx(base64: string, filename: string): void {
-  const bytes = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
-  const blob = new Blob([bytes], {
-    type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-  });
+/**
+ * Trigger a browser download of a Blob. Office-host-safe: the anchor must be in
+ * the DOM for the click to register in some hosts, and in Edge WebView2 a
+ * synchronous revokeObjectURL after click can abort the download stream, so
+ * cleanup is deferred to the next tick.
+ */
+export function downloadBlob(blob: Blob, filename: string): void {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
   a.download = filename;
-  // The anchor must be in the DOM for the click to register in some hosts, and
-  // in Office's Edge WebView2 host a synchronous revokeObjectURL after click
-  // can abort the download stream. Defer cleanup to the next tick so the host
-  // has picked up the blob first.
   document.body.appendChild(a);
   a.click();
   setTimeout(() => {
@@ -79,4 +76,15 @@ export function downloadDocx(base64: string, filename: string): void {
       // Anchor may already be detached; ignore.
     }
   }, 0);
+}
+
+/** Trigger a browser download of the returned .docx as a fallback to inserting it. */
+export function downloadDocx(base64: string, filename: string): void {
+  const bytes = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
+  downloadBlob(
+    new Blob([bytes], {
+      type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    }),
+    filename,
+  );
 }

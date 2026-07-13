@@ -1,4 +1,4 @@
-import { request } from "./http";
+import { request, requestForm } from "./http";
 
 /**
  * Negotiation playbooks. Selecting one drives the review to the firm's
@@ -73,6 +73,60 @@ interface PlaybookDetailListResponse {
 }
 
 /** Playbooks including their per-clause positions and fallback ladders. */
+/** A starter playbook extracted from an open contract (not yet saved). */
+export interface ExtractedPlaybook {
+  /** Clause-type -> position map, passed straight back to createPlaybook. */
+  positions: Record<string, unknown>;
+  extractedCount: number;
+  /** Detected (or supplied) contract-type key, e.g. "nda". */
+  contractType: string;
+  jurisdiction: string;
+  source: string;
+}
+
+/**
+ * Extract a starter playbook from the open contract's text: the backend
+ * classifies each clause block and returns draft positions the user reviews and
+ * saves. Does NOT persist (the human gate is `createPlaybook`). The positions are
+ * passed back verbatim to createPlaybook, so no client-side reshaping is needed.
+ */
+export async function extractPlaybookFromText(text: string): Promise<ExtractedPlaybook> {
+  const form = new FormData();
+  form.append("text", text);
+  form.append("contract_type", "auto");
+  const res = await requestForm<{
+    positions?: Record<string, unknown>;
+    extracted_count?: number;
+    contract_type?: string;
+    jurisdiction?: string;
+    source?: string;
+  }>(`${PLAYBOOKS}/extract-from-docx`, form);
+  const positions = res.positions ?? {};
+  return {
+    positions,
+    extractedCount: res.extracted_count ?? Object.keys(positions).length,
+    contractType: res.contract_type ?? "",
+    jurisdiction: res.jurisdiction ?? "US",
+    source: res.source ?? "text",
+  };
+}
+
+/** Save a new playbook (e.g. from an extraction). Returns the created id. */
+export async function createPlaybook(input: {
+  name: string;
+  contractType: string;
+  positions: Record<string, unknown>;
+}): Promise<{ id: string }> {
+  return request<{ id: string }>(PLAYBOOKS, {
+    method: "POST",
+    body: {
+      name: input.name,
+      contractType: input.contractType,
+      positions: input.positions,
+    },
+  });
+}
+
 export async function getPlaybooksWithPositions(): Promise<PlaybookDetail[]> {
   const res = await request<PlaybookDetailListResponse>(PLAYBOOKS);
   return (res.playbooks ?? []).map((p) => ({ ...p, positions: p.positions ?? {} }));

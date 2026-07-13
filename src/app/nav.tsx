@@ -30,7 +30,17 @@ export type AppIntent =
   | { kind: "checkCitations" }
   | { kind: "reviewPreset"; preset: "nda" | "compliance" }
   // Assistant
-  | { kind: "assistantAsk"; prompt: string; scope?: "document" | "selection"; autoSend?: boolean }
+  | {
+      kind: "assistantAsk";
+      prompt: string;
+      scope?: "document" | "selection";
+      autoSend?: boolean;
+      /** Ground the answer purely in the open document: skip corpus / matter /
+       *  web retrieval. Used when the question is about the open document itself
+       *  (e.g. "should I accept this redline?"), where external retrieval only
+       *  adds latency and irrelevant citations. */
+      documentOnly?: boolean;
+    }
   | { kind: "selectionTool"; tool: SelectionToolKey }
   // Draft + Tools
   | { kind: "draft" }

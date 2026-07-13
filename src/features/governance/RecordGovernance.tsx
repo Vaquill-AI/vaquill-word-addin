@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { errorMessage } from "@/api/errors";
 import { Button } from "@/ui/primitives";
 import { CheckIcon } from "@/ui/icons";
 import { buildLedgerFromGate, type GateLike, type ReviewMeta } from "@/lib/governance";
@@ -22,7 +23,7 @@ export function RecordGovernance({ gate, meta }: { gate: GateLike; meta: ReviewM
       setStatus("done");
     } catch (e) {
       setStatus("error");
-      setError((e as Error).message);
+      setError(errorMessage(e));
     }
   }
 

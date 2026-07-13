@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useState } from "react";
+import { errorMessage } from "@/api/errors";
 import { ViewHeader } from "@/ui/ViewHeader";
 import { Badge, Banner, Button, Spinner } from "@/ui/primitives";
 import { LocateIcon } from "@/ui/icons";
 import { readNumberedParagraphs } from "@/office/structure";
-import { selectClauseInDocument } from "@/office/navigate";
+import { locateInDocument } from "@/office/navigate";
 import { analyzeCrossReferences, type CrossRefReport } from "@/lib/cross-references";
 import { useDocumentAutoRefresh } from "@/lib/useDocumentAutoRefresh";
 import "./xref.css";
@@ -30,7 +31,7 @@ export function CrossRefView() {
       const paragraphs = await readNumberedParagraphs();
       setState({ status: "ready", report: analyzeCrossReferences(paragraphs) });
     } catch (e) {
-      setState({ status: "error", error: (e as Error).message });
+      setState({ status: "error", error: errorMessage(e) });
     }
   }, []);
 
@@ -55,7 +56,7 @@ export function CrossRefView() {
 
   async function find(label: string) {
     setNote(null);
-    const ok = await selectClauseInDocument(label);
+    const ok = await locateInDocument(label);
     if (!ok) setNote(`Could not locate "${label}" in the document.`);
   }
 

@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { errorMessage } from "@/api/errors";
+import { AutoTextarea } from "@/ui/AutoTextarea";
 import { ViewHeader } from "@/ui/ViewHeader";
 import { Badge, Banner, Button, Spinner } from "@/ui/primitives";
 import { Avatar } from "@/ui/Avatar";
@@ -83,7 +85,7 @@ function SignoffAction({
     <div className="gov-action stack">
       <div className="field">
         <label>Add a note (optional)</label>
-        <textarea
+        <AutoTextarea
           value={note}
           placeholder="e.g. Approved the New York to Delaware change."
           onChange={(e) => setNote(e.target.value)}
@@ -119,7 +121,7 @@ function LockControl() {
         setNote(`${!locked ? "Locked" : "Unlocked"} ${n} tagged field${n === 1 ? "" : "s"}.`);
       }
     } catch (e) {
-      setNote((e as Error).message);
+      setNote(errorMessage(e));
     } finally {
       setBusy(false);
     }
@@ -164,7 +166,7 @@ function StampPropertiesControl({ ledger }: { ledger: GovernanceLedger }) {
       });
       setDone(true);
     } catch (e) {
-      setError((e as Error).message);
+      setError(errorMessage(e));
     } finally {
       setBusy(false);
     }

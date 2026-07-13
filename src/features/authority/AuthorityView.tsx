@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { errorMessage } from "@/api/errors";
 import { ViewHeader } from "@/ui/ViewHeader";
 import { Button, Banner, Spinner, LiveRegion } from "@/ui/primitives";
 import { FilterChips, type FilterChipOption } from "@/ui/FilterChips";
@@ -9,6 +10,7 @@ import { getExtractCoverage } from "./extract";
 import { AuthorityItem } from "./AuthorityItem";
 import { CitationStyle } from "./CitationStyle";
 import { insertTableOfAuthorities } from "@/office/citations";
+import { canAnnotate, paintCritiques, clearCritiques, type CritiqueItem } from "@/office/annotations";
 import type { AuthorityResult } from "@/api/authority";
 import "./authority.css";
 
@@ -52,6 +54,32 @@ export function AuthorityView() {
   const noMatch = state.results.filter((r) => r.verdict === "no_match").length;
   const other = state.results.length - verified.length - noMatch;
 
+  // Native inline critiques: underline the unresolved citations in the document
+  // itself (Word's writing-assistance surface), not just in this pane.
+  const [flagged, setFlagged] = useState(false);
+  const [flagBusy, setFlagBusy] = useState(false);
+  const unresolvedCritiques: CritiqueItem[] = state.results
+    .filter((r) => r.verdict === "no_match" || r.verdict === "unrecognized")
+    .map((r) => ({ text: r.raw, color: "Red" }));
+
+  async function toggleFlag() {
+    setFlagBusy(true);
+    try {
+      if (flagged) {
+        await clearCritiques();
+        setFlagged(false);
+      } else {
+        await paintCritiques(unresolvedCritiques);
+        setFlagged(true);
+      }
+    } finally {
+      setFlagBusy(false);
+    }
+  }
+
+  // Clear our critiques when leaving the view so they never linger.
+  useEffect(() => () => void clearCritiques(), []);
+
   async function insertToA() {
     setToaBusy(true);
     setToaError(null);
@@ -67,7 +95,7 @@ export function AuthorityView() {
         `Inserted a Table of Authorities with ${n} case${n === 1 ? "" : "s"} at your cursor. Word scrolled to it. Reposition it (e.g. to the front) if you need it elsewhere.`,
       );
     } catch (e) {
-      setToaError((e as Error).message);
+      setToaError(errorMessage(e));
     } finally {
       setToaBusy(false);
     }
@@ -193,6 +221,13 @@ export function AuthorityView() {
               </Button>
             )}
             <CitationStyle citations={state.results.map((r) => r.raw)} />
+            {canAnnotate() && unresolvedCritiques.length > 0 && (
+              <Button variant="ghost" size="sm" onClick={() => void toggleFlag()} loading={flagBusy}>
+                {flagged
+                  ? "Clear document flags"
+                  : `Flag ${unresolvedCritiques.length} unresolved in Word`}
+              </Button>
+            )}
           </div>
           {verifiedWithNames.length > 0 && !toaNote && (
             <span className="small muted">

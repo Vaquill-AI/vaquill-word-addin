@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { AutoTextarea } from "@/ui/AutoTextarea";
 import { Badge, Banner, Button, Field, IconButton, Spinner } from "@/ui/primitives";
 import { XIcon, EditIcon, TrashIcon } from "@/ui/icons";
 import { ScopedSearchList } from "@/ui/ScopedSearchList";
@@ -296,7 +297,7 @@ function PromptForm({
         />
       </Field>
       <Field label="Prompt">
-        <textarea
+        <AutoTextarea
           value={body}
           rows={4}
           placeholder="The reusable instruction to insert into the composer."

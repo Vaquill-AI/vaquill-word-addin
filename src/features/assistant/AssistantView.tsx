@@ -4,6 +4,7 @@ import { ChevronIcon } from "@/ui/icons";
 import { MessageBubble } from "./MessageBubble";
 import { Composer, type ComposerHandle, type ComposerMode } from "./Composer";
 import { SuggestedPrompts, detectContractType } from "./SuggestedPrompts";
+import { EditIntro } from "./EditIntro";
 import { ChatHistory } from "./ChatHistory";
 import {
   deriveTitle,
@@ -138,6 +139,10 @@ export function AssistantView({
     return () => clearTimeout(t);
   }, [actionResult]);
   const [editState, setEditState] = useState<EditState>({ status: "idle" });
+  // The instruction that produced the current edit set, echoed above the cards so
+  // the user sees what they asked (like a chat turn) instead of cards appearing
+  // from nowhere.
+  const [editInstruction, setEditInstruction] = useState("");
   const [editDecisions, setEditDecisions] = useState<Record<number, Decision>>({});
   const editDecisionOf = (i: number): Decision => editDecisions[i] ?? "pending";
   const setEditDecision = (i: number, d: Decision) =>
@@ -181,6 +186,7 @@ export function AssistantView({
   async function generateEdit(instruction: string) {
     const instr = instruction.trim();
     if (!instr) return;
+    setEditInstruction(instr);
     setEditState({ status: "generating" });
     setEditDecisions({});
     try {
@@ -258,7 +264,7 @@ export function AssistantView({
         }
       }
     } catch (e) {
-      setActionResult((e as Error).message);
+      setActionResult(errorMessage(e));
     }
   }
 
@@ -352,7 +358,20 @@ export function AssistantView({
       if (intent.scope) setScope(intent.scope);
       if (intent.prompt) setDraft(intent.prompt);
       if (intent.autoSend && intent.prompt.trim()) {
-        send(intent.prompt, intent.scope ?? scope, grounding, attach.contextFiles());
+        // A document-only ask (e.g. "should I accept this redline?") is answered
+        // from the open document alone: turn off every external source so the
+        // backend does not auto-fall-back to web / corpus retrieval. The explicit
+        // enableWebSearch:false is honored server-side as a hard opt-out.
+        const askGrounding: AssistantOptions = intent.documentOnly
+          ? {
+              useRag: false,
+              matterId: null,
+              enableVaquillDbSearch: false,
+              enableMatterDocsSearch: false,
+              enableWebSearch: false,
+            }
+          : grounding;
+        send(intent.prompt, intent.scope ?? scope, askGrounding, attach.contextFiles());
         setDraft("");
       } else {
         requestAnimationFrame(() => composerRef.current?.focus());
@@ -371,10 +390,13 @@ export function AssistantView({
   // The current Word selection (if any), so the empty state can offer to ask
   // about the highlighted clause specifically.
   const selectionText = useWordSelection();
-  // Best-effort client-side contract-type guess (tailors the starter chips).
+  // Best-effort client-side contract-type guess (tailors the starter chips and
+  // the Edit-mode example preview). Load it whenever a starter surface is shown:
+  // the Ask empty state, or Edit mode sitting idle.
   const [docType, setDocType] = useState<string | null>(null);
+  const wantDocType = empty || (mode === "edit" && editState.status === "idle");
   useEffect(() => {
-    if (!empty) return;
+    if (!wantDocType) return;
     let alive = true;
     readFullDocumentText()
       .then((text) => alive && setDocType(detectContractType(text)))
@@ -382,7 +404,7 @@ export function AssistantView({
     return () => {
       alive = false;
     };
-  }, [empty]);
+  }, [wantDocType]);
 
   // Recent conversations to resume from the empty state (excluding this one).
   const recentChats: Conversation[] = empty
@@ -391,14 +413,6 @@ export function AssistantView({
         .slice(0, 2)
     : [];
 
-  // Active grounding sources, shown as chips so "grounded in ..." is concrete
-  // and the composer's context badge count is legible.
-  const sourceChips: string[] = [
-    "This document",
-    ...(context.corpus ? ["US law"] : []),
-    ...(prefs.matterId && context.matterDocs ? ["Matter documents"] : []),
-    ...(context.web ? ["Web"] : []),
-  ];
   // Only offer the selection when it's a meaningful span, not a stray caret/word.
   const hasSelection = selectionText.length > 20;
 
@@ -418,6 +432,7 @@ export function AssistantView({
           title="History"
         >
           <ClockGlyph />
+          <span className="assistant__bar-label">History</span>
         </button>
         <button
           type="button"
@@ -428,6 +443,7 @@ export function AssistantView({
           title="New chat"
         >
           <PlusGlyph />
+          <span className="assistant__bar-label">New chat</span>
         </button>
       </div>
       <div className="assistant__messages" ref={scrollRef} onScroll={onMessagesScroll}>
@@ -436,9 +452,18 @@ export function AssistantView({
         {mode === "edit" ? (
           <div className="stack" style={{ padding: "4px 0" }}>
             {editState.status === "idle" && (
-              <p className="small muted" style={{ margin: 0 }}>
-                Describe a change; get grounded redlines to accept or reject.
-              </p>
+              <EditIntro
+                contractType={docType}
+                onPick={(instruction) => {
+                  setDraft(instruction);
+                  requestAnimationFrame(() => composerRef.current?.focus());
+                }}
+              />
+            )}
+            {editState.status !== "idle" && editInstruction && (
+              <div className="msg msg--user msg--edit-echo">
+                <p>{editInstruction}</p>
+              </div>
             )}
             {editState.status === "generating" && (
               <div className="row" style={{ gap: 8, alignItems: "center" }}>
@@ -479,13 +504,6 @@ export function AssistantView({
               <p className="assistant__greeting-sub">
                 Grounded in your document and US law, with checkable sources.
               </p>
-              <div className="assistant__sources">
-                {sourceChips.map((s) => (
-                  <span key={s} className="assistant__source">
-                    {s}
-                  </span>
-                ))}
-              </div>
             </div>
 
             {hasSelection && (

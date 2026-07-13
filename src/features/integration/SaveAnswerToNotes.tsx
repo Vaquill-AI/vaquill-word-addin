@@ -69,7 +69,7 @@ export function SaveAnswerToNotes({
       setDone(true);
       setOpen(false);
     } catch (e) {
-      setError((e as Error).message);
+      setError(errorMessage(e));
     } finally {
       setBusy(false);
     }

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { AutoTextarea } from "@/ui/AutoTextarea";
 import { Button, Field, SegmentedControl, Toggle, Spinner } from "@/ui/primitives";
 import { Combobox } from "@/ui/Combobox";
 import { PlaybookPicker } from "./PlaybookPicker";
@@ -263,7 +264,7 @@ export function ReviewForm({
           />
         }
       >
-        <textarea
+        <AutoTextarea
           value={instructions}
           placeholder="e.g. Prioritize liability, indemnity, and termination."
           onChange={(e) => setInstructions(e.target.value)}

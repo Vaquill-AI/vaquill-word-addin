@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { errorMessage } from "@/api/errors";
 import { ViewHeader } from "@/ui/ViewHeader";
 import { Badge, Banner, Button, Spinner } from "@/ui/primitives";
 import { Dropzone } from "@/ui/Dropzone";
@@ -110,7 +111,7 @@ function FillReview({
       if (out.applied > 0) onMarkApplied([fill.placeholder]);
       else setNote(`Could not find ${fill.placeholder} in the document.`);
     } catch (e) {
-      setNote((e as Error).message);
+      setNote(errorMessage(e));
     } finally {
       setBusy(null);
     }
@@ -126,7 +127,7 @@ function FillReview({
         setNote(`Applied ${out.applied}. ${out.notFound.length} placeholder(s) were not found.`);
       }
     } catch (e) {
-      setNote((e as Error).message);
+      setNote(errorMessage(e));
     } finally {
       setBusy(null);
     }

@@ -88,9 +88,9 @@ export async function askStatuteSection(
 }
 
 // --- Case law (brief only) -------------------------------------------------
-// We deliberately do NOT surface raw opinion text: that endpoint requires
-// Attribution that the policy does not permit
-// and raises redistribution concerns. The IRAC brief is an LLM transformation.
+// We deliberately surface only the generated IRAC brief, never raw opinion
+// text. The brief is a synthesized transformation the backend returns; the
+// pane never fetches or displays the underlying source document.
 
 /** A case resolved from a citation (via the same lookup the Authority tab uses). */
 export interface CaseMatch {

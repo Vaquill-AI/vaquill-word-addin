@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { errorMessage } from "@/api/errors";
 import { Button } from "@/ui/primitives";
 import { getPlaybooksWithPositions, addToPlaybook, type PlaybookDetail } from "@/api/playbooks";
 import type { RedlineSuggestion } from "@/api/types";
@@ -45,7 +46,7 @@ export function AddToPlaybook({ redline }: { redline: RedlineSuggestion }) {
       setDone(true);
       setOpen(false);
     } catch (e) {
-      setError((e as Error).message);
+      setError(errorMessage(e));
     } finally {
       setBusy(false);
     }

@@ -2,7 +2,7 @@
 
 Vaquill for Microsoft Word - a Word task-pane add-in. Vite + React 18 + TypeScript SPA, Office.js (WordApi 1.6 floor), Supabase auth. Thin client over the existing Vaquill FastAPI backend.
 
-> This is a **separate repo** from the main backend (`the Vaquill backend`). The add-in performs no contract analysis, retrieval, or generation of its own. The legal intelligence lives in the backend; this repo reads the open document through Office.js, calls the backend, and applies results back as native Word tracked changes, comments, and content controls. It will not run with only an LLM API key.
+> This is a **separate repo** from the main Vaquill backend. The add-in performs no contract analysis, retrieval, or generation of its own. The legal intelligence lives in the backend; this repo reads the open document through Office.js, calls the backend, and applies results back as native Word tracked changes, comments, and content controls. It will not run with only an LLM API key.
 
 ## Quick Reference Commands
 
@@ -32,7 +32,7 @@ Word (desktop / Mac / web)
   Vaquill AI backend (api.vaquill.ai)   [required, unchanged except CORS]
 ```
 
-Two hosted surfaces: the static task-pane SPA at `word.vaquill.ai`, and the unchanged backend at `api.vaquill.ai` reached over the same Supabase-JWT bearer auth and SSE contract the web app uses. Full detail in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md); product rationale and roadmap in [docs/PRD.md](docs/PRD.md).
+Two hosted surfaces: the static task-pane SPA at `word.vaquill.ai`, and the unchanged backend at `api.vaquill.ai` reached over the same Supabase-JWT bearer auth and SSE contract the web app uses.
 
 ### The only required backend change
 
@@ -59,7 +59,7 @@ The active-org change bumps `orgVersion`, which is the `key` on `app-body`, remo
 | `src/ui/` | Shared primitives (Combobox, OverflowMenu, ToolCard, progress, icons, tokens). White theme only. |
 | `src/lib/` | Cross-cutting helpers (prefs, org, sections, severity, governance, hash, tiptap). |
 | `src/config.ts` | Runtime config. `apiBase` / `appBase` fixed by build mode; Supabase URL + anon key injected at build. No secrets. |
-| `docs/` | PRD, ARCHITECTURE, FEATURE_SPEC, competitive research, Office.js capability notes, design system. |
+| `docs/` | Internal design and research notes (not published in this repo). |
 
 ## Critical Gotchas (Office.js)
 
@@ -117,6 +117,6 @@ Never use em dashes. Use plain dashes, periods, or commas. No emojis (lucide-sty
 ## Working Rules (repo-specific)
 
 - Reuse the shared `src/ui/` primitives and `src/office/` helpers before writing new ones. Do not add a second `Word.run` path outside `src/office/`.
-- Never name third-party model or infrastructure providers in customer-facing copy. Do not re-add any removed case-law attribution labels.
+- Never name third-party model or infrastructure providers in customer-facing copy.
 - Do not commit, push, or amend without an explicit per-turn request.
-- There is significant uncommitted work in progress (a Research surface, Templates, assistant attachments, context ingest). Check `git status` before assuming a feature is or is not landed.
+- Check `git status` before assuming a feature is or is not landed.

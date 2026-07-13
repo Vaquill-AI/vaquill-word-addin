@@ -278,7 +278,7 @@ function StatuteReader({ result, onBack }: { result: StatuteResult; onBack: () =
       await insertPassageAtCursor(label, text);
       setInserted(true);
     } catch (e) {
-      setNote((e as Error).message);
+      setNote(errorMessage(e));
     } finally {
       setInserting(false);
     }
@@ -292,7 +292,7 @@ function StatuteReader({ result, onBack }: { result: StatuteResult; onBack: () =
       await insertCitationFootnote(label);
       setFootnoted(true);
     } catch (e) {
-      setNote((e as Error).message);
+      setNote(errorMessage(e));
     } finally {
       setFootnoting(false);
     }

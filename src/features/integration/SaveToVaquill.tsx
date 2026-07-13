@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { errorMessage } from "@/api/errors";
 import { Button, Banner } from "@/ui/primitives";
 import { CheckIcon } from "@/ui/icons";
 import { getReviewPrefs } from "@/lib/prefs";
@@ -102,7 +103,7 @@ export function SaveToVaquill(props: Props) {
         url: ref.draftId ? `${config.appBase}/drafting/${ref.draftId}` : undefined,
       });
     } catch (e) {
-      setError((e as Error).message);
+      setError(errorMessage(e));
     } finally {
       setBusy(null);
     }
@@ -122,7 +123,7 @@ export function SaveToVaquill(props: Props) {
         url: templateId ? `${config.appBase}/templates/${templateId}` : undefined,
       });
     } catch (e) {
-      setError((e as Error).message);
+      setError(errorMessage(e));
     } finally {
       setBusy(null);
     }
@@ -143,7 +144,7 @@ export function SaveToVaquill(props: Props) {
       if (e instanceof ApiError && (e.kind === "not_found" || e.status === 404)) {
         setError("Vendor extraction isn't enabled for your account yet.");
       } else {
-        setError((e as Error).message);
+        setError(errorMessage(e));
       }
     } finally {
       setBusy(null);
@@ -165,7 +166,7 @@ export function SaveToVaquill(props: Props) {
       setVendorProposal(null);
       setSaved({ label: "Added to the vendor / sub-processor registry." });
     } catch (e) {
-      setError((e as Error).message);
+      setError(errorMessage(e));
     } finally {
       setBusy(null);
     }

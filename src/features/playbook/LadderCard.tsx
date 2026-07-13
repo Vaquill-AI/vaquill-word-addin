@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { errorMessage } from "@/api/errors";
 import { Badge, Button } from "@/ui/primitives";
 import { CheckIcon, ChevronIcon } from "@/ui/icons";
 import { insertClauseTracked } from "@/office/richInsert";
@@ -38,7 +39,7 @@ function Rung({
       setDone(true);
       setTimeout(() => setDone(false), 1500);
     } catch (e) {
-      setErr((e as Error).message);
+      setErr(errorMessage(e));
     } finally {
       setInserting(false);
     }

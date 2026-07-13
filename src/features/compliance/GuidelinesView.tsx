@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { AutoTextarea } from "@/ui/AutoTextarea";
 import { Banner, Button, Field, Spinner, LiveRegion } from "@/ui/primitives";
 import { ElapsedSeconds } from "@/ui/ElapsedSeconds";
 import { DistributionBar, type DistributionSegment } from "@/ui/DistributionBar";
@@ -73,7 +74,7 @@ export function GuidelinesView() {
         reported as met, partial, not met, or unclear, with the passage that proves it.
       </p>
       <Field label="Guidelines (one per line)">
-        <textarea
+        <AutoTextarea
           className="guidelines-editor"
           value={text}
           onChange={(e) => setText(e.target.value)}

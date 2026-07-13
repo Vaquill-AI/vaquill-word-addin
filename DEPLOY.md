@@ -7,7 +7,7 @@ This guide covers the Dokploy deployment, the one backend change, and how to ver
 ## What actually gets deployed
 
 - **This repo** builds to static files and is served by the rootless nginx in the [Dockerfile](Dockerfile). Host it at `word.vaquill.ai`.
-- **The backend** (`the Vaquill backend`, already running at `api.vaquill.ai`) needs exactly one change: allow the add-in origin through CORS.
+- **The backend** (the Vaquill API, already running at `api.vaquill.ai`) needs exactly one change: allow the add-in origin through CORS.
 - **The manifest** ([manifest.xml](manifest.xml)) is already production-shaped (it points at `word.vaquill.ai` and `api.vaquill.ai`). You sideload it to test, then submit it to AppSource later.
 
 ## Configuration model

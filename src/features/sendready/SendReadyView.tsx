@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { errorMessage } from "@/api/errors";
 import { ViewHeader } from "@/ui/ViewHeader";
 import { Banner, Button, Spinner } from "@/ui/primitives";
 import {
@@ -23,6 +24,7 @@ import { scanText } from "@/features/redact/detect";
 import { CATEGORIES } from "@/features/redact/categories";
 import { analyzeDefinedTerms } from "@/lib/defined-terms";
 import { analyzeCrossReferences } from "@/lib/cross-references";
+import { ScrubMetadata } from "@/features/integration/ScrubMetadata";
 import "./sendready.css";
 
 // The regex-only redaction categories (structured PII). The pre-flight uses the
@@ -85,7 +87,7 @@ export function SendReadyView() {
         },
       });
     } catch (e) {
-      setState({ status: "error", error: (e as Error).message });
+      setState({ status: "error", error: errorMessage(e) });
     }
   }, []);
 
@@ -100,7 +102,7 @@ export function SendReadyView() {
       await acceptAllTrackedChanges();
       await scan();
     } catch (e) {
-      setNote((e as Error).message);
+      setNote(errorMessage(e));
     } finally {
       setBusy(null);
     }
@@ -113,7 +115,7 @@ export function SendReadyView() {
       await deleteAllComments();
       await scan();
     } catch (e) {
-      setNote((e as Error).message);
+      setNote(errorMessage(e));
     } finally {
       setBusy(null);
     }
@@ -293,10 +295,7 @@ export function SendReadyView() {
         />
       </div>
 
-      <Banner tone="warn">
-        Before sending externally, run Word's <strong>File &gt; Info &gt; Inspect Document</strong> to
-        strip author names and hidden metadata this check cannot reach.
-      </Banner>
+      <ScrubMetadata />
     </div>
   );
 }

@@ -78,7 +78,7 @@ export function ClauseLibraryView() {
       }
       setSaveText(text.trim());
     } catch (e) {
-      setNote((e as Error).message);
+      setNote(errorMessage(e));
     }
   }
 
@@ -88,7 +88,7 @@ export function ClauseLibraryView() {
     try {
       await insertPassageAtCursor(c.name, c.content);
     } catch (e) {
-      setNote((e as Error).message);
+      setNote(errorMessage(e));
     } finally {
       setBusyId(null);
     }
@@ -189,14 +189,13 @@ function ClauseCard({
   return (
     <div className="card clause-card" role="listitem">
       <div className="clause-card__head">
-        <div className="stack" style={{ gap: 3, minWidth: 0 }}>
+        <div
+          className="row"
+          style={{ gap: 6, flexWrap: "wrap", alignItems: "baseline", minWidth: 0, flex: 1 }}
+        >
           <strong className="clause-card__title">{clause.name}</strong>
-          {(typeLabel || clause.isSystem) && (
-            <div className="row" style={{ gap: 4, flexWrap: "wrap" }}>
-              {typeLabel && <Badge tone="neutral">{typeLabel}</Badge>}
-              {clause.isSystem && <Badge tone="brand">Firm</Badge>}
-            </div>
-          )}
+          {typeLabel && <Badge tone="neutral">{typeLabel}</Badge>}
+          {clause.isSystem && <Badge tone="brand">Firm</Badge>}
         </div>
         {!clause.isSystem && (
           <IconButton label={`Delete ${clause.name}`} tone="red" onClick={onDelete}>

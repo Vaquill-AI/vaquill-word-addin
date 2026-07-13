@@ -1,4 +1,5 @@
 import { useCallback, useState } from "react";
+import { errorMessage } from "@/api/errors";
 import { detectEntities } from "@/api/redact";
 import { readFullDocumentText, readSelectionText } from "@/office/document";
 import { redactValues, type RedactScope } from "@/office/redact";
@@ -79,7 +80,7 @@ export function useRedact() {
         return { status: "review", scope: s.scope, candidates: merged, confirmed, aiPending: false };
       });
     } catch (e) {
-      setState({ status: "error", error: (e as Error).message });
+      setState({ status: "error", error: errorMessage(e) });
     }
   }, []);
 
@@ -101,7 +102,7 @@ export function useRedact() {
       });
       setState({ status: "done", redacted: outcome.redacted, notFound: outcome.notFound });
     } catch (e) {
-      setState({ status: "error", error: (e as Error).message });
+      setState({ status: "error", error: errorMessage(e) });
     }
   }, []);
 

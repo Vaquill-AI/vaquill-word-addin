@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { errorMessage } from "@/api/errors";
 import { readFullDocumentText } from "@/office/document";
 import { getCaseStatusBatch, verifyCitation, type AuthorityResult } from "@/api/authority";
 import { extractCaseCitations } from "./extract";
@@ -132,7 +133,7 @@ export function useAuthorityScan() {
       await runTreatmentPass(acc);
     } catch (e) {
       if ((e as Error).name === "AbortError") return;
-      setState({ ...INITIAL, status: "error", error: (e as Error).message });
+      setState({ ...INITIAL, status: "error", error: errorMessage(e) });
     }
   }, []);
 

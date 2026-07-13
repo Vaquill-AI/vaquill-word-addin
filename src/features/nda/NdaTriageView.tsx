@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { AutoTextarea } from "@/ui/AutoTextarea";
 import { ViewHeader } from "@/ui/ViewHeader";
 import { Badge, Banner, Button, Field, Spinner, LiveRegion } from "@/ui/primitives";
 import { ElapsedSeconds } from "@/ui/ElapsedSeconds";
@@ -130,7 +131,7 @@ export function NdaTriageView() {
               />
             }
           >
-            <textarea
+            <AutoTextarea
               value={context}
               placeholder="e.g. Evaluating Acme as a data-processing vendor; they will receive our customer PII."
               onChange={(e) => setContext(e.target.value)}

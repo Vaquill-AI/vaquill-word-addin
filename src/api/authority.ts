@@ -41,7 +41,7 @@ export interface AuthorityResult {
   caseName?: string;
   court?: string;
   year?: string;
-  /** the case-law source cluster id (used to build a link + fetch treatment). */
+  /** Case-law cluster id (used to build a link + fetch treatment). */
   clusterId?: number;
   /** Full, clickable case URL (relative absolute_url is dead on its own). */
   caseUrl?: string;
@@ -110,9 +110,9 @@ function cleanCourt(court?: string): string | undefined {
   return court;
 }
 
-/** Build the in-app case link from the cluster id. We deliberately do NOT link
- *  to the external case-law host: customer-facing links must point to the
- *  Vaquill app, per the cutover + attribution policy. */
+/** Build the in-app case link from the cluster id. Customer-facing links point
+ *  to the Vaquill app so citations resolve inside the product, never to an
+ *  external host. */
 function buildCaseUrl(clusterId?: number): string | undefined {
   return clusterId !== undefined ? `${config.appBase}/cases/${clusterId}` : undefined;
 }

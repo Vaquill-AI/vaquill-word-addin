@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
+import { errorMessage } from "@/api/errors";
 import { ViewHeader } from "@/ui/ViewHeader";
 import { Badge, Banner, Button, Spinner } from "@/ui/primitives";
 import { LocateIcon } from "@/ui/icons";
 import { StatusGroup } from "@/ui/StatusGroup";
 import type { StatusTone } from "@/ui/status";
 import { readDocumentText } from "@/office/document";
-import { selectClauseInDocument } from "@/office/navigate";
+import { locateInDocument } from "@/office/navigate";
 import { useDocumentAutoRefresh } from "@/lib/useDocumentAutoRefresh";
 import {
   analyzeDefinedTerms,
@@ -51,7 +52,7 @@ export function DefinedTermsView() {
       const text = await readDocumentText();
       setState({ status: "ready", report: analyzeDefinedTerms(text) });
     } catch (e) {
-      setState({ status: "error", error: (e as Error).message });
+      setState({ status: "error", error: errorMessage(e) });
     }
   }, []);
 
@@ -77,7 +78,7 @@ export function DefinedTermsView() {
 
   async function find(term: string) {
     setNote(null);
-    const ok = await selectClauseInDocument(term);
+    const ok = await locateInDocument(term);
     if (!ok) setNote(`Could not locate "${term}" in the document.`);
   }
 

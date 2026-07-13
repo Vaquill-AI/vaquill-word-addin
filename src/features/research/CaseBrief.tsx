@@ -97,7 +97,7 @@ export function CaseBrief() {
       await insertHtmlAtCursor(heading + markdownToSafeHtml(brief));
       setInserted(true);
     } catch (e) {
-      setNote((e as Error).message);
+      setNote(errorMessage(e));
     } finally {
       setInserting(false);
     }

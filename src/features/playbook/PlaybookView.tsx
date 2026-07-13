@@ -7,6 +7,7 @@ import { usePlaybookDetails } from "./usePlaybookDetails";
 import { LadderCard } from "./LadderCard";
 import { PlaybookFit } from "./PlaybookFit";
 import { PlaybookLibrary } from "./PlaybookLibrary";
+import { CreatePlaybookFromDoc } from "./CreatePlaybookFromDoc";
 import { config } from "@/config";
 import type { PlaybookDetail } from "@/api/playbooks";
 import "./playbook.css";
@@ -130,6 +131,8 @@ export function PlaybookView({
         infoSide="left"
         subtitle="Open a playbook to browse its clause positions and insert them as tracked changes, or run one against the open document."
       />
+
+      <CreatePlaybookFromDoc onCreated={() => void state.reload()} />
 
       <PlaybookLibrary
         playbooks={playbooks}

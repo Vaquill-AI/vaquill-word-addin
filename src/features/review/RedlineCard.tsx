@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { AutoTextarea } from "@/ui/AutoTextarea";
 import { Badge, Button, IconButton } from "@/ui/primitives";
 import { OverflowMenu, type OverflowMenuItem } from "@/ui/OverflowMenu";
 import { SplitButton } from "@/ui/SplitButton";
@@ -76,7 +77,7 @@ const RATIONALE_INLINE_MAX = 140;
 // There is no backend-provided title, so this is a best-effort summary and is
 // deliberately conservative: when the distillation is empty, too short, or just
 // echoes the clause name, we omit the line rather than show something misleading.
-const INTENT_MAX = 60;
+// Shown only when the full rationale is collapsed, and never clipped.
 
 // Leading filler that frames the redline ("This change...", "We recommend...")
 // rather than describing the edit. Stripped (case-insensitively) so the phrase
@@ -161,13 +162,10 @@ function distillIntent(rationale: string, clauseName: string): string | null {
     if (normPhrase.startsWith(normClause) && normPhrase.length - normClause.length < 8) return null;
   }
 
-  // Trim to a word boundary at ~60 chars with an ellipsis.
-  if (phrase.length > INTENT_MAX) {
-    const clipped = phrase.slice(0, INTENT_MAX);
-    const lastSpace = clipped.lastIndexOf(" ");
-    const base = lastSpace > 20 ? clipped.slice(0, lastSpace) : clipped;
-    phrase = `${base.replace(/[\s,;:.\-]+$/, "")}...`;
-  }
+  // We show the full first sentence rather than clipping it: the intent line only
+  // appears when the rationale is hidden behind the "Why this change" toggle, so a
+  // clipped-with-"..." summary would defeat the purpose. The first sentence is
+  // naturally short; nothing is truncated.
 
   // Read as a title: capitalize the first letter if it is lowercase.
   const first = phrase.charAt(0);
@@ -282,7 +280,7 @@ export function RedlineCard({
       const found = await selectClauseInDocument(active.currentLanguage);
       if (!found) setNote("Could not locate this clause in the document.");
     } catch (e) {
-      setNote((e as Error).message);
+      setNote(errorMessage(e));
     }
   }
 
@@ -304,7 +302,7 @@ export function RedlineCard({
       setNote(
         e instanceof AnchorNotFoundError
           ? "Could not find this clause verbatim. Use Download redlined copy instead."
-          : (e as Error).message,
+          : errorMessage(e),
       );
     } finally {
       setBusy(false);
@@ -522,6 +520,10 @@ export function RedlineCard({
         kind: "assistantAsk",
         prompt: `Should I accept the proposed change to the "${active.clauseName}" clause? Briefly explain the risk it addresses and the tradeoff of accepting versus rejecting it.`,
         autoSend: true,
+        // This is a question about the open document itself, so answer from the
+        // document, not the corpus / matter docs / web (which only add latency
+        // and off-topic citations for an accept/reject call).
+        documentOnly: true,
       }),
   });
   overflowItems.push({
@@ -538,11 +540,27 @@ export function RedlineCard({
   return (
     <div className="card redline redline--enter" style={style} ref={focusRef} tabIndex={-1}>
       <div className="redline__head">
-        <div className="row" style={{ gap: 6, flexWrap: "wrap", alignItems: "flex-start" }}>
+        <div className="row" style={{ gap: 6, flexWrap: "wrap", alignItems: "flex-start", minWidth: 0 }}>
           <span className="redline__num">{index + 1}</span>
           <div className="redline__titlewrap">
             <strong>{active.clauseName}</strong>
-            {intent && <span className="redline__intent">{intent}</span>}
+            {/* Status badges live in the header, next to the title, so severity /
+                grounding / approval read at a glance without a separate row. */}
+            <div className="redline__badges">
+              <SeverityBadge severity={severityOf(active)} />
+              {active.isDealBreaker && <Badge tone="red">Deal-breaker</Badge>}
+              {active.approvalLevel && active.approvalLevel !== "none" && (
+                <Badge tone="yellow">{APPROVAL_LABEL[active.approvalLevel] ?? active.approvalLevel}</Badge>
+              )}
+              <GroundingBadge grounding={active.grounding} />
+              {improved && <Badge tone="green">Stronger fix</Badge>}
+              {isEdited && <Badge tone="brand">Edited</Badge>}
+            </div>
+            {/* The distilled intent is only a useful subtitle when the full
+                rationale is hidden behind the "Why this change" toggle; when the
+                rationale is shown inline below, this line just duplicates it (and
+                its "..." clipping is what looked truncated), so we omit it. */}
+            {intent && collapseRationale && <span className="redline__intent">{intent}</span>}
           </div>
         </div>
         {!isInsertion && (
@@ -552,22 +570,11 @@ export function RedlineCard({
         )}
       </div>
 
-      <div className="row" style={{ gap: 4, flexWrap: "wrap" }}>
-        <SeverityBadge severity={severityOf(active)} />
-        {active.isDealBreaker && <Badge tone="red">Deal-breaker</Badge>}
-        {active.approvalLevel && active.approvalLevel !== "none" && (
-          <Badge tone="yellow">{APPROVAL_LABEL[active.approvalLevel] ?? active.approvalLevel}</Badge>
-        )}
-        <GroundingBadge grounding={active.grounding} />
-        {improved && <Badge tone="green">Stronger fix</Badge>}
-        {isEdited && <Badge tone="brand">Edited</Badge>}
-      </div>
-
       {active.sectionReference && <p className="small muted redline__ref">{active.sectionReference}</p>}
 
       {editing ? (
         <div className="redline__edit">
-          <textarea
+          <AutoTextarea
             ref={editRef}
             className="redline__editbox"
             value={draft}
@@ -610,8 +617,15 @@ export function RedlineCard({
             </div>
           )}
 
-          {isInsertion || view === "final" ? (
+          {isInsertion ? (
+            // A brand-new clause is an insertion in full, so green is honest here.
             <p className="redline__text redline__text--ins">{proposed}</p>
+          ) : view === "final" ? (
+            // "Final" is the clean finished clause as it will read AFTER accepting:
+            // neutral, not tinted green. Green marks only actual insertions (in the
+            // Redline diff). Green-washing the whole paragraph made Final look
+            // barely different from Redline and implied every word was new.
+            <p className="redline__text redline__text--final">{proposed}</p>
           ) : (
             <InlineDiff before={active.currentLanguage} after={proposed} />
           )}
@@ -715,16 +729,18 @@ export function RedlineCard({
         </div>
       )}
 
-      {!editing && (
-        <CommentAction
-          redline={active}
-          index={index}
-          proposed={proposed}
-          allowCounterparty={!isInsertion}
-        />
-      )}
-
-      <div className="redline__foot">
+      {/* Secondary actions share one row instead of stacking: Comment and Add to
+          playbook are both low-frequency, so they sit side by side to keep the
+          card compact. Each expands in place when opened. */}
+      <div className="redline__secondary">
+        {!editing && (
+          <CommentAction
+            redline={active}
+            index={index}
+            proposed={proposed}
+            allowCounterparty={!isInsertion}
+          />
+        )}
         <AddToPlaybook redline={active} />
       </div>
     </div>

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { errorMessage } from "@/api/errors";
 import { readLedger, writeLedger } from "@/office/governance";
 import {
   applySignoff,
@@ -57,7 +58,7 @@ export function useGovernance() {
         busy: false,
       });
     } catch (e) {
-      setState({ ...INITIAL, status: "error", error: (e as Error).message });
+      setState({ ...INITIAL, status: "error", error: errorMessage(e) });
     }
   }, []);
 
@@ -107,7 +108,7 @@ export function useGovernance() {
             }
             // Network / server error: surface it and let the user retry rather
             // than silently downgrading an enforced sign-off to an attestation.
-            setState((s) => ({ ...s, busy: false, error: (e as Error).message }));
+            setState((s) => ({ ...s, busy: false, error: errorMessage(e) }));
           }
           return;
         }
@@ -118,7 +119,7 @@ export function useGovernance() {
         await writeLedger(next);
         setState({ status: "loaded", ledger: next, integrity: "verified", error: null, busy: false });
       } catch (e) {
-        setState((s) => ({ ...s, busy: false, error: (e as Error).message }));
+        setState((s) => ({ ...s, busy: false, error: errorMessage(e) }));
       }
     },
     [state.ledger],

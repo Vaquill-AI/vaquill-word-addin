@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { errorMessage } from "@/api/errors";
 import { Badge, Banner, Button, IconButton, Spinner, Toggle } from "@/ui/primitives";
 import { ViewHeader } from "@/ui/ViewHeader";
 import { InfoTip } from "@/ui/InfoTip";
@@ -6,6 +7,7 @@ import { CheckIcon, CleanIcon, RefreshIcon } from "@/ui/icons";
 import { readDocumentChanges, acceptAllTrackedChanges } from "@/office/changes";
 import { deleteAllComments, countDocumentComments } from "@/office/comments";
 import { useDocumentAutoRefresh } from "@/lib/useDocumentAutoRefresh";
+import { ScrubMetadata } from "@/features/integration/ScrubMetadata";
 import "./clean-copy.css";
 
 type Scan = { trackedChanges: number; comments: number };
@@ -47,7 +49,7 @@ export function CleanCopyView() {
         scan: { trackedChanges: c.trackedChanges.length, comments },
       });
     } catch (e) {
-      setPhase({ status: "error", error: (e as Error).message });
+      setPhase({ status: "error", error: errorMessage(e) });
     }
   }, []);
 
@@ -91,7 +93,7 @@ export function CleanCopyView() {
         accepted > 0
           ? ` Note: ${accepted} change${accepted === 1 ? "" : "s"} were already accepted; use Ctrl+Z to undo if needed.`
           : "";
-      setPhase({ status: "error", error: `${(e as Error).message}${partial}` });
+      setPhase({ status: "error", error: `${errorMessage(e)}${partial}` });
     }
   }
 
@@ -161,10 +163,7 @@ export function CleanCopyView() {
           {phase.accepted === 1 ? "" : "s"} and removed {phase.removed} comment
           {phase.removed === 1 ? "" : "s"}. Word's Undo (Ctrl+Z) reverses this.
         </Banner>
-        <Banner tone="warn">
-          Before sending, run Word's <strong>File &gt; Info &gt; Inspect Document</strong> to strip
-          residual metadata (author names, document properties) that this cannot reach.
-        </Banner>
+        <ScrubMetadata />
       </div>
     );
   }

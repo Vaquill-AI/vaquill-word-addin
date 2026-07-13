@@ -5,6 +5,8 @@
  */
 import { resolveAfterAnchor } from "./anchor";
 import { runWord, serializeTrackChanges } from "./run";
+import { sampleInsertionFont, matchInsertedFont } from "./font";
+import { inheritListNumbering } from "./lists";
 
 /** Escape the five HTML-significant characters so text content is never markup. */
 function escapeHtml(s: string): string {
@@ -56,10 +58,14 @@ function buildDraftHtml(draft: Draft): string {
 export async function insertDraftFormatted(draft: Draft): Promise<void> {
   const html = buildDraftHtml(draft);
   return runWord(async (context) => {
+    // Sample the surrounding font BEFORE inserting so the HTML (which otherwise
+    // lands in the Calibri default) adopts the document's family + size.
+    const font = await sampleInsertionFont(context);
     const selection = context.document.getSelection();
     const inserted = selection.insertHtml(html, Word.InsertLocation.after);
     inserted.select();
     await context.sync();
+    await matchInsertedFont(context, inserted, font);
   });
 }
 
@@ -100,14 +106,19 @@ export async function insertClauseTracked(text: string): Promise<void> {
       // the insert as an untracked edit (the "tracked insertion" never appears).
       doc.changeTrackingMode = Word.ChangeTrackingMode.trackAll;
       await context.sync();
+      const inserted: Word.Paragraph[] = [];
       let cursor: Word.Paragraph | undefined;
       for (const block of blocks) {
         cursor = cursor
           ? cursor.insertParagraph(block, Word.InsertLocation.after)
           : anchor.insertParagraph(block, Word.InsertLocation.after);
+        inserted.push(cursor);
       }
       cursor?.select();
       await context.sync();
+      // Join the anchor's numbered list so the contract renumbers natively
+      // rather than the inserted clause breaking the outline.
+      await inheritListNumbering(context, anchor, inserted);
     } finally {
       // Best-effort restore so a broken context can't mask the original error.
       try {
@@ -177,6 +188,8 @@ export async function insertHtmlAtCursor(html: string): Promise<void> {
       doc.load("changeTrackingMode");
       await context.sync();
 
+      // Sample before the insert so the inserted HTML matches the doc's font.
+      const font = await sampleInsertionFont(context);
       const priorMode = doc.changeTrackingMode;
       try {
         // Commit the mode flip before inserting so the insert is tracked.
@@ -185,6 +198,7 @@ export async function insertHtmlAtCursor(html: string): Promise<void> {
         const range = doc.getSelection().insertHtml(html, Word.InsertLocation.after);
         range.select();
         await context.sync();
+        await matchInsertedFont(context, range, font);
       } finally {
         try {
           doc.changeTrackingMode = priorMode;
@@ -217,14 +231,18 @@ export async function insertClauseFormatted(
     doc.load("changeTrackingMode");
     await context.sync();
 
+    // Sample the document's base font before inserting so the appended clause
+    // matches it rather than the HTML default.
+    const font = await sampleInsertionFont(context);
     const priorMode = doc.changeTrackingMode;
     try {
       // Commit the mode flip before inserting so the insert is tracked (or the
       // clean insert is genuinely untracked) rather than racing in one batch.
       doc.changeTrackingMode = tracked ? Word.ChangeTrackingMode.trackAll : Word.ChangeTrackingMode.off;
       await context.sync();
-      doc.body.insertHtml(html, Word.InsertLocation.end);
+      const range = doc.body.insertHtml(html, Word.InsertLocation.end);
       await context.sync();
+      await matchInsertedFont(context, range, font);
     } finally {
       try {
         doc.changeTrackingMode = priorMode;

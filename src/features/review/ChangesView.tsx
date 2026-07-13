@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { AutoTextarea } from "@/ui/AutoTextarea";
 import { ViewHeader } from "@/ui/ViewHeader";
 import { Button, Banner, Spinner, Badge, IconButton, Field, LiveRegion } from "@/ui/primitives";
-import { LocateIcon, CheckIcon, XIcon, PlusIcon, MinusIcon, EditIcon, AlertTriangleIcon } from "@/ui/icons";
+import { LocateIcon, CheckIcon, XIcon, CopyIcon, PlusIcon, MinusIcon, EditIcon, AlertTriangleIcon } from "@/ui/icons";
 import {
   readDocumentChanges,
   resolveTrackedChangeAt,
@@ -15,7 +16,7 @@ import {
   insertCommentAnchored,
   locateComment,
 } from "@/office/comments";
-import { selectClauseInDocument } from "@/office/navigate";
+import { locateInDocument } from "@/office/navigate";
 import { Avatar } from "@/ui/Avatar";
 import { formatRelativeTime, formatExactTime } from "@/lib/relativeTime";
 import { CommentCard } from "./CommentCard";
@@ -114,7 +115,7 @@ export function ChangesView() {
       setChanges(await readDocumentChanges());
       setLoad("ready");
     } catch (e) {
-      setLoadError((e as Error).message);
+      setLoadError(errorMessage(e));
       setLoad("error");
     }
   }, []);
@@ -126,7 +127,7 @@ export function ChangesView() {
       if (!ok) setActionError("Could not update that comment (it may have been deleted).");
       else await reload();
     } catch (e) {
-      setActionError((e as Error).message);
+      setActionError(errorMessage(e));
     }
   }
 
@@ -137,7 +138,7 @@ export function ChangesView() {
         const ok = await locateComment(id);
         if (!ok) setActionError("Could not locate that comment (it may have been deleted).");
       } catch (e) {
-        setActionError((e as Error).message);
+        setActionError(errorMessage(e));
       }
     })();
   }
@@ -155,7 +156,7 @@ export function ChangesView() {
       setActionError("Could not reply to that comment (it may have been deleted).");
       return false;
     } catch (e) {
-      setActionError((e as Error).message);
+      setActionError(errorMessage(e));
       return false;
     }
   }
@@ -217,7 +218,7 @@ export function ChangesView() {
         setDraftError("Word does not allow comments in that region. Use Copy and paste it manually.");
       }
     } catch (e) {
-      setDraftError((e as Error).message);
+      setDraftError(errorMessage(e));
     } finally {
       setInsertingReply(false);
     }
@@ -280,7 +281,7 @@ export function ChangesView() {
       focusIdxRef.current = index;
       await reload();
     } catch (e) {
-      setActionError((e as Error).message);
+      setActionError(errorMessage(e));
     } finally {
       setBusy(null);
     }
@@ -289,9 +290,9 @@ export function ChangesView() {
   async function locate(text: string) {
     setActionError(null);
     try {
-      await selectClauseInDocument(text);
+      await locateInDocument(text);
     } catch (e) {
-      setActionError((e as Error).message);
+      setActionError(errorMessage(e));
     }
   }
 
@@ -307,7 +308,7 @@ export function ChangesView() {
         `${action === "accept" ? "Accepted" : "Rejected"} ${n} change${n === 1 ? "" : "s"} from ${who}.`,
       );
     } catch (e) {
-      setActionError((e as Error).message);
+      setActionError(errorMessage(e));
     } finally {
       setBulk(null);
     }
@@ -333,13 +334,15 @@ export function ChangesView() {
         setActionNote(`Accepted ${accepted} approved change${accepted === 1 ? "" : "s"}.`);
       }
     } catch (e) {
-      setActionError((e as Error).message);
+      setActionError(errorMessage(e));
     } finally {
       setBulk(null);
     }
   }
 
   const suggested = tcs.filter((c) => verdicts[c.text]?.verdict === "accept" && c.text.trim()).length;
+  // Formatting-only tracked changes (no reviewable text) are hidden from the list.
+  const formattingOnly = tcs.filter((c) => c.text.trim().length === 0).length;
   const counts = { accept: 0, review: 0, reject: 0 };
   for (const c of tcs) {
     const v = verdicts[c.text]?.verdict;
@@ -418,6 +421,7 @@ export function ChangesView() {
                   onClick={runTriage}
                   loading={triage === "running"}
                   disabled={anyBusy}
+                  style={{ marginLeft: "auto" }}
                 >
                   {triage === "done" ? "Re-run AI triage" : "AI triage the changes"}
                 </Button>
@@ -448,6 +452,11 @@ export function ChangesView() {
 
           <div className="stack" ref={listRef}>
             {tcs.map((c, i) => {
+              // Formatting-only tracked changes carry no reviewable text (they
+              // render as "(formatting change)" with no action) and just clutter
+              // the list. Skip them, but keep the original index `i` intact so
+              // accept/reject still target the right change in the document.
+              if (c.text.trim().length === 0) return null;
               const v = verdicts[c.text];
               const canResolve = c.text.trim().length > 0;
               const author = c.author || "Unknown";
@@ -501,8 +510,10 @@ export function ChangesView() {
                         onClick={() => resolveAt(i, "reject")}
                         loading={busy?.index === i && busy.action === "reject"}
                         disabled={anyBusy && busy?.index !== i}
+                        aria-label="Reject"
+                        title="Reject"
                       >
-                        <XIcon size={13} /> Reject
+                        <XIcon size={13} />
                       </Button>
                       {draftFor !== i && (
                         <Button
@@ -510,6 +521,7 @@ export function ChangesView() {
                           size="sm"
                           onClick={() => void startDraft(i, c.text)}
                           disabled={anyBusy || drafting}
+                          style={{ marginLeft: "auto" }}
                         >
                           Draft reply
                         </Button>
@@ -525,7 +537,7 @@ export function ChangesView() {
                           </div>
                         ) : (
                           <>
-                            <textarea
+                            <AutoTextarea
                               value={draftText}
                               aria-label="Draft reply to the counterparty"
                               rows={3}
@@ -541,17 +553,14 @@ export function ChangesView() {
                               >
                                 <CheckIcon size={13} /> Insert as comment
                               </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => void copyReply()}
-                                disabled={!draftText.trim()}
-                              >
-                                Copy
-                              </Button>
-                              <Button variant="ghost" size="sm" onClick={closeDraft}>
-                                Close
-                              </Button>
+                              <div className="row" style={{ gap: 4, marginLeft: "auto" }}>
+                                <IconButton label="Copy" onClick={() => void copyReply()}>
+                                  <CopyIcon size={14} />
+                                </IconButton>
+                                <IconButton label="Close" tone="red" onClick={closeDraft}>
+                                  <XIcon size={14} />
+                                </IconButton>
+                              </div>
                             </div>
                           </>
                         )}
@@ -562,6 +571,13 @@ export function ChangesView() {
               );
             })}
           </div>
+
+          {formattingOnly > 0 && (
+            <p className="small muted" style={{ margin: 0 }}>
+              {formattingOnly} formatting-only change{formattingOnly === 1 ? "" : "s"} hidden. Bulk
+              accept/reject by author still includes them.
+            </p>
+          )}
 
           <div className="stack" style={{ gap: 6 }}>
             <h2 className="small muted" style={{ margin: 0 }}>Accept or reject in bulk by author</h2>

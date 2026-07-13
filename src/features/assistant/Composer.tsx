@@ -1,5 +1,6 @@
 import { forwardRef, useImperativeHandle, useRef, useState } from "react";
 import { IconButton, SegmentedControl, Spinner } from "@/ui/primitives";
+import { AutoTextarea } from "@/ui/AutoTextarea";
 import { StopIcon, WandIcon } from "@/ui/icons";
 import { useImprovePrompt } from "@/lib/useImprovePrompt";
 import { improveChatPrompt, improveDraftingPrompt } from "@/api/improve-prompt";
@@ -150,7 +151,6 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
       )}
       <div className="composer__box">
         {improve.note && <span className="composer__improve-note small muted">{improve.note}</span>}
-        {mode === "ask" && <FocusControl scope={scope} onScope={onScope} />}
         {attachments.length > 0 && (
           <AttachmentChips
             files={attachments}
@@ -159,7 +159,7 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
             compact
           />
         )}
-        <textarea
+        <AutoTextarea
           ref={taRef}
           value={value}
           aria-label={mode === "edit" ? "Describe a change to the document" : "Ask about this contract"}
@@ -167,6 +167,7 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
             mode === "edit" ? "Describe a change to the document..." : "Ask about this contract..."
           }
           rows={2}
+          style={{ minHeight: 44 }}
           onChange={(e) => onChange(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === "Enter" && !e.shiftKey) {
@@ -176,6 +177,15 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
           }}
         />
         <div className="composer__actions">
+          <SegmentedControl<ComposerMode>
+            label="Assistant mode"
+            options={[
+              { value: "ask", label: "Ask" },
+              { value: "edit", label: "Edit" },
+            ]}
+            value={mode}
+            onChange={onMode}
+          />
           <span className="composer__ctx-trigger">
             <IconButton
               label={`Add context${ctxCount > 0 ? ` (${ctxCount} on)` : ""}`}
@@ -190,31 +200,29 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
               </span>
             )}
           </span>
-          <IconButton
-            label="Prompt library"
+          <button
+            type="button"
+            className={`composer__tool${libraryOpen ? " composer__tool--on" : ""}`}
             onClick={() => setLibraryOpen((v) => !v)}
-            active={libraryOpen}
+            aria-pressed={libraryOpen}
+            title="Saved prompts"
           >
-            <WandIcon size={16} />
-          </IconButton>
+            <WandIcon size={14} /> Prompts
+          </button>
           {improve.canImprove && !disabled && (
-            <IconButton
-              label={improve.improving ? "Improving..." : "Improve with AI"}
+            <button
+              type="button"
+              className="composer__tool"
               onClick={() => void improve.improve()}
+              disabled={improve.improving}
+              title="Improve this with AI"
             >
               {improve.improving ? <Spinner /> : <SparklesGlyph />}
-            </IconButton>
+              {improve.improving ? "Improving" : "Improve"}
+            </button>
           )}
           <span className="composer__spacer" />
-          <SegmentedControl<ComposerMode>
-            label="Assistant mode"
-            options={[
-              { value: "ask", label: "Ask" },
-              { value: "edit", label: "Edit" },
-            ]}
-            value={mode}
-            onChange={onMode}
-          />
+          {mode === "ask" && <FocusControl scope={scope} onScope={onScope} />}
           {disabled && onStop ? (
             <button
               type="button"

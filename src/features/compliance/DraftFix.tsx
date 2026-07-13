@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Banner, Button, LiveRegion, Spinner } from "@/ui/primitives";
+import { Banner, Button, IconButton, LiveRegion, Spinner } from "@/ui/primitives";
+import { CheckIcon, CopyIcon } from "@/ui/icons";
 import type { ComplianceRequirement } from "@/api/clause-tools";
 import { useAppNav } from "@/app/nav";
 import { useDraftFix } from "./useDraftFix";
@@ -81,12 +82,14 @@ export function DraftFix({ req }: { req: ComplianceRequirement }) {
         >
           {state.inserted ? "Inserted" : "Insert into document"}
         </Button>
-        <Button size="sm" onClick={() => void copy(state.text)}>
-          {copied ? "Copied" : "Copy"}
-        </Button>
-        <Button variant="ghost" size="sm" onClick={reset}>
-          {state.inserted ? "Done" : "Discard"}
-        </Button>
+        <div className="row" style={{ gap: 4, marginLeft: "auto", alignItems: "center" }}>
+          <IconButton label={copied ? "Copied" : "Copy"} onClick={() => void copy(state.text)}>
+            {copied ? <CheckIcon size={14} /> : <CopyIcon size={14} />}
+          </IconButton>
+          <Button variant="ghost" size="sm" onClick={reset}>
+            {state.inserted ? "Done" : "Discard"}
+          </Button>
+        </div>
       </div>
 
       {state.inserted ? (

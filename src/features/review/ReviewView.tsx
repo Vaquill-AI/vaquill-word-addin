@@ -10,6 +10,7 @@ import { SignoffGate } from "./SignoffGate";
 import { RedlineCard } from "./RedlineCard";
 import { ReviewOverview } from "./ReviewOverview";
 import { ReviewMemo } from "./ReviewMemo";
+import { IssuesListExport } from "./IssuesListExport";
 import { ReviewFlags } from "./ReviewFlags";
 import { ReviewToolbar, type RedlineFilter } from "./ReviewToolbar";
 import { ReviewActionBar } from "./ReviewActionBar";
@@ -324,6 +325,7 @@ export function ReviewView({
           <ReviewOverview redlines={redlines} />
           <ReviewMemo result={result} redlines={redlines} />
           <ReviewFlags flags={result.flags ?? []} />
+          <IssuesListExport redlines={redlines} flags={result.flags ?? []} decisionOf={decisionOf} />
           <OutlinePanel />
           {redlines.length > 0 && <DocumentTools redlines={redlines} />}
           <SaveToVaquill

@@ -57,7 +57,7 @@ export function TransplantView() {
       await insertClauseTracked(text);
       setInserted(true);
     } catch (e) {
-      setNote((e as Error).message);
+      setNote(errorMessage(e));
     } finally {
       setInserting(false);
     }

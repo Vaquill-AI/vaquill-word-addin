@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { errorMessage } from "@/api/errors";
 import { Spinner } from "@/ui/primitives";
 import { readOutline, goToOutlineItem, type OutlineItem } from "@/office/outline";
 
@@ -18,7 +19,7 @@ export function OutlinePanel() {
     try {
       setItems(await readOutline());
     } catch (e) {
-      setError((e as Error).message);
+      setError(errorMessage(e));
     } finally {
       setLoading(false);
     }
@@ -29,7 +30,7 @@ export function OutlinePanel() {
   }
 
   function go(index: number) {
-    goToOutlineItem(index).catch((e) => setError((e as Error).message));
+    goToOutlineItem(index).catch((e) => setError(errorMessage(e)));
   }
 
   return (

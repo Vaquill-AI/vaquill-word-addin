@@ -17,12 +17,18 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: 5px;
   border: none;
   background: transparent;
   color: var(--text-muted);
   cursor: pointer;
-  padding: 6px;
+  padding: 6px 8px;
   border-radius: var(--radius-sm);
+  font-size: 12.5px;
+  font-weight: 500;
+}
+.assistant__bar-label {
+  line-height: 1;
 }
 .assistant__bar-btn:hover:not(:disabled) {
   background: var(--surface-muted);
@@ -136,6 +142,51 @@
   color: var(--brand);
 }
 
+/* ---- Edit-mode empty state (starters + a labeled example redline) ---- */
+.edit-intro {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin: auto 0;
+  padding: 8px 2px;
+}
+.edit-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-muted);
+  padding: 12px;
+}
+.edit-preview__tag {
+  align-self: flex-start;
+  font-size: var(--fs-caption);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.edit-preview__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  justify-content: space-between;
+}
+.edit-preview__name {
+  font-size: var(--fs-body);
+}
+.edit-preview__badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.edit-preview__why,
+.edit-preview__fallback {
+  margin: 0;
+}
+
 /* ---- Message bubbles ---- */
 .msg {
   max-width: 100%;
@@ -237,6 +288,54 @@
 .msg__sources li {
   overflow-wrap: anywhere;
 }
+/* Numbered source list: the marker shows the citation number so an inline [N]
+   maps to a visible item. */
+.msg__sources ol.msg__source-list {
+  margin: 4px 0 0;
+  padding-left: 22px;
+  color: var(--text-muted);
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.msg__source {
+  overflow-wrap: anywhere;
+  border-radius: var(--radius-sm);
+}
+.msg__source--flash {
+  animation: msg-source-flash 1.2s ease;
+}
+@keyframes msg-source-flash {
+  0%,
+  40% {
+    background: var(--brand-tint);
+  }
+  100% {
+    background: transparent;
+  }
+}
+/* Inline citation chips: hoverable (native title tooltip) superscript numbers
+   that jump to the matching source, mirroring the web app's citation UX. */
+.msg__cites {
+  display: inline-flex;
+  gap: 2px;
+  vertical-align: super;
+  font-size: 0.7em;
+  line-height: 0;
+}
+.msg__cite {
+  border: none;
+  background: var(--brand-tint);
+  color: var(--brand);
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0 4px;
+  border-radius: 6px;
+  min-width: 14px;
+}
+.msg__cite:hover {
+  background: var(--brand-border);
+}
 
 /* Collapsible "Finished in N steps" reasoning trace under an assistant reply. */
 .msg__steps {
@@ -300,19 +399,32 @@
 .msg__actions {
   margin-top: 6px;
 }
-/* The assistant kebab stays quiet until the answer is hovered or focused. */
+/* Answer actions are first-class and always visible: Copy + Insert are one
+   click away, not hidden behind hover or a kebab. */
 .msg__actions--assistant {
-  opacity: 0;
-  transition: opacity 0.12s ease;
-}
-.msg--assistant:hover .msg__actions--assistant,
-.msg__actions--assistant:focus-within {
-  opacity: 1;
-}
-.msg__actions-row {
   display: flex;
   align-items: center;
-  gap: 8px;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.msg__action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease;
+}
+.msg__action-btn:hover {
+  background: var(--brand-tint);
+  border-color: var(--brand-border);
+  color: var(--brand);
 }
 .msg__actions-note {
   line-height: 1;
@@ -498,23 +610,6 @@
 }
 
 /* ---- Empty-state: grounding sources, selection chip, recent chats ---- */
-.assistant__sources {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  justify-content: center;
-  margin-top: 8px;
-}
-.assistant__source {
-  padding: 2px 9px;
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  background: var(--fill-subtle);
-  color: var(--text-muted);
-  font-size: 11px;
-  font-weight: 600;
-}
-
 /* The "ask about the selection" chip stands out with a brand tint since it is
    contextual to what the user just highlighted. */
 .assistant__sel-chip {
@@ -671,4 +766,34 @@
   display: block;
   margin-bottom: 2px;
   padding: 0 2px;
+}
+
+/* Labeled composer tool buttons (Prompts / Improve). Text labels so the two
+   sparkle-ish affordances are not mistaken for each other. */
+.composer__tool {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+.composer__tool:hover:not(:disabled) {
+  background: var(--fill-subtle);
+  color: var(--text);
+}
+.composer__tool--on {
+  background: var(--fill-subtle-hover);
+  color: var(--text);
+}
+.composer__tool:disabled {
+  opacity: 0.6;
+  cursor: default;
 }

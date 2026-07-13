@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { errorMessage } from "@/api/errors";
 import { Button, Banner } from "@/ui/primitives";
 import {
   highlightIssues,
@@ -37,7 +38,7 @@ export function DocumentTools({ redlines }: { redlines: RedlineSuggestion[] }) {
     setNote(null);
     try {
       if (highlighted) {
-        await clearIssueHighlights(anchorable.map((r) => ({ currentLanguage: r.currentLanguage })));
+        await clearIssueHighlights();
         setHighlighted(false);
         setNote("Cleared the highlights.");
       } else {
@@ -48,7 +49,7 @@ export function DocumentTools({ redlines }: { redlines: RedlineSuggestion[] }) {
         setNote(`Highlighted ${n} clause${n === 1 ? "" : "s"} in the document.`);
       }
     } catch (e) {
-      setError((e as Error).message);
+      setError(errorMessage(e));
     } finally {
       setBusy(null);
     }
@@ -60,7 +61,7 @@ export function DocumentTools({ redlines }: { redlines: RedlineSuggestion[] }) {
     setNote(null);
     try {
       if (covered) {
-        await clearCoverageHighlights(anchorable.map((r) => ({ currentLanguage: r.currentLanguage })));
+        await clearCoverageHighlights();
         setCovered(false);
         setNote("Cleared the coverage highlights.");
       } else {
@@ -69,7 +70,7 @@ export function DocumentTools({ redlines }: { redlines: RedlineSuggestion[] }) {
         setNote(`Highlighted ${n} covered clause${n === 1 ? "" : "s"} in the document.`);
       }
     } catch (e) {
-      setError((e as Error).message);
+      setError(errorMessage(e));
     } finally {
       setBusy(null);
     }
@@ -82,7 +83,7 @@ export function DocumentTools({ redlines }: { redlines: RedlineSuggestion[] }) {
     try {
       setNote(await fn());
     } catch (e) {
-      setError((e as Error).message);
+      setError(errorMessage(e));
     } finally {
       setBusy(null);
     }

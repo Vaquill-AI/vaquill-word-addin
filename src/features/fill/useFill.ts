@@ -26,7 +26,7 @@ export function useFill() {
       const text = await readFullDocumentText();
       setState({ status: "ready", placeholders: detectPlaceholders(text) });
     } catch (e) {
-      setState({ status: "error", error: (e as Error).message });
+      setState({ status: "error", error: errorMessage(e) });
     }
   }, []);
 

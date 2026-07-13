@@ -58,9 +58,13 @@ export function FocusControl({
     onScope(hasSelection ? "selection" : "document");
   }, [hasSelection, loading, onScope]);
 
-  const focusingSelection = scope === "selection" && hasSelection;
-  // The toggle can only "Focus selection" when there is a selection to focus.
-  const toggleDisabled = !focusingSelection && !hasSelection;
+  // With no selection the assistant already defaults to the whole document, so
+  // the chip would just be permanent "Whole doc" noise. Only surface it once
+  // there IS a selection to focus (then it shows "Selection · Nw" and can toggle
+  // back to the whole doc).
+  if (!hasSelection) return null;
+
+  const focusingSelection = scope === "selection";
   const label = focusingSelection ? `Selection · ${words}w` : "Whole doc";
 
   // A subtle chip, not a full sentence: icon + short scope + a quiet toggle. The
@@ -69,7 +73,6 @@ export function FocusControl({
     <button
       type="button"
       onClick={() => onScope(focusingSelection ? "document" : "selection")}
-      disabled={toggleDisabled}
       title={
         focusingSelection
           ? "Answering about your selection. Click to use the whole document."
@@ -84,12 +87,11 @@ export function FocusControl({
         display: "inline-flex",
         alignItems: "center",
         gap: 5,
-        alignSelf: "flex-start",
         border: "none",
         background: "transparent",
         padding: "2px 2px",
         color: focusingSelection ? "var(--brand)" : "var(--text-muted)",
-        cursor: toggleDisabled ? "default" : "pointer",
+        cursor: "pointer",
       }}
     >
       <span aria-hidden style={{ display: "inline-flex" }}>

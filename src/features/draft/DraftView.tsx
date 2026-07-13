@@ -1,4 +1,5 @@
 import { useCallback, useRef, useState } from "react";
+import { AutoTextarea } from "@/ui/AutoTextarea";
 import { ViewHeader } from "@/ui/ViewHeader";
 import { Button, Banner, Badge, Field, Spinner, SegmentedControl, IconButton } from "@/ui/primitives";
 import { Combobox } from "@/ui/Combobox";
@@ -182,7 +183,7 @@ export function DraftView() {
       });
       setInserted(true);
     } catch (e) {
-      setError((e as Error).message);
+      setError(errorMessage(e));
     } finally {
       setInserting(false);
     }
@@ -419,7 +420,7 @@ export function DraftView() {
           />
         }
       >
-        <textarea
+        <AutoTextarea
           value={instructions}
           placeholder="e.g. Parties: Acme Inc. (Disclosing) and Beta LLC (Receiving). Mutual, 3-year term, carve-outs for independently developed information."
           onChange={(e) => setInstructions(e.target.value)}

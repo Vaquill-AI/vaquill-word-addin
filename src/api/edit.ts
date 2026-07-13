@@ -59,7 +59,7 @@ export async function editDocument(
  * straight from the server -- never faked. `grounding` defaults to "verified"
  * only because edit-document DROPS any edit whose current_language is not a
  * verbatim span, so every returned edit is genuinely verified (and the server
- * asserts it explicitly). Shared by the Assistant Edit flow and EditView.
+ * asserts it explicitly). Used by the Assistant Edit flow.
  */
 export function editToRedline(e: EditItem): RedlineSuggestion {
   return {

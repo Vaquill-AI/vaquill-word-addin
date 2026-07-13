@@ -1,8 +1,9 @@
 import { useState } from "react";
+import { errorMessage } from "@/api/errors";
 import { Badge, IconButton } from "@/ui/primitives";
 import { OverflowMenu, type OverflowMenuItem } from "@/ui/OverflowMenu";
 import { LocateIcon, CheckIcon, XIcon, AlertTriangleIcon } from "@/ui/icons";
-import { selectClauseInDocument } from "@/office/navigate";
+import { locateInDocument } from "@/office/navigate";
 import { commentOnCitation } from "@/office/citations";
 import { useAppNav } from "@/app/nav";
 import { config } from "@/config";
@@ -119,10 +120,10 @@ export function AuthorityItem({ result }: { result: AuthorityResult }) {
   async function locate() {
     setNote(null);
     try {
-      const found = await selectClauseInDocument(result.raw);
+      const found = await locateInDocument(result.raw);
       if (!found) setNote("Could not locate this citation in the document.");
     } catch (e) {
-      setNote((e as Error).message);
+      setNote(errorMessage(e));
     }
   }
 
@@ -139,7 +140,7 @@ export function AuthorityItem({ result }: { result: AuthorityResult }) {
         setNote("Could not locate this citation to comment on.");
       }
     } catch (e) {
-      setNote((e as Error).message);
+      setNote(errorMessage(e));
     } finally {
       setBusy(false);
     }

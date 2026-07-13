@@ -61,18 +61,30 @@ export async function readDocumentChanges(): Promise<DocChanges> {
         text: c.text,
         createdAt: toIso((c as unknown as { date?: unknown }).date),
       })),
-      comments: comments.items.map((c) => ({
-        id: c.id,
-        author: c.authorName,
-        text: c.content,
-        resolved: c.resolved,
-        createdAt: toIso((c as unknown as { creationDate?: unknown }).creationDate),
-        replies: c.replies.items.map((r) => ({
-          author: r.authorName,
-          text: r.content,
-          createdAt: toIso((r as unknown as { creationDate?: unknown }).creationDate),
-        })),
-      })),
+      comments: comments.items.map((c) => {
+        const author = c.authorName;
+        const content = c.content;
+        const replies = c.replies.items
+          .map((r) => ({
+            author: r.authorName,
+            text: r.content,
+            createdAt: toIso((r as unknown as { creationDate?: unknown }).creationDate),
+          }))
+          // Word surfaces a programmatically-inserted comment's OWN text back as
+          // a phantom self-reply (there is no such reply in the document), which
+          // showed the comment body duplicated under itself. Drop any reply that
+          // exactly duplicates the parent comment (same author + same text); a
+          // genuine reply repeating the full comment verbatim does not happen.
+          .filter((r) => !(r.author === author && (r.text ?? "").trim() === (content ?? "").trim()));
+        return {
+          id: c.id,
+          author,
+          text: content,
+          resolved: c.resolved,
+          createdAt: toIso((c as unknown as { creationDate?: unknown }).creationDate),
+          replies,
+        };
+      }),
     };
   });
 }
