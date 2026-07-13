@@ -178,7 +178,7 @@ function Signal({
   const cls = `home__signal${onClick ? " home__signal--btn" : ""}${alert ? " home__signal--alert" : ""}`;
   const body = (
     <span className="home__signal-body">
-      <span className="home__signal-val">{value}</span>
+      <span className="home__signal-val">{value.toLocaleString()}</span>
       <span className="home__signal-label">{label}</span>
     </span>
   );
