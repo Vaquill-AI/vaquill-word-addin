@@ -119,8 +119,11 @@
 .banner {
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 10px 12px;
+  padding: 9px 11px;
   background: var(--surface-muted);
+  /* Hints and status callouts read as secondary, not body copy. */
+  font-size: 12.5px;
+  line-height: 1.45;
 }
 .banner--warn {
   background: var(--yellow-tint);
@@ -166,10 +169,18 @@
   flex-direction: column;
   gap: 4px;
 }
-.field > label {
+.field > label,
+.field__labelrow > label {
   font-size: 12px;
   font-weight: 600;
   color: var(--text-muted);
+}
+/* Label + an inline action (e.g. "Improve") share one row above the control. */
+.field__labelrow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
 }
 /* Bordered inputs; the border goes brand + a soft ring on focus. */
 .field select,

@@ -363,20 +363,14 @@ export function DraftView() {
       </div>
 
       <div className="form-grid">
+        {/* The two dropdowns pair on one row; Title (free text) gets its own full
+            row so it never truncates at intermediate pane widths. */}
         <Field label="Document type">
           <Combobox
             value={category}
             onChange={setCategory}
             options={DRAFT_CATEGORIES}
             ariaLabel="Document type"
-          />
-        </Field>
-
-        <Field label="Title">
-          <input
-            value={title}
-            placeholder={`e.g. Mutual ${labelOf(DRAFT_CATEGORIES, category)} - Acme and Beta`}
-            onChange={(e) => setTitle(e.target.value)}
           />
         </Field>
 
@@ -388,6 +382,16 @@ export function DraftView() {
             ariaLabel="Governing law"
           />
         </Field>
+
+        <div className="form-grid__full">
+          <Field label="Title">
+            <input
+              value={title}
+              placeholder={`e.g. Mutual ${labelOf(DRAFT_CATEGORIES, category)} - Acme and Beta`}
+              onChange={(e) => setTitle(e.target.value)}
+            />
+          </Field>
+        </div>
 
         {/* Tone is a short, fixed enum (Protective / Balanced / Permissive), so it
             reads as a segmented control spanning the full grid width, not a dropdown. */}
@@ -404,13 +408,9 @@ export function DraftView() {
         </div>
       </div>
 
-      <Field label="Key terms and instructions">
-        <textarea
-          value={instructions}
-          placeholder="e.g. Parties: Acme Inc. (Disclosing) and Beta LLC (Receiving). Mutual, 3-year term, carve-outs for independently developed information."
-          onChange={(e) => setInstructions(e.target.value)}
-        />
-        <div className="row" style={{ gap: 8, alignItems: "center", marginTop: 6 }}>
+      <Field
+        label="Key terms and instructions"
+        action={
           <Button
             variant="ghost"
             size="sm"
@@ -420,9 +420,19 @@ export function DraftView() {
           >
             <WandIcon size={13} /> Improve with AI
           </Button>
-          {improveNote && <span className="small muted">{improveNote}</span>}
-        </div>
+        }
+      >
+        <textarea
+          value={instructions}
+          placeholder="e.g. Parties: Acme Inc. (Disclosing) and Beta LLC (Receiving). Mutual, 3-year term, carve-outs for independently developed information."
+          onChange={(e) => setInstructions(e.target.value)}
+        />
       </Field>
+      {improveNote && (
+        <span className="small muted" style={{ marginTop: -4 }}>
+          {improveNote}
+        </span>
+      )}
 
       <div className="attach">
         <div className="attach__head">

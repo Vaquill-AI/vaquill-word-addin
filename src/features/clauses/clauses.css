@@ -1,21 +1,37 @@
-/* Clause library: search + save + insert saved clauses. */
+/* Clause library. The list chrome + search come from ScopedSearchList; these
+   rules only style the clause card, matching the padding/rhythm of template-card
+   (10px 12px) so the surface is consistent with Templates and Saved drafts. */
 
-.clauses__search {
-  width: 100%;
+.clause-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
 }
 
-.clauses__list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
+.clause-card__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.clause-card__title {
+  font-weight: 600;
+  font-size: 13px;
 }
 
 /* Content preview stays to a couple of lines so the list scans quickly. */
-.clauses__preview {
+.clause-card__preview {
+  margin: 0;
   display: -webkit-box;
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
   white-space: pre-wrap;
   word-break: break-word;
+}
+
+.clause-card__actions {
+  display: flex;
 }

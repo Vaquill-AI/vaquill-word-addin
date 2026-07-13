@@ -16,6 +16,9 @@ import {
   locateComment,
 } from "@/office/comments";
 import { selectClauseInDocument } from "@/office/navigate";
+import { Avatar } from "@/ui/Avatar";
+import { formatRelativeTime, formatExactTime } from "@/lib/relativeTime";
+import { CommentCard } from "./CommentCard";
 import { triageChanges, positionsSummary, type Verdict, type VerdictMap } from "./triage";
 import { draftCounterReply } from "./counter";
 import { usePlaybookDetails } from "@/features/playbook/usePlaybookDetails";
@@ -55,12 +58,8 @@ export function ChangesView() {
   const [bulk, setBulk] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [actionNote, setActionNote] = useState<string | null>(null);
-  // Per-comment resolve/reply state. `commentBusy` is keyed `resolve:${id}` /
-  // `reply:${id}` so only the acting control spins; `replyFor` opens one inline
-  // reply box at a time.
-  const [replyFor, setReplyFor] = useState<string | null>(null);
-  const [replyText, setReplyText] = useState("");
-  const [commentBusy, setCommentBusy] = useState<string | null>(null);
+  // Per-comment resolve/reply busy state lives inside each CommentCard, so acting
+  // on one comment never disables the others.
 
   // Draft-a-reply (the "respond" half of negotiation): one change's reply panel
   // is open at a time. `draftText` is editable before it is inserted as a comment.
@@ -92,8 +91,7 @@ export function ChangesView() {
     }
   }, []);
 
-  async function onResolveComment(id: string, resolved: boolean) {
-    setCommentBusy(`resolve:${id}`);
+  async function onResolveComment(id: string, resolved: boolean): Promise<void> {
     setActionError(null);
     try {
       const ok = await resolveComment(id, resolved);
@@ -101,39 +99,36 @@ export function ChangesView() {
       else await reload();
     } catch (e) {
       setActionError((e as Error).message);
-    } finally {
-      setCommentBusy(null);
     }
   }
 
-  async function onLocateComment(id: string) {
+  function onLocateComment(id: string) {
     setActionError(null);
-    try {
-      const ok = await locateComment(id);
-      if (!ok) setActionError("Could not locate that comment (it may have been deleted).");
-    } catch (e) {
-      setActionError((e as Error).message);
-    }
-  }
-
-  async function onReplyComment(id: string) {
-    const text = replyText.trim();
-    if (!text) return;
-    setCommentBusy(`reply:${id}`);
-    setActionError(null);
-    try {
-      const ok = await replyToComment(id, text);
-      if (ok) {
-        setReplyText("");
-        setReplyFor(null);
-        await reload();
-      } else {
-        setActionError("Could not reply to that comment (it may have been deleted).");
+    void (async () => {
+      try {
+        const ok = await locateComment(id);
+        if (!ok) setActionError("Could not locate that comment (it may have been deleted).");
+      } catch (e) {
+        setActionError((e as Error).message);
       }
+    })();
+  }
+
+  async function onReplyComment(id: string, text: string): Promise<boolean> {
+    const t = text.trim();
+    if (!t) return false;
+    setActionError(null);
+    try {
+      const ok = await replyToComment(id, t);
+      if (ok) {
+        await reload();
+        return true;
+      }
+      setActionError("Could not reply to that comment (it may have been deleted).");
+      return false;
     } catch (e) {
       setActionError((e as Error).message);
-    } finally {
-      setCommentBusy(null);
+      return false;
     }
   }
 
@@ -352,17 +347,16 @@ export function ChangesView() {
           <InfoTip text="Shows the other side's tracked changes and comments. AI triage classifies each change against your playbook as Accept, Review, or Reject with a reason, so you can auto-accept the safe ones and focus on the rest. Every action here edits Word's real tracked changes, so review before you accept in bulk." />
         </div>
         <p className="small muted" style={{ margin: 0 }}>
-          Triage the other side's tracked changes: accept the acceptable ones, reject the rest, and draft a grounded reply to the ones you want to push back on.
+          Accept, reject, or reply to the other side's tracked changes.
         </p>
       </div>
 
       {tcs.length === 0 && (
         <Banner tone="info">
           {comments.length === 0
-            ? "No tracked changes or comments in this document yet. "
+            ? "No tracked changes or comments yet. "
             : "No tracked changes yet. "}
-          When the other side returns this contract with tracked changes, they appear here to triage
-          against your playbook, accept or reject in bulk, and draft a grounded reply to each.
+          They appear here when the other side returns the contract.
         </Banner>
       )}
 
@@ -428,21 +422,36 @@ export function ChangesView() {
             {tcs.map((c, i) => {
               const v = verdicts[c.text];
               const canResolve = c.text.trim().length > 0;
+              const author = c.author || "Unknown";
+              const tcTime = formatRelativeTime(c.createdAt);
               return (
                 <div key={`${i}-${c.text.slice(0, 24)}`} className="card change-item">
                   <div className="change-item__head">
-                    <div className="row" style={{ gap: 4, flexWrap: "wrap" }}>
+                    <div
+                      className="row"
+                      style={{ gap: 8, alignItems: "center", minWidth: 0, flex: 1 }}
+                    >
+                      <Avatar name={author} size={22} />
+                      <div className="author-line">
+                        <span className="author-name">{author}</span>
+                        {tcTime && (
+                          <span className="author-time" title={formatExactTime(c.createdAt)}>
+                            {tcTime}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="row" style={{ gap: 4, alignItems: "center", flexWrap: "wrap" }}>
                       {changeTypeBadge(c.type)}
                       {v && verdictBadge(v.verdict)}
+                      {canResolve && (
+                        <IconButton label="Find in document" onClick={() => void locate(c.text)}>
+                          <LocateIcon size={13} />
+                        </IconButton>
+                      )}
                     </div>
-                    {canResolve && (
-                      <IconButton label="Find in document" onClick={() => void locate(c.text)}>
-                        <LocateIcon size={13} />
-                      </IconButton>
-                    )}
                   </div>
                   <p className="change-item__text">
-                    {c.author ? <strong>{c.author}: </strong> : null}
                     {c.text.trim() || "(formatting change)"}
                   </p>
                   {v?.reason && <p className="small muted" style={{ margin: 0 }}>{v.reason}</p>}
@@ -570,81 +579,16 @@ export function ChangesView() {
       )}
 
       {comments.length > 0 && (
-        <div className="stack" style={{ gap: 6 }}>
+        <div className="stack" style={{ gap: 8 }}>
           <h2 className="small muted">Comments ({comments.length})</h2>
           {comments.map((c) => (
-            <div key={c.id} className="card change-item">
-              <div className="change-item__head">
-                <span className="small muted">
-                  {c.resolved ? "Resolved comment" : "Comment"}
-                </span>
-                <IconButton label="Find in document" onClick={() => void onLocateComment(c.id)}>
-                  <LocateIcon size={13} />
-                </IconButton>
-              </div>
-              <p className="change-item__text">
-                {c.author ? <strong>{c.author}: </strong> : null}
-                {c.text}
-              </p>
-              {c.replies.length > 0 && (
-                <div className="comment-replies">
-                  {c.replies.map((r, ri) => (
-                    <p key={ri} className="small comment-replies__item">
-                      {r.author ? <strong>{r.author}: </strong> : null}
-                      {r.text}
-                    </p>
-                  ))}
-                </div>
-              )}
-              <div className="row" style={{ gap: 6, flexWrap: "wrap" }}>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => void onResolveComment(c.id, !c.resolved)}
-                  loading={commentBusy === `resolve:${c.id}`}
-                  disabled={commentBusy !== null}
-                >
-                  {c.resolved ? "Reopen" : "Resolve"}
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    setReplyText("");
-                    setReplyFor((cur) => (cur === c.id ? null : c.id));
-                  }}
-                  disabled={commentBusy !== null}
-                >
-                  Reply
-                </Button>
-              </div>
-              {replyFor === c.id && (
-                <div className="row" style={{ gap: 6 }}>
-                  <input
-                    type="text"
-                    className="comment-reply__input"
-                    value={replyText}
-                    aria-label="Reply to comment"
-                    placeholder="Write a reply..."
-                    onChange={(e) => setReplyText(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" && replyText.trim()) {
-                        e.preventDefault();
-                        void onReplyComment(c.id);
-                      }
-                    }}
-                  />
-                  <Button
-                    size="sm"
-                    onClick={() => void onReplyComment(c.id)}
-                    loading={commentBusy === `reply:${c.id}`}
-                    disabled={!replyText.trim() || commentBusy !== null}
-                  >
-                    Send
-                  </Button>
-                </div>
-              )}
-            </div>
+            <CommentCard
+              key={c.id}
+              comment={c}
+              onResolve={onResolveComment}
+              onReply={onReplyComment}
+              onLocate={onLocateComment}
+            />
           ))}
         </div>
       )}

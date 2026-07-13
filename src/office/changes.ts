@@ -5,34 +5,73 @@ import { runWord } from "./run";
  * summarize what the counterparty changed. Tracked-change enumeration is
  * WordApi 1.6 (GA); comments are WordApi 1.4 (GA).
  */
+export interface DocCommentReply {
+  author: string;
+  text: string;
+  /** ISO timestamp, when the runtime reports it (WordApi 1.4+). */
+  createdAt?: string;
+}
+
+export interface DocComment {
+  id: string;
+  author: string;
+  text: string;
+  resolved: boolean;
+  /** ISO timestamp, when the runtime reports it (WordApi 1.4+). */
+  createdAt?: string;
+  replies: DocCommentReply[];
+}
+
+export interface DocTrackedChange {
+  author: string;
+  type: string;
+  text: string;
+  /** ISO timestamp, when the runtime reports it (WordApi 1.6+). */
+  createdAt?: string;
+}
+
 export interface DocChanges {
-  trackedChanges: { author: string; type: string; text: string }[];
-  comments: {
-    id: string;
-    author: string;
-    text: string;
-    resolved: boolean;
-    replies: { author: string; text: string }[];
-  }[];
+  trackedChanges: DocTrackedChange[];
+  comments: DocComment[];
+}
+
+/** Office.js returns creationDate as a Date; normalize to an ISO string (or
+ *  undefined if the runtime does not populate it). */
+function toIso(value: unknown): string | undefined {
+  if (value instanceof Date && !Number.isNaN(value.getTime())) return value.toISOString();
+  if (typeof value === "string" && value) return value;
+  return undefined;
 }
 
 export async function readDocumentChanges(): Promise<DocChanges> {
   return runWord(async (context) => {
     const body = context.document.body;
     const changes = body.getTrackedChanges();
-    changes.load("author,type,text");
+    changes.load("author,type,text,date");
     const comments = body.getComments();
-    comments.load("id,authorName,content,resolved,replies/authorName,replies/content");
+    comments.load(
+      "id,authorName,content,resolved,creationDate,replies/authorName,replies/content,replies/creationDate",
+    );
     await context.sync();
 
     return {
-      trackedChanges: changes.items.map((c) => ({ author: c.author, type: c.type, text: c.text })),
+      trackedChanges: changes.items.map((c) => ({
+        author: c.author,
+        type: c.type,
+        text: c.text,
+        createdAt: toIso((c as unknown as { date?: unknown }).date),
+      })),
       comments: comments.items.map((c) => ({
         id: c.id,
         author: c.authorName,
         text: c.content,
         resolved: c.resolved,
-        replies: c.replies.items.map((r) => ({ author: r.authorName, text: r.content })),
+        createdAt: toIso((c as unknown as { creationDate?: unknown }).creationDate),
+        replies: c.replies.items.map((r) => ({
+          author: r.authorName,
+          text: r.content,
+          createdAt: toIso((r as unknown as { creationDate?: unknown }).creationDate),
+        })),
       })),
     };
   });

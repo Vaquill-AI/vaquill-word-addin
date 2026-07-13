@@ -14,7 +14,7 @@ import { createContext, useCallback, useContext, useMemo, useState, type ReactNo
  */
 
 export type AppTab = "review" | "draft" | "assistant" | "tools";
-export type ReviewSub = "redlines" | "changes" | "compare" | "citations";
+export type ReviewSub = "redlines" | "changes" | "compare" | "citations" | "playbooks";
 export type SelectionToolKey = "rewrite" | "explain" | "plain" | "risk" | "compliance";
 export type ToolKey =
   | "cleancopy"

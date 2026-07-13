@@ -45,18 +45,19 @@
   flex-wrap: wrap;
 }
 .context-bar__verb {
-  border: none;
-  background: none;
-  padding: 3px 7px;
-  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  padding: 2px 8px;
+  border-radius: 999px;
   color: var(--text);
-  font-size: 12px;
-  font-weight: 600;
+  font-size: 11.5px;
+  font-weight: 500;
   cursor: pointer;
-  transition: background 0.12s ease, color 0.12s ease;
+  transition: background 0.12s ease, color 0.12s ease, border-color 0.12s ease;
 }
 .context-bar__verb:hover {
   background: var(--brand-tint);
+  border-color: var(--brand-border);
   color: var(--brand);
 }
 .context-bar__verb:focus-visible {

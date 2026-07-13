@@ -85,7 +85,17 @@ export function Banner({ tone = "info", children }: { tone?: BannerTone; childre
   );
 }
 
-export function Field({ label, children }: { label: string; children: ReactNode }) {
+export function Field({
+  label,
+  children,
+  action,
+}: {
+  label: string;
+  children: ReactNode;
+  /** Optional control rendered on the label's row, right-aligned (e.g. an
+   *  "Improve" affordance next to a textarea). */
+  action?: ReactNode;
+}) {
   // Associate the visible label with its control so clicking the label focuses
   // it and screen readers announce a name (the child gets the generated id).
   const id = useId();
@@ -94,7 +104,14 @@ export function Field({ label, children }: { label: string; children: ReactNode 
     : children;
   return (
     <div className="field">
-      <label htmlFor={id}>{label}</label>
+      {action ? (
+        <div className="field__labelrow">
+          <label htmlFor={id}>{label}</label>
+          {action}
+        </div>
+      ) : (
+        <label htmlFor={id}>{label}</label>
+      )}
       {child}
     </div>
   );

@@ -16,6 +16,9 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
+  /* .card ships no padding; restore the house list-card value (matches
+     .template-card / .clause-card) so content is not flush to the border. */
+  padding: 10px 12px;
 }
 
 .fill-card__head {

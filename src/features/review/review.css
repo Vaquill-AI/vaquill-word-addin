@@ -250,7 +250,7 @@
 }
 .redline__resolved-icon--ok {
   background: var(--green);
-  color: #fff;
+  color: var(--on-brand);
 }
 .redline__resolved-name {
   flex: 1;
@@ -424,34 +424,5 @@
   }
 }
 
-/* Inline reply box under a counterparty comment (Changes tab). */
-.comment-reply__input {
-  flex: 1;
-  min-width: 0;
-  padding: 7px 10px;
-  border: 1px solid var(--control-border);
-  border-radius: var(--radius-sm);
-  font-family: inherit;
-  font-size: var(--fs-body);
-  background: var(--surface);
-  color: var(--text);
-}
-.comment-reply__input:focus {
-  outline: none;
-  border-color: var(--brand);
-  box-shadow: 0 0 0 2px var(--brand-tint);
-}
-
-/* Reply thread under a counterparty comment. */
-.comment-replies {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  margin: 2px 0 0 10px;
-  padding-left: 8px;
-  border-left: 2px solid var(--border);
-}
-.comment-replies__item {
-  margin: 0;
-  color: var(--text-muted);
-}
+/* The counterparty comment thread (avatar, timestamp, replies, resolve/reply)
+   lives in comment-card.css and its CommentCard component. */

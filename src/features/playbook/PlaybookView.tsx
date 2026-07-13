@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Banner, Spinner, Button } from "@/ui/primitives";
 import { InfoTip } from "@/ui/InfoTip";
+import { ScopedSearchList } from "@/ui/ScopedSearchList";
 import { ArrowLeftIcon } from "@/ui/icons";
 import { usePlaybookDetails } from "./usePlaybookDetails";
 import { LadderCard } from "./LadderCard";
@@ -106,24 +107,18 @@ export function PlaybookView({
           </p>
         </div>
 
-        <input
-          className="playbook-filter"
-          type="search"
-          aria-label="Filter clauses"
-          placeholder="Filter clauses..."
-          value={clauseFilter}
-          onChange={(e) => setClauseFilter(e.target.value)}
-        />
-
-        {entries.length === 0 ? (
-          <p className="small muted">No clauses match your filter.</p>
-        ) : (
-          <div className="stack">
-            {entries.map(([clauseType, position]) => (
-              <LadderCard key={clauseType} clauseType={clauseType} position={position} />
-            ))}
-          </div>
-        )}
+        <ScopedSearchList
+          query={clauseFilter}
+          onQuery={setClauseFilter}
+          searchPlaceholder="Filter clauses..."
+          ariaLabel="Clause positions"
+          isEmpty={entries.length === 0}
+          empty="No clauses match your filter."
+        >
+          {entries.map(([clauseType, position]) => (
+            <LadderCard key={clauseType} clauseType={clauseType} position={position} />
+          ))}
+        </ScopedSearchList>
       </div>
     );
   }

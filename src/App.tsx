@@ -19,6 +19,7 @@ import { CompareView } from "@/features/compare/CompareView";
 import { AuthorityView } from "@/features/authority/AuthorityView";
 import { AssistantTab } from "@/features/assistant/AssistantTab";
 import { DraftView } from "@/features/draft/DraftView";
+import { PlaybookView } from "@/features/playbook/PlaybookView";
 import { ToolsHub } from "@/features/toolshub/ToolsHub";
 import { ReviewProvider } from "@/features/review/ReviewProvider";
 import { SettingsView } from "@/features/settings/SettingsView";
@@ -54,7 +55,7 @@ export function App() {
 }
 
 function AppShell() {
-  const { tab, setTab, reviewSub, setReviewSub, intent, clearIntent } = useAppNav();
+  const { tab, setTab, reviewSub, setReviewSub, intent, navigate, clearIntent } = useAppNav();
   const [user, setUser] = useState<User | null>(null);
   // Bumped whenever the active organization changes, to remount the data views
   // (matters/drafts/playbooks/clients) so they refetch under the new org.
@@ -169,6 +170,7 @@ function AppShell() {
               { value: "changes", label: "Changes" },
               { value: "compare", label: "Compare" },
               { value: "citations", label: "Citations" },
+              { value: "playbooks", label: "Playbooks" },
             ]}
           />
         </div>
@@ -209,8 +211,18 @@ function AppShell() {
             <ChangesView />
           ) : reviewSub === "compare" ? (
             <CompareView />
-          ) : (
+          ) : reviewSub === "citations" ? (
             <AuthorityView />
+          ) : (
+            <PlaybookView
+              onRunPlaybook={(pb) =>
+                navigate("review", {
+                  kind: "runPlaybook",
+                  playbookId: pb.id,
+                  contractType: pb.contractType,
+                })
+              }
+            />
           )
         ) : tab === "draft" ? (
           <DraftView />
