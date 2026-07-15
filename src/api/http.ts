@@ -2,6 +2,7 @@ import { config } from "@/config";
 import { getAccessToken, refresh } from "@/auth/session";
 import { getActiveOrgId } from "@/lib/org";
 import { ApiError, errorFromResponse } from "./errors";
+import { isCommunity } from "@/community/edition";
 
 /**
  * Authenticated JSON fetch against the Vaquill backend.
@@ -90,6 +91,12 @@ async function buildHeaders(token: string, extra?: Record<string, string>): Prom
 }
 
 export async function request<T>(path: string, opts: RequestOptions = {}): Promise<T> {
+  if (isCommunity()) {
+    // Lazy import so the community shim (and its DOCX parser) never weighs the
+    // cloud bundle.
+    const { communityRequest } = await import("@/community/localRouter");
+    return communityRequest<T>(path, opts.method ?? "GET", opts.body);
+  }
   const token = await getAccessToken();
   if (!token) throw new ApiError("unauthorized", 401, "Not signed in.");
 
@@ -144,6 +151,10 @@ export async function requestForm<T>(
   form: FormData,
   opts: { signal?: AbortSignal; timeoutMs?: number } = {},
 ): Promise<T> {
+  if (isCommunity()) {
+    const { communityRequestForm } = await import("@/community/localForm");
+    return communityRequestForm<T>(path, form);
+  }
   const token = await getAccessToken();
   if (!token) throw new ApiError("unauthorized", 401, "Not signed in.");
 
@@ -212,6 +223,9 @@ export async function requestBinary(
   path: string,
   opts: RequestOptions = {},
 ): Promise<{ base64: string; filename: string }> {
+  if (isCommunity()) {
+    throw new ApiError("unknown", 0, "This feature needs the self-hosted backend (a later phase).", "EDITION");
+  }
   const token = await getAccessToken();
   if (!token) throw new ApiError("unauthorized", 401, "Not signed in.");
 

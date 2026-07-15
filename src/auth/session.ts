@@ -1,5 +1,7 @@
 import type { Session, User } from "@supabase/supabase-js";
 import { getSupabase } from "./supabase";
+import { isCommunity } from "@/community/edition";
+import { isConfigured, removeKey } from "@/ai/keys";
 
 /**
  * In-memory session store. Holds the Supabase access + refresh tokens for the
@@ -62,7 +64,32 @@ function notify(): void {
   for (const l of listeners) l(user);
 }
 
+// --- Community edition -------------------------------------------------------
+// The BYOK build has no Supabase account. "Signed in" simply means a working key
+// is configured, so we synthesize a minimal local user and re-notify listeners
+// whenever the key changes (the setup wizard / Settings call notifyCommunityAuth).
+function communityUser(): User | null {
+  if (!isConfigured()) return null;
+  return {
+    id: "local",
+    app_metadata: {},
+    user_metadata: {},
+    aud: "authenticated",
+    created_at: "",
+  } as unknown as User;
+}
+
+export function notifyCommunityAuth(): void {
+  const user = communityUser();
+  for (const l of listeners) l(user);
+}
+
 export function subscribe(listener: Listener): () => void {
+  if (isCommunity()) {
+    listeners.add(listener);
+    listener(communityUser());
+    return () => listeners.delete(listener);
+  }
   listeners.add(listener);
   listener(session?.user ?? null);
   // main.tsx (not editable here) owns the other startup inits; the first
@@ -76,6 +103,7 @@ export function subscribe(listener: Listener): () => void {
 }
 
 export function getUser(): User | null {
+  if (isCommunity()) return communityUser();
   return session?.user ?? null;
 }
 
@@ -99,6 +127,12 @@ export async function setSessionFromTokens(
 }
 
 export function clearSession(): void {
+  if (isCommunity()) {
+    removeKey("openai");
+    removeKey("anthropic");
+    notifyCommunityAuth();
+    return;
+  }
   session = null;
   writeStoredRefreshToken(null);
   void getSupabase().auth.signOut({ scope: "local" });
@@ -116,6 +150,7 @@ function isExpiringSoon(s: Session): boolean {
  * Returns null when there is no session or refresh failed (caller re-auths).
  */
 export async function getAccessToken(): Promise<string | null> {
+  if (isCommunity()) return isConfigured() ? "community" : null;
   if (!session) return null;
   if (isExpiringSoon(session)) {
     return refresh();
@@ -150,6 +185,7 @@ async function doRefresh(): Promise<string | null> {
  * refresh token is never spent twice.
  */
 export async function refresh(): Promise<string | null> {
+  if (isCommunity()) return isConfigured() ? "community" : null;
   if (inFlightRefresh) return inFlightRefresh;
   inFlightRefresh = (async () => {
     try {
@@ -170,6 +206,7 @@ export async function refresh(): Promise<string | null> {
  * out, exactly as before persistence existed.
  */
 export async function rehydrateSession(): Promise<void> {
+  if (isCommunity()) return; // No Supabase session to restore in the BYOK build.
   if (session) return;
   const refreshToken = readStoredRefreshToken();
   if (!refreshToken) return;

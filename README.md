@@ -10,10 +10,11 @@ The legal intelligence lives in the backend, so the hosted add-in will not run s
 Everything operates on the document you already have open in Word.
 There is no separate upload step: the open document is the subject.
 
-> **Community edition (in progress).**
-> A standalone, self-hostable **community version that works with your own API key (BYOK)** is under active development.
-> It will let you run the add-in 100% locally against your own model and infrastructure, without the hosted Vaquill backend.
-> Until it lands, the add-in in this repo targets the hosted backend (see [Backend requirement](#backend-requirement)).
+> **Community edition (bring-your-own-key).**
+> A standalone, self-hostable **community build that runs on your own API key (OpenAI or Anthropic)** is available.
+> It runs the add-in against your own provider, with no hosted Vaquill backend.
+> To run it, follow [SELF_HOSTING.md](SELF_HOSTING.md) (step by step). For what it can do, see [COMMUNITY.md](COMMUNITY.md).
+> The default (cloud) build in this repo still targets the hosted backend (see [Backend requirement](#backend-requirement)).
 
 ---
 

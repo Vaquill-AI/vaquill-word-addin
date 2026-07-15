@@ -31,6 +31,8 @@ import { TourProvider, useTour } from "@/tour/TourProvider";
 import { GuidesMenu } from "@/tour/GuidesMenu";
 import { WELCOME_TOUR_ID } from "@/tour/registry";
 import { resetToursSeen } from "@/tour/tourStore";
+import { isCommunity } from "@/community/edition";
+import { KeyWizard } from "@/features/onboarding/KeyWizard";
 import { subscribeActiveOrg } from "@/lib/org";
 import "./styles/app.css";
 
@@ -274,6 +276,8 @@ function AppShell() {
               <Spinner />
               <p className="login__sub small">Signing you in...</p>
             </div>
+          ) : isCommunity() ? (
+            <KeyWizard />
           ) : (
             <LoginView notice={authNotice} />
           )

@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<OfficeApp
+  xmlns="http://schemas.microsoft.com/office/appforoffice/1.1"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:bt="http://schemas.microsoft.com/office/officeappbasictypes/1.0"
+  xmlns:ov="http://schemas.microsoft.com/office/taskpaneappversionoverrides"
+  xsi:type="TaskPaneApp">
+
+  <!-- Community (bring-your-own-key) manifest TEMPLATE.
+       Before sideloading:
+       1. Replace every YOUR-DOMAIN.example.com with the HTTPS origin you serve
+          the built dist/ folder from (Office requires HTTPS for the task pane).
+       2. Replace the Id below with your own new GUID (any GUID generator works;
+          it must be unique to your install).
+       There is NO Vaquill backend, Supabase, or Google OAuth here: the add-in
+       calls your own AI provider directly, so those AppDomains are removed. -->
+  <Id>REPLACE-WITH-YOUR-OWN-GUID-0000-000000000000</Id>
+  <Version>1.0.0.0</Version>
+  <ProviderName>Vaquill Community</ProviderName>
+  <DefaultLocale>en-US</DefaultLocale>
+  <DisplayName DefaultValue="Vaquill for Word (Community)" />
+  <Description DefaultValue="Bring-your-own-key contract review, drafting, and document tools inside Word. Runs against your own AI provider; no hosted backend." />
+  <IconUrl DefaultValue="https://YOUR-DOMAIN.example.com/assets/icon-32.png" />
+  <HighResolutionIconUrl DefaultValue="https://YOUR-DOMAIN.example.com/assets/icon-80.png" />
+  <SupportUrl DefaultValue="https://YOUR-DOMAIN.example.com/" />
+
+  <!-- Only the origin you serve the add-in from. Calls to your AI provider
+       (api.openai.com / api.anthropic.com) go out via fetch and are governed by
+       CORS, not AppDomains, so they do not belong here. -->
+  <AppDomains>
+    <AppDomain>https://YOUR-DOMAIN.example.com</AppDomain>
+  </AppDomains>
+
+  <Hosts>
+    <Host Name="Document" />
+  </Hosts>
+
+  <Requirements>
+    <Sets DefaultMinVersion="1.6">
+      <Set Name="WordApi" MinVersion="1.6" />
+    </Sets>
+  </Requirements>
+
+  <DefaultSettings>
+    <SourceLocation DefaultValue="https://YOUR-DOMAIN.example.com/index.html" />
+  </DefaultSettings>
+
+  <Permissions>ReadWriteDocument</Permissions>
+
+  <VersionOverrides xmlns="http://schemas.microsoft.com/office/taskpaneappversionoverrides" xsi:type="VersionOverridesV1_0">
+    <Hosts>
+      <Host xsi:type="Document">
+        <DesktopFormFactor>
+          <GetStarted>
+            <Title resid="GetStarted.Title" />
+            <Description resid="GetStarted.Description" />
+            <LearnMoreUrl resid="GetStarted.LearnMoreUrl" />
+          </GetStarted>
+          <ExtensionPoint xsi:type="PrimaryCommandSurface">
+            <OfficeTab id="TabHome">
+              <Group id="Vaquill.Group">
+                <Label resid="Vaquill.Group.Label" />
+                <Icon>
+                  <bt:Image size="16" resid="Icon.16" />
+                  <bt:Image size="32" resid="Icon.32" />
+                  <bt:Image size="80" resid="Icon.80" />
+                </Icon>
+                <Control xsi:type="Button" id="Vaquill.OpenPane">
+                  <Label resid="Vaquill.OpenPane.Label" />
+                  <Supertip>
+                    <Title resid="Vaquill.OpenPane.Label" />
+                    <Description resid="Vaquill.OpenPane.Tip" />
+                  </Supertip>
+                  <Icon>
+                    <bt:Image size="16" resid="Icon.16" />
+                    <bt:Image size="32" resid="Icon.32" />
+                    <bt:Image size="80" resid="Icon.80" />
+                  </Icon>
+                  <Action xsi:type="ShowTaskpane">
+                    <TaskpaneId>Vaquill.Taskpane</TaskpaneId>
+                    <SourceLocation resid="Taskpane.Url" />
+                  </Action>
+                </Control>
+              </Group>
+            </OfficeTab>
+          </ExtensionPoint>
+          <ExtensionPoint xsi:type="ContextMenu">
+            <OfficeMenu id="ContextMenuText">
+              <Control xsi:type="Button" id="Vaquill.ContextReview">
+                <Label resid="Vaquill.Context.Label" />
+                <Supertip>
+                  <Title resid="Vaquill.Context.Label" />
+                  <Description resid="Vaquill.OpenPane.Tip" />
+                </Supertip>
+                <Icon>
+                  <bt:Image size="16" resid="Icon.16" />
+                  <bt:Image size="32" resid="Icon.32" />
+                  <bt:Image size="80" resid="Icon.80" />
+                </Icon>
+                <Action xsi:type="ShowTaskpane">
+                  <TaskpaneId>Vaquill.Taskpane</TaskpaneId>
+                  <SourceLocation resid="Taskpane.Url" />
+                </Action>
+              </Control>
+            </OfficeMenu>
+          </ExtensionPoint>
+        </DesktopFormFactor>
+      </Host>
+    </Hosts>
+    <Resources>
+      <bt:Images>
+        <bt:Image id="Icon.16" DefaultValue="https://YOUR-DOMAIN.example.com/assets/icon-16.png" />
+        <bt:Image id="Icon.32" DefaultValue="https://YOUR-DOMAIN.example.com/assets/icon-32.png" />
+        <bt:Image id="Icon.80" DefaultValue="https://YOUR-DOMAIN.example.com/assets/icon-80.png" />
+      </bt:Images>
+      <bt:Urls>
+        <bt:Url id="Taskpane.Url" DefaultValue="https://YOUR-DOMAIN.example.com/index.html" />
+        <bt:Url id="GetStarted.LearnMoreUrl" DefaultValue="https://YOUR-DOMAIN.example.com/" />
+      </bt:Urls>
+      <bt:ShortStrings>
+        <bt:String id="GetStarted.Title" DefaultValue="Vaquill for Word (Community) is ready" />
+        <bt:String id="Vaquill.Group.Label" DefaultValue="Vaquill" />
+        <bt:String id="Vaquill.OpenPane.Label" DefaultValue="Open Vaquill" />
+        <bt:String id="Vaquill.Context.Label" DefaultValue="Review with Vaquill" />
+      </bt:ShortStrings>
+      <bt:LongStrings>
+        <bt:String id="GetStarted.Description" DefaultValue="Open the pane to review this contract, apply grounded redlines, and draft clauses with your own AI key." />
+        <bt:String id="Vaquill.OpenPane.Tip" DefaultValue="Review the open contract, apply tracked-change redlines, and run drafting and document tools." />
+      </bt:LongStrings>
+    </Resources>
+  </VersionOverrides>
+</OfficeApp>

@@ -18,6 +18,9 @@ import {
   type ReviewPrefs,
 } from "@/lib/prefs";
 import { JURISDICTIONS } from "@/features/review/constants";
+import { isCommunity } from "@/community/edition";
+import { AiProvidersCard } from "./AiProvidersCard";
+import { CourtListenerCard } from "./CourtListenerCard";
 import "./settings.css";
 
 // Footer links on the marketing site (www.vaquill.ai, the domain the manifest
@@ -210,10 +213,16 @@ export function SettingsView({
         </div>
       </div>
 
-      <div className="card settings-card">
-        <h2 className="settings-heading">Plan &amp; usage</h2>
-        <UsageSection state={usage} />
-      </div>
+      {isCommunity() && <AiProvidersCard />}
+
+      {isCommunity() && <CourtListenerCard />}
+
+      {!isCommunity() && (
+        <div className="card settings-card">
+          <h2 className="settings-heading">Plan &amp; usage</h2>
+          <UsageSection state={usage} />
+        </div>
+      )}
 
       <div className="card settings-card">
         <h2 className="settings-heading">Workspace defaults</h2>

@@ -2,6 +2,7 @@ import { config } from "@/config";
 import { getAccessToken, refresh } from "@/auth/session";
 import { getActiveOrgId } from "@/lib/org";
 import { ApiError, errorFromResponse } from "./errors";
+import { isCommunity } from "@/community/edition";
 
 /**
  * POST + Server-Sent-Events reader for the Vaquill streaming endpoints.
@@ -72,6 +73,10 @@ function readWithIdleTimeout<T>(read: Promise<T>, ms: number): Promise<T> {
 }
 
 export async function postStream(path: string, body: unknown, opts: StreamHandlers): Promise<void> {
+  if (isCommunity()) {
+    const { communityStream } = await import("@/community/localStream");
+    return communityStream(path, body, opts);
+  }
   const token = await getAccessToken();
   if (!token) throw new ApiError("unauthorized", 401, "Not signed in.");
 

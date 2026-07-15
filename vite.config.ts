@@ -1,6 +1,25 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
+import { existsSync, readFileSync } from "node:fs";
+import { homedir } from "node:os";
 import { resolve } from "node:path";
+
+// Local HTTPS for the dev server (Office requires HTTPS, even on localhost).
+// Order: explicit cert paths from env (office-addin-debugging sets these), then
+// the certificate created by `npx office-addin-dev-certs install` (the community
+// self-host flow uses this so `npm run dev:community` just works), then none.
+function devHttps() {
+  if (process.env.WORD_ADDIN_KEY && process.env.WORD_ADDIN_CERT) {
+    return { key: process.env.WORD_ADDIN_KEY, cert: process.env.WORD_ADDIN_CERT };
+  }
+  const dir = resolve(homedir(), ".office-addin-dev-certs");
+  const keyPath = resolve(dir, "localhost.key");
+  const certPath = resolve(dir, "localhost.crt");
+  if (existsSync(keyPath) && existsSync(certPath)) {
+    return { key: readFileSync(keyPath), cert: readFileSync(certPath) };
+  }
+  return undefined;
+}
 
 // The add-in ships two HTML entry points served from the same origin:
 //   index.html    the task pane SPA
@@ -13,14 +32,7 @@ export default defineConfig({
   },
   server: {
     port: 3000,
-    // office-addin-debugging injects the dev certificate paths via env.
-    https:
-      process.env.WORD_ADDIN_KEY && process.env.WORD_ADDIN_CERT
-        ? {
-            key: process.env.WORD_ADDIN_KEY,
-            cert: process.env.WORD_ADDIN_CERT,
-          }
-        : undefined,
+    https: devHttps(),
   },
   build: {
     outDir: "dist",

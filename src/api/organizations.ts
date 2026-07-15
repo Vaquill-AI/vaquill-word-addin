@@ -1,5 +1,6 @@
 import { getSupabase } from "@/auth/supabase";
 import { getUser } from "@/auth/session";
+import { isCommunity } from "@/community/edition";
 
 /**
  * List the organizations the signed-in user is an ACTIVE member of (owned or
@@ -28,6 +29,7 @@ interface MemberRow {
 }
 
 export async function listMyOrganizations(): Promise<Org[]> {
+  if (isCommunity()) return []; // No orgs in the community edition.
   const user = getUser();
   if (!user) return [];
   const supabase = getSupabase();

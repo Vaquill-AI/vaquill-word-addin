@@ -12,6 +12,7 @@ import { CitationStyle } from "./CitationStyle";
 import { insertTableOfAuthorities } from "@/office/citations";
 import { canAnnotate, paintCritiques, clearCritiques, type CritiqueItem } from "@/office/annotations";
 import type { AuthorityResult } from "@/api/authority";
+import { citationAuthorityAvailable } from "@/community/gating";
 import "./authority.css";
 
 /** Which summary bucket a citation result falls in (drives the filter chips). */
@@ -109,9 +110,17 @@ export function AuthorityView() {
         info="Checks every case and statute citation in the document against Vaquill AI's US corpus. Found means a real matching authority exists, not that it is still good law, so confirm its current treatment before relying on it. No match can mean a hallucinated, mis-typed, or unreported citation, so confirm it yourself before you rely on it or file."
         subtitle="Verify every case and statute citation in this document against Vaquill AI's US corpus. Catch citations that do not resolve to a real authority before you file or send."
       />
-        <Button variant="primary" className="btn--cta" onClick={run}>
-          Check citations
-        </Button>
+        {citationAuthorityAvailable() ? (
+          <Button variant="primary" className="btn--cta" onClick={run}>
+            Check citations
+          </Button>
+        ) : (
+          <Banner tone="info">
+            To check whether cited cases exist, add your free CourtListener API token in Settings.
+            Statute verification needs a Vaquill AI account and is not available in the community
+            edition.
+          </Banner>
+        )}
       </div>
     );
   }
