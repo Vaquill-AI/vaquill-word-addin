@@ -1,5 +1,7 @@
 import { useMemo, useState } from "react";
 import { Banner, Button } from "@/ui/primitives";
+import { isCommunity } from "@/community/edition";
+import { UpgradeLink } from "@/ui/UpgradeGate";
 import { severityOf } from "@/lib/severity";
 import { goToBookmark } from "@/office/bookmarks";
 import { selectClauseInDocument } from "@/office/navigate";
@@ -294,9 +296,13 @@ export function ReviewMemo({
             <Button variant="ghost" size="sm" onClick={onCopy}>
               {copied ? "Copied" : "Copy memo"}
             </Button>
-            <Button variant="ghost" size="sm" onClick={onDownload} loading={downloading}>
-              Download .docx
-            </Button>
+            {isCommunity() ? (
+              <UpgradeLink label="Download .docx (hosted)" />
+            ) : (
+              <Button variant="ghost" size="sm" onClick={onDownload} loading={downloading}>
+                Download .docx
+              </Button>
+            )}
           </div>
         )}
       </div>

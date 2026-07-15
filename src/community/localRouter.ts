@@ -296,7 +296,8 @@ async function handleDrafting(
     return startDraft(body);
   }
   if (method === "GET" && path === "/api/v1/drafting/drafts") {
-    return { drafts: [], total: 0 };
+    // The drafts-list wrapper (api/drafts.ts) expects a bare array.
+    return [];
   }
   const rowMatch = /^\/api\/v1\/drafting\/drafts\/([^/]+)$/.exec(path);
   if (method === "GET" && rowMatch) {

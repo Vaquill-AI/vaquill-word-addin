@@ -36,9 +36,14 @@ export const config = {
 export const authRedirectUrl = `${config.addinOrigin}/auth.html`;
 
 export function assertConfigured(): void {
-  const missing = (["supabaseUrl", "supabaseAnonKey", "addinOrigin"] as const).filter(
-    (k) => !config[k],
-  );
+  // The community (bring-your-own-key) build has no Supabase, so it only needs
+  // the add-in origin. VITE_EDITION is a build constant, so this is safe at boot
+  // and does not block the community build on missing Supabase config.
+  const community = import.meta.env.VITE_EDITION === "community";
+  const required = community
+    ? (["addinOrigin"] as const)
+    : (["supabaseUrl", "supabaseAnonKey", "addinOrigin"] as const);
+  const missing = required.filter((k) => !config[k]);
   if (missing.length) {
     throw new Error(`Vaquill add-in misconfigured. Missing: ${missing.join(", ")}`);
   }

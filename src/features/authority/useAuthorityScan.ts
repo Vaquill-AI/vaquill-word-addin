@@ -2,7 +2,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { errorMessage } from "@/api/errors";
 import { readFullDocumentText } from "@/office/document";
 import { getCaseStatusBatch, verifyCitation, type AuthorityResult } from "@/api/authority";
-import { extractCaseCitations } from "./extract";
+import { extractCaseCitations, isStatuteCitation } from "./extract";
+import { isCommunity } from "@/community/edition";
 import { ApiError } from "@/api/errors";
 
 export type ScanStatus = "idle" | "reading" | "scanning" | "done" | "error";
@@ -84,7 +85,11 @@ export function useAuthorityScan() {
     try {
       const text = await readFullDocumentText();
       if (signal.aborted) return;
-      const cites = extractCaseCitations(text);
+      // Statute verification needs the hosted corpus, so in the community edition
+      // skip statute citations rather than flag valid ones as unverified.
+      const cites = extractCaseCitations(text).filter(
+        (c) => !isCommunity() || !isStatuteCitation(c.raw),
+      );
       if (cites.length === 0) {
         setState({ ...INITIAL, status: "done" });
         return;
