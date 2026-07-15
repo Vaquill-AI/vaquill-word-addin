@@ -119,9 +119,9 @@ export function AuthorityView() {
           <div className="stack" style={{ gap: 8 }}>
             <Banner tone="info">
               To check whether cited cases exist, add your free CourtListener API token in Settings.
-              Statute verification and good-law checks are part of the Vaquill hosted plan.
+              Statute verification and good-law checks are part of the Vaquill AI hosted plan.
             </Banner>
-            <UpgradeLink label="Get Vaquill hosted" />
+            <UpgradeLink label="Get Vaquill AI hosted" />
           </div>
         )}
       </div>

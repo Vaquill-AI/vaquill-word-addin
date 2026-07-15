@@ -1,7 +1,7 @@
-# Running Vaquill for Word yourself
+# Running Vaquill AI for Word yourself
 
-This guide walks you through running the community edition of the Vaquill Word add-in on your own, with your own AI key.
-No Vaquill account is needed.
+This guide walks you through running the community edition of the Vaquill AI Word add-in on your own, with your own AI key.
+No Vaquill AI account is needed.
 It assumes you can install software and run a few commands, but not that you are a developer.
 Every step is spelled out.
 
@@ -10,7 +10,7 @@ Every step is spelled out.
 The add-in is a small web app that runs inside Word.
 "Sideloading" means telling Word to load your copy of it, instead of getting it from the Office store.
 You do three things: install the tools, start the app, and tell Word to load it.
-After that, opening Word shows a Vaquill button.
+After that, opening Word shows a Vaquill AI button.
 
 There are two ways to run it.
 Pick one.
@@ -89,7 +89,7 @@ The file you point Word at is `manifest.localhost.xml`, in the project folder yo
    If there is no folder named `wef`, create one there.
 3. Copy `manifest.localhost.xml` into that `wef` folder.
 4. Quit Word completely and reopen it.
-5. Open a document, go to the Home tab, click Add-ins, then My Add-ins, and pick Vaquill under "Developer Add-ins".
+5. Open a document, go to the Home tab, click Add-ins, then My Add-ins, and pick Vaquill AI under "Developer Add-ins".
 
 **Word on Windows:**
 1. Make a folder anywhere, for example `C:\vaquill-addin`, and copy `manifest.localhost.xml` into it.
@@ -99,11 +99,11 @@ The file you point Word at is `manifest.localhost.xml`, in the project folder yo
    Go to File, then Options, then Trust Center, then Trust Center Settings, then Trusted Add-in Catalogs.
 4. Paste the network path into "Catalog Url", click Add Catalog, tick "Show in Menu", and click OK.
 5. Close Word and reopen it.
-6. On the Home tab, click Add-ins, open the "Shared Folder" tab, and pick Vaquill.
+6. On the Home tab, click Add-ins, open the "Shared Folder" tab, and pick Vaquill AI.
 
 ### Step 4. Open it and add your key
 
-1. On the Home tab, click "Open Vaquill".
+1. On the Home tab, click "Open Vaquill AI".
    The pane opens on the right.
 2. The first time, it asks for your AI provider and key.
    Choose OpenAI or Anthropic, paste your key, and click Test.
@@ -138,14 +138,14 @@ Send `manifest.firm.xml` to each person.
 Each person loads it using the matching steps in Option A, Step 3 (Word on the web, Mac, or Windows).
 Then each person adds their own AI key, as in Option A, Step 4.
 
-## What works, and what needs a Vaquill account
+## What works, and what needs a Vaquill AI account
 
 Most of the product works with just your key: the assistant, drafting, contract review and redlines, playbooks, NDA triage, the clause and prompt libraries, and all the document tools (formatting, defined terms, cross-references, clean copy, and so on).
 See [COMMUNITY.md](COMMUNITY.md) for the full list.
 
 Two things need a Vaquill AI account and are not in the community edition:
 - Statute verification (checking a cited statute against a statute database).
-- Saving work back into the hosted Vaquill product (matters, vendors, usage).
+- Saving work back into the hosted Vaquill AI product (matters, vendors, usage).
 
 Case-law verification (does a cited case exist) is available if you add your own free CourtListener token in Settings.
 Get one at https://www.courtlistener.com/help/api/rest/.
@@ -166,7 +166,7 @@ For Option B, run `npm run build:community` and copy the new `dist` to your serv
 - Word says it cannot load the add-in.
   Close Word completely and reopen it after sideloading.
 - A feature says it needs a Vaquill AI account.
-  That feature uses Vaquill's hosted data and is not part of the community edition.
+  That feature uses Vaquill AI's hosted data and is not part of the community edition.
 - The citation check says nothing happens.
   Add a free CourtListener token in Settings, under "Case-law verification".
   Case citations are checked against CourtListener; statutes are not checked in this edition.

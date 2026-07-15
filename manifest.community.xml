@@ -12,13 +12,13 @@
           the built dist/ folder from (Office requires HTTPS for the task pane).
        2. Replace the Id below with your own new GUID (any GUID generator works;
           it must be unique to your install).
-       There is NO Vaquill backend, Supabase, or Google OAuth here: the add-in
+       There is NO Vaquill AI backend, Supabase, or Google OAuth here: the add-in
        calls your own AI provider directly, so those AppDomains are removed. -->
   <Id>REPLACE-WITH-YOUR-OWN-GUID-0000-000000000000</Id>
   <Version>1.0.0.0</Version>
-  <ProviderName>Vaquill Community</ProviderName>
+  <ProviderName>Vaquill AI Community</ProviderName>
   <DefaultLocale>en-US</DefaultLocale>
-  <DisplayName DefaultValue="Vaquill for Word (Community)" />
+  <DisplayName DefaultValue="Vaquill AI for Word (Community)" />
   <Description DefaultValue="Bring-your-own-key contract review, drafting, and document tools inside Word. Runs against your own AI provider; no hosted backend." />
   <IconUrl DefaultValue="https://YOUR-DOMAIN.example.com/assets/icon-32.png" />
   <HighResolutionIconUrl DefaultValue="https://YOUR-DOMAIN.example.com/assets/icon-80.png" />
@@ -118,10 +118,10 @@
         <bt:Url id="GetStarted.LearnMoreUrl" DefaultValue="https://YOUR-DOMAIN.example.com/" />
       </bt:Urls>
       <bt:ShortStrings>
-        <bt:String id="GetStarted.Title" DefaultValue="Vaquill for Word (Community) is ready" />
-        <bt:String id="Vaquill.Group.Label" DefaultValue="Vaquill" />
-        <bt:String id="Vaquill.OpenPane.Label" DefaultValue="Open Vaquill" />
-        <bt:String id="Vaquill.Context.Label" DefaultValue="Review with Vaquill" />
+        <bt:String id="GetStarted.Title" DefaultValue="Vaquill AI for Word (Community) is ready" />
+        <bt:String id="Vaquill.Group.Label" DefaultValue="Vaquill AI" />
+        <bt:String id="Vaquill.OpenPane.Label" DefaultValue="Open Vaquill AI" />
+        <bt:String id="Vaquill.Context.Label" DefaultValue="Review with Vaquill AI" />
       </bt:ShortStrings>
       <bt:LongStrings>
         <bt:String id="GetStarted.Description" DefaultValue="Open the pane to review this contract, apply grounded redlines, and draft clauses with your own AI key." />

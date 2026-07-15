@@ -9,7 +9,7 @@ export function AiProvidersCard() {
     <div className="card settings-card">
       <h2 className="settings-heading">AI provider</h2>
       <p className="small muted settings-heading__hint">
-        Vaquill uses your own AI key in this edition. Switch providers or update your key here.
+        Vaquill AI uses your own AI key in this edition. Switch providers or update your key here.
       </p>
       <ProviderKeyForm />
     </div>

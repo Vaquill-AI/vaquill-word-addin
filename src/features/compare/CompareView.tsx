@@ -34,7 +34,7 @@ export function CompareView() {
         />
         <UpgradeGate title="Document compare is on the hosted plan">
           Compare the open document against a reference version and get a native tracked-changes
-          redline. This runs on Vaquill's hosted service.
+          redline. This runs on Vaquill AI's hosted service.
         </UpgradeGate>
       </div>
     );

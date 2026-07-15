@@ -11,9 +11,9 @@
        after running `npm run dev:community`. No editing needed. See SELF_HOSTING.md. -->
   <Id>c0ffee00-10ca-4b0a-9e62-3c5d1a8b6f04</Id>
   <Version>1.0.0.0</Version>
-  <ProviderName>Vaquill Community</ProviderName>
+  <ProviderName>Vaquill AI Community</ProviderName>
   <DefaultLocale>en-US</DefaultLocale>
-  <DisplayName DefaultValue="Vaquill for Word (Community, local)" />
+  <DisplayName DefaultValue="Vaquill AI for Word (Community, local)" />
   <Description DefaultValue="Bring-your-own-key contract review, drafting, and document tools inside Word. Runs on your own AI provider from your computer." />
   <IconUrl DefaultValue="https://localhost:3000/assets/icon-32.png" />
   <HighResolutionIconUrl DefaultValue="https://localhost:3000/assets/icon-80.png" />
@@ -87,11 +87,11 @@
         <bt:Url id="Taskpane.Url" DefaultValue="https://localhost:3000/index.html" />
       </bt:Urls>
       <bt:ShortStrings>
-        <bt:String id="Vaquill.Group.Label" DefaultValue="Vaquill" />
-        <bt:String id="Vaquill.OpenPane.Label" DefaultValue="Open Vaquill" />
+        <bt:String id="Vaquill.Group.Label" DefaultValue="Vaquill AI" />
+        <bt:String id="Vaquill.OpenPane.Label" DefaultValue="Open Vaquill AI" />
       </bt:ShortStrings>
       <bt:LongStrings>
-        <bt:String id="Vaquill.OpenPane.Tip" DefaultValue="Open the Vaquill pane to review the open contract, draft, and run the document tools." />
+        <bt:String id="Vaquill.OpenPane.Tip" DefaultValue="Open the Vaquill AI pane to review the open contract, draft, and run the document tools." />
       </bt:LongStrings>
     </Resources>
   </VersionOverrides>

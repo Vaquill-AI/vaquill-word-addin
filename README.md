@@ -12,13 +12,13 @@ There is no separate upload step: the open document is the subject.
 
 > **Community edition (bring-your-own-key).**
 > A standalone, self-hostable **community build that runs on your own API key (OpenAI or Anthropic)** is available.
-> It runs the add-in against your own provider, with no hosted Vaquill backend.
+> It runs the add-in against your own provider, with no hosted Vaquill AI backend.
 > To run it, follow [SELF_HOSTING.md](SELF_HOSTING.md) (step by step). For what it can do, see [COMMUNITY.md](COMMUNITY.md).
 > The default (cloud) build in this repo still targets the hosted backend (see [Backend requirement](#backend-requirement)).
 
 ## What works in each edition
 
-| Capability | Vaquill (hosted) | Community (your own key) |
+| Capability | Vaquill AI (hosted) | Community (your own key) |
 | --- | --- | --- |
 | Assistant chat over the open document | Yes, grounded in the legal corpus, the web, and your matter files | Yes, grounded in the open document |
 | Rewrite, explain, plain-English, risk, compliance, and guideline checks | Yes | Yes |
@@ -31,16 +31,16 @@ There is no separate upload step: the open document is the subject.
 | Clause transplant, fill-from-reference, attach a document | Yes (PDF, DOCX, and more) | Yes (DOCX, TXT, MD) |
 | Prompt and clause libraries | Yes, synced to your account | Yes, saved on your device |
 | Document tools (Proper Format, defined terms, cross-references, reading navigator, deal cockpit, figures, send-ready, clean copy, tracked-changes review) | Yes | Yes, identical and fully local |
-| Case-law existence check (does a cited case exist) | Yes, against the Vaquill corpus | Yes, with your own free CourtListener token |
+| Case-law existence check (does a cited case exist) | Yes, against the Vaquill AI corpus | Yes, with your own free CourtListener token |
 | Good-law / treatment signal (is a case still good law) | Yes | No |
 | Statute verification and legal research | Yes | No |
 | Authored tracked-changes .docx export | Yes | No |
 | Document compare (redline against a reference) | Yes | No |
 | Save work to matters, vendors, or the web app | Yes | No |
-| AI provider | Managed by Vaquill | Your own OpenAI or Anthropic key |
-| Where your text is sent | Vaquill's backend | Only to the AI provider you choose |
+| AI provider | Managed by Vaquill AI | Your own OpenAI or Anthropic key |
+| Where your text is sent | Vaquill AI's backend | Only to the AI provider you choose |
 | Hosting | Nothing to run, we host it | You run it, on your machine or your own server |
-| Account | Vaquill account | No account, just your key |
+| Account | Vaquill AI account | No account, just your key |
 | Cost | Subscription | You pay your AI provider directly |
 
 ## Try it on your own computer (community edition)
@@ -66,7 +66,7 @@ npm run dev:community
 Then:
 
 1. Load it into Word by sideloading `manifest.localhost.xml`. On Word on the web, open Add-ins, then "Upload My Add-in". The Mac and Windows steps are in [SELF_HOSTING.md](SELF_HOSTING.md).
-2. In Word, click "Open Vaquill", then paste your OpenAI or Anthropic key.
+2. In Word, click "Open Vaquill AI", then paste your OpenAI or Anthropic key.
 
 Two guides cover the rest:
 

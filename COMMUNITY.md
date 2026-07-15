@@ -1,6 +1,6 @@
-# Vaquill for Word: Community (bring-your-own-key) edition
+# Vaquill AI for Word: Community (bring-your-own-key) edition
 
-The community edition runs the Word add-in against your OWN AI provider key, with no hosted Vaquill backend.
+The community edition runs the Word add-in against your OWN AI provider key, with no hosted Vaquill AI backend.
 You host nothing but the static add-in files.
 Your documents and prompts go only to the provider you choose (OpenAI or Anthropic), from your own machine.
 
@@ -34,8 +34,8 @@ Runs entirely in Word with no key (already local):
 
 ## What needs a Vaquill AI account (not in the community edition)
 
-- Statute resolution, and good-law (treatment) signals for cases. These use Vaquill's statute and case-law data.
-- Saving work back into the hosted Vaquill product (matters, vendors, usage, org).
+- Statute resolution, and good-law (treatment) signals for cases. These use Vaquill AI's statute and case-law data.
+- Saving work back into the hosted Vaquill AI product (matters, vendors, usage, org).
 
 ## Known limits
 
@@ -46,7 +46,7 @@ Runs entirely in Word with no key (already local):
 ## Privacy and security
 
 Your API key lives in the add-in's own browser storage on your machine.
-It is never sent to Vaquill, and only sent to the provider you chose.
+It is never sent to Vaquill AI, and only sent to the provider you chose.
 Because it is your own key on your own device, treat this box like any machine that holds a live API key: keep it patched and access-controlled.
 
 ## License

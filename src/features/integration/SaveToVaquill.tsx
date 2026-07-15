@@ -53,14 +53,14 @@ function mapRedlines(redlines: RedlineSuggestion[]): ImportRedline[] {
 }
 
 /**
- * Save the reviewed contract or generated draft back into Vaquill: as an
+ * Save the reviewed contract or generated draft back into Vaquill AI: as an
  * editable draft (with redlines rendered as tracked changes + comment threads),
  * or as a reusable template. Optionally scoped to a matter.
  */
 export function SaveToVaquill(props: Props) {
-  // Saving back into the hosted Vaquill product is a hosted-plan feature. In the
+  // Saving back into the hosted Vaquill AI product is a hosted-plan feature. In the
   // community edition, show a locked upsell instead of hiding it.
-  if (isCommunity()) return <UpgradeLink label="Save to Vaquill (hosted)" />;
+  if (isCommunity()) return <UpgradeLink label="Save to Vaquill AI (hosted)" />;
   // Matter is the user's standing context, set once in Settings (no per-save
   // picker). An explicit defaultMatterId prop still wins when a caller passes one.
   const matterId = props.defaultMatterId ?? getReviewPrefs().matterId ?? "";
