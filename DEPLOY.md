@@ -93,13 +93,15 @@ If, while sideloaded, the pane is blank and the host console shows a CSP error n
 2. Only if it still fails, add `'unsafe-inline'` to `script-src` as well.
 3. Redeploy and retest.
 
-Relax `script-src` only as far as the host actually requires, and never loosen `connect-src`, `object-src`, or `frame-ancestors`.
+Relax `script-src` only as far as the host actually requires, and never loosen `object-src` or `frame-ancestors`.
+The only intentional `connect-src` entries beyond our own API + Supabase + Office are the bring-your-own-key hosts the pane calls directly from the browser: `api.openai.com`, `api.anthropic.com`, and `www.courtlistener.com`.
+These are fixed, well-known API hosts reached only on the BYOK path; do not add wildcards or other hosts.
 
 ## Security posture (summary)
 
 - Rootless nginx (uid 101), non-privileged port 8080, `server_tokens off`.
 - HSTS, `X-Content-Type-Options: nosniff`, `Referrer-Policy`, and a locked-down `Permissions-Policy` on every response.
-- Strict CSP: `default-src 'self'`, `object-src 'none'`, `base-uri 'self'`, `connect-src` limited to our API + the Supabase project + Office, and a `frame-ancestors` allowlist for the Office web hosts (no `X-Frame-Options`, which cannot express those origins).
+- Strict CSP: `default-src 'self'`, `object-src 'none'`, `base-uri 'self'`, `connect-src` limited to our API + the Supabase project + Office + the BYOK provider hosts (`api.openai.com`, `api.anthropic.com`, `www.courtlistener.com`), and a `frame-ancestors` allowlist for the Office web hosts (no `X-Frame-Options`, which cannot express those origins).
 - Source maps are stripped from the image and 404 if requested; dotfiles are denied.
 - TLS is mandatory (Office requires HTTPS) and terminated by Traefik with an auto-renewing Let's Encrypt certificate.
 - No secrets in the bundle: only the public Supabase anon key, which RLS backs; the auth session is held in memory only and never written to `localStorage` or the Office Settings object.
