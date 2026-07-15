@@ -153,14 +153,16 @@
 }
 /* Every block in the login column shares one width and centers, so the header,
    the tab switch, and the form read as a single aligned column rather than a
-   centered header sitting above a left-aligned form. */
+   centered header sitting above a left-aligned form. The column grows with the
+   pane (width: 100%) up to a readable max, so widening the task pane widens the
+   content instead of stranding it in a narrow column. */
 .login > .stack,
 .login > .seg,
 .login > .login__form,
 .login > .login__divider,
 .login > .login__register {
   width: 100%;
-  max-width: 280px;
+  max-width: 40rem;
 }
 /* On the login screen the tab switch spans the column with two even halves,
    overriding the compact flush-left toggle used in dense inline rows. */
@@ -178,7 +180,9 @@
   font-size: var(--fs-subtitle);
 }
 .login__sub {
-  max-width: 240px;
+  /* Reflow to the column width so the description text widens with the pane
+     rather than staying pinned to a narrow measure. */
+  max-width: 100%;
   color: var(--text-muted);
 }
 .login__register {
