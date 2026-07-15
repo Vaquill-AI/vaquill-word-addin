@@ -1,6 +1,6 @@
 import type { Session, User } from "@supabase/supabase-js";
 import { getSupabase } from "./supabase";
-import { isCommunity } from "@/community/edition";
+import { isCommunity, setByokMode } from "@/community/edition";
 import { isConfigured, removeKey } from "@/ai/keys";
 
 /**
@@ -130,7 +130,14 @@ export function clearSession(): void {
   if (isCommunity()) {
     removeKey("openai");
     removeKey("anthropic");
-    notifyCommunityAuth();
+    // Leaving BYOK mode returns the hosted build to the sign-in screen; the
+    // community build stays in the key wizard (isBuildCommunity keeps it there).
+    setByokMode(false);
+    try {
+      window.location.reload();
+    } catch {
+      notifyCommunityAuth();
+    }
     return;
   }
   session = null;

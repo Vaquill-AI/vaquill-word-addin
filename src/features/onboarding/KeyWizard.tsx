@@ -1,4 +1,5 @@
 import { notifyCommunityAuth } from "@/auth/session";
+import { isBuildCommunity, setByokMode } from "@/community/edition";
 import { ProviderKeyForm } from "./ProviderKeyForm";
 
 /**
@@ -32,6 +33,21 @@ export function KeyWizard() {
           </a>
         ))}
       </div>
+      {!isBuildCommunity() && (
+        <p className="small muted" style={{ margin: 0, textAlign: "center" }}>
+          Have a Vaquill AI account?{" "}
+          <button
+            type="button"
+            className="linkaction"
+            onClick={() => {
+              setByokMode(false);
+              window.location.reload();
+            }}
+          >
+            Sign in
+          </button>
+        </p>
+      )}
     </div>
   );
 }

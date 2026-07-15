@@ -2,7 +2,9 @@ import { type FormEvent, useState } from "react";
 import { login } from "@/auth/dialog-login";
 import { loginWithPassword } from "@/auth/password-login";
 import { config } from "@/config";
-import { Banner, Button, Field } from "@/ui/primitives";
+import { Banner, Button, Field, SegmentedControl } from "@/ui/primitives";
+import { ProviderKeyForm } from "@/features/onboarding/ProviderKeyForm";
+import { setByokMode } from "@/community/edition";
 
 /** Open the web sign-up in the system browser. There is no sign-up inside Word:
  *  a new user registers on the web app, then comes back here to sign in. Prefer
@@ -50,6 +52,7 @@ export function LoginView({ notice }: { notice?: string | null } = {}) {
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState<null | "password" | "google">(null);
   const [error, setError] = useState<string | null>(null);
+  const [tab, setTab] = useState<"cloud" | "byok">("cloud");
 
   async function onPasswordSignIn(e: FormEvent) {
     e.preventDefault();
@@ -93,58 +96,86 @@ export function LoginView({ notice }: { notice?: string | null } = {}) {
         </p>
       </div>
 
+      <SegmentedControl<"cloud" | "byok">
+        label="Sign-in method"
+        value={tab}
+        onChange={setTab}
+        options={[
+          { value: "cloud", label: "Vaquill AI account" },
+          { value: "byok", label: "Bring your own key" },
+        ]}
+      />
+
       {notice && !error && <Banner tone="info">{notice}</Banner>}
-      {error && <Banner tone="danger">{error}</Banner>}
+      {error && tab === "cloud" && <Banner tone="danger">{error}</Banner>}
 
-      <form className="login__form" onSubmit={onPasswordSignIn}>
-        <Field label="Email">
-          <input
-            type="email"
-            autoComplete="username"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="you@firm.com"
-            disabled={disabled}
+      {tab === "cloud" ? (
+        <>
+          <form className="login__form" onSubmit={onPasswordSignIn}>
+            <Field label="Email">
+              <input
+                type="email"
+                autoComplete="username"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@firm.com"
+                disabled={disabled}
+              />
+            </Field>
+            <Field label="Password">
+              <input
+                type="password"
+                autoComplete="current-password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Your password"
+                disabled={disabled}
+              />
+            </Field>
+            <Button variant="primary" type="submit" loading={busy === "password"} disabled={disabled} block>
+              Sign in
+            </Button>
+          </form>
+
+          <div className="login__divider">
+            <span>or</span>
+          </div>
+
+          <div className="login__form">
+            <Button
+              type="button"
+              variant="default"
+              onClick={onGoogleSignIn}
+              loading={busy === "google"}
+              disabled={disabled}
+              block
+            >
+              <GoogleGlyph /> Continue with Google
+            </Button>
+          </div>
+
+          <p className="login__register small muted">
+            New to Vaquill AI?{" "}
+            <button type="button" className="linkaction" onClick={openRegister} disabled={disabled}>
+              Create an account
+            </button>
+          </p>
+        </>
+      ) : (
+        <div className="login__form stack" style={{ gap: 10 }}>
+          <p className="small muted" style={{ margin: 0 }}>
+            Use your own OpenAI or Anthropic key. No account needed. Your key stays on this device
+            and is sent only to your provider. Case-law, statutes, and saving to Vaquill AI stay on
+            the account plan.
+          </p>
+          <ProviderKeyForm
+            onSaved={() => {
+              setByokMode(true);
+              window.location.reload();
+            }}
           />
-        </Field>
-        <Field label="Password">
-          <input
-            type="password"
-            autoComplete="current-password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="Your password"
-            disabled={disabled}
-          />
-        </Field>
-        <Button variant="primary" type="submit" loading={busy === "password"} disabled={disabled} block>
-          Sign in
-        </Button>
-      </form>
-
-      <div className="login__divider">
-        <span>or</span>
-      </div>
-
-      <div className="login__form">
-        <Button
-          type="button"
-          variant="default"
-          onClick={onGoogleSignIn}
-          loading={busy === "google"}
-          disabled={disabled}
-          block
-        >
-          <GoogleGlyph /> Continue with Google
-        </Button>
-      </div>
-
-      <p className="login__register small muted">
-        New to Vaquill?{" "}
-        <button type="button" className="linkaction" onClick={openRegister} disabled={disabled}>
-          Create an account
-        </button>
-      </p>
+        </div>
+      )}
     </div>
   );
 }
