@@ -16,6 +16,33 @@ There is no separate upload step: the open document is the subject.
 > To run it, follow [SELF_HOSTING.md](SELF_HOSTING.md) (step by step). For what it can do, see [COMMUNITY.md](COMMUNITY.md).
 > The default (cloud) build in this repo still targets the hosted backend (see [Backend requirement](#backend-requirement)).
 
+### What works in each edition
+
+| Capability | Vaquill (hosted) | Community (your own key) |
+| --- | --- | --- |
+| Assistant chat over the open document | Yes, grounded in the legal corpus, the web, and your matter files | Yes, grounded in the open document |
+| Rewrite, explain, plain-English, risk, compliance, and guideline checks | Yes | Yes |
+| Bluebook citation-format check | Yes | Yes |
+| Contract review and grounded redlines | Yes | Yes |
+| Agentic "draft a stronger fix" | Yes | Yes |
+| NDA triage | Yes | Yes |
+| Playbook fit and playbook library | Yes | Yes, saved on your device |
+| Draft generation | Yes, with corpus and case-law grounding, cited authorities, and a quality score | Yes, without corpus grounding, authorities, or a quality score |
+| Clause transplant, fill-from-reference, attach a document | Yes (PDF, DOCX, and more) | Yes (DOCX, TXT, MD) |
+| Prompt and clause libraries | Yes, synced to your account | Yes, saved on your device |
+| Document tools (Proper Format, defined terms, cross-references, reading navigator, deal cockpit, figures, send-ready, clean copy, tracked-changes review) | Yes | Yes, identical and fully local |
+| Case-law existence check (does a cited case exist) | Yes, against the Vaquill corpus | Yes, with your own free CourtListener token |
+| Good-law / treatment signal (is a case still good law) | Yes | No |
+| Statute verification and legal research | Yes | No |
+| Authored tracked-changes .docx export | Yes | No |
+| Document compare (redline against a reference) | Yes | No |
+| Save work to matters, vendors, or the web app | Yes | No |
+| AI provider | Managed by Vaquill | Your own OpenAI or Anthropic key |
+| Where your text is sent | Vaquill's backend | Only to the AI provider you choose |
+| Hosting | Nothing to run, we host it | You run it, on your machine or your own server |
+| Account | Vaquill account | No account, just your key |
+| Cost | Subscription | You pay your AI provider directly |
+
 ---
 
 ## Features
