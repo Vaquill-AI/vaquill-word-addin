@@ -165,8 +165,7 @@ export function LoginView({ notice }: { notice?: string | null } = {}) {
         <div className="login__form stack" style={{ gap: 10 }}>
           <p className="small muted" style={{ margin: 0 }}>
             Use your own OpenAI or Anthropic key. No account needed. Your key stays on this device
-            and is sent only to your provider. Case-law, statutes, and saving to Vaquill AI stay on
-            the account plan.
+            and is sent only to your provider.
           </p>
           <ProviderKeyForm
             onSaved={() => {
