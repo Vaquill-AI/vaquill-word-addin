@@ -25,7 +25,7 @@ import { ArrowLeftIcon } from "@/ui/icons";
 import { useReviewContext } from "./ReviewProvider";
 import type { RunParams } from "./useReview";
 import { useReviewFreshness } from "./useReviewFreshness";
-import { useDecisions } from "./decisions";
+import { useDecisions, redlineKey } from "./decisions";
 import { CONTRACT_TYPES, JURISDICTIONS, USER_SIDES, labelOf } from "./constants";
 import { severityOf } from "@/lib/severity";
 import "./review.css";
@@ -79,12 +79,16 @@ function fmtDate(iso: string): string {
 export function ReviewView({
   pendingPlaybook,
   pendingPreset,
+  pendingFocus,
   onPendingConsumed,
 }: {
   /** A "Run this playbook" handoff from the Playbook tab: pre-fills the form. */
   pendingPlaybook?: { playbookId: string; contractType: string } | null;
   /** A "quick check" handoff: open the NDA-screen or compliance preset. */
   pendingPreset?: "nda" | "compliance" | null;
+  /** A "View in review" handoff from the Deal cockpit: scroll to + highlight one
+   *  clause's redline card (by redlineKey). */
+  pendingFocus?: { clauseKey: string; clauseName?: string } | null;
   onPendingConsumed?: () => void;
 } = {}) {
   const { state, run, reset, hydrate } = useReviewContext();
@@ -102,6 +106,11 @@ export function ReviewView({
   // When present, the governance sign-off runs through the backend's
   // authority-enforced approval instead of the in-file attestation.
   const [savedDraftId, setSavedDraftId] = useState<string | null>(null);
+  // The redline card the Deal cockpit asked us to focus. While set, that card
+  // gets a highlight ring and is scrolled into view; it clears itself shortly
+  // after so the ring is a brief cue, not a permanent state.
+  const [focusKey, setFocusKey] = useState<string | null>(null);
+  const focusCardRef = useRef<HTMLDivElement>(null);
 
   const result = state.status === "done" ? state.result : null;
 
@@ -136,6 +145,16 @@ export function ReviewView({
     setPreset(pendingPreset);
     onPendingConsumed?.();
   }, [pendingPreset, onPendingConsumed]);
+
+  // A "View in review" handoff from the cockpit: remember which clause to focus,
+  // widen the filter so the card can't be hidden, and consume the intent. The
+  // hydrate + scroll happen in the two effects below once the redlines exist.
+  useEffect(() => {
+    if (!pendingFocus) return;
+    setFocusKey(pendingFocus.clauseKey);
+    setFilter("all");
+    onPendingConsumed?.();
+  }, [pendingFocus, onPendingConsumed]);
 
   // Persist a freshly completed review into the .docx (skip when resuming).
   useEffect(() => {
@@ -229,6 +248,25 @@ export function ReviewView({
         }),
     [redlines, filter, decisionOf],
   );
+
+  // Focus flow, step 1: if a clause was requested but no live review is showing,
+  // hydrate the one stored in the document so its cards render. Without this the
+  // idle "Resume review" prompt would sit in the way of the deep-link.
+  useEffect(() => {
+    if (!focusKey || result || !snapshot) return;
+    hydrate(snapshot.result, snapshot.docHash);
+  }, [focusKey, result, snapshot, hydrate]);
+
+  // Focus flow, step 2: once the redlines are on screen, scroll the requested
+  // card into view and let its highlight ring play, then clear the key so the
+  // ring is a one-shot cue. The clear is armed even if the card is missing (a
+  // stale key from an out-of-date snapshot) so focusKey never lingers.
+  useEffect(() => {
+    if (!focusKey || !result) return;
+    focusCardRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    const t = setTimeout(() => setFocusKey(null), 2600);
+    return () => clearTimeout(t);
+  }, [focusKey, result, visible]);
 
   function onRun(p: RunParams) {
     setParams(p);
@@ -345,26 +383,34 @@ export function ReviewView({
             </p>
           ) : (
             <div className="stack">
-              {visible.map(({ r, i }) => (
-                <RedlineCard
-                  key={`${r.clauseName}-${i}`}
-                  redline={r}
-                  index={i}
-                  decision={decisionOf(i)}
-                  onDecision={setDecision}
-                  applyBusy={applyBusy}
-                  setApplyBusy={setApplyBusy}
-                  fixContext={
-                    params
-                      ? {
-                          userSide: params.userSide,
-                          paperSide: params.paperSide,
-                          playbookId: params.playbookId,
-                        }
-                      : undefined
-                  }
-                />
-              ))}
+              {visible.map(({ r, i }) => {
+                const focused = redlineKey(r) === focusKey;
+                return (
+                  <div
+                    key={`${r.clauseName}-${i}`}
+                    ref={focused ? focusCardRef : undefined}
+                    className={focused ? "redline-focus" : undefined}
+                  >
+                    <RedlineCard
+                      redline={r}
+                      index={i}
+                      decision={decisionOf(i)}
+                      onDecision={setDecision}
+                      applyBusy={applyBusy}
+                      setApplyBusy={setApplyBusy}
+                      fixContext={
+                        params
+                          ? {
+                              userSide: params.userSide,
+                              paperSide: params.paperSide,
+                              playbookId: params.playbookId,
+                            }
+                          : undefined
+                      }
+                    />
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>

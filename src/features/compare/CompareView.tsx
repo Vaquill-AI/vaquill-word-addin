@@ -5,6 +5,7 @@ import { Dropzone } from "@/ui/Dropzone";
 import { CheckIcon, DownloadIcon, CompareIcon, AlertTriangleIcon } from "@/ui/icons";
 import { errorMessage } from "@/api/errors";
 import { downloadDocx, replaceDocumentWithDocx } from "@/office/export";
+import { useAppNav } from "@/app/nav";
 import { useCompare, type CompareDirection } from "./useCompare";
 import "./compare.css";
 
@@ -20,6 +21,7 @@ const ACCEPT = ".docx,.doc,.pdf";
  * sides, and offers the produced redline to download or apply.
  */
 export function CompareView() {
+  const { navigate } = useAppNav();
   const { state, start, cancel, reset, fetchRedline } = useCompare();
   const [direction, setDirection] = useState<CompareDirection>("docIsRevised");
   const [busy, setBusy] = useState<null | "download" | "replace">(null);
@@ -154,10 +156,22 @@ export function CompareView() {
             </Button>
 
             {replaced ? (
-              <Banner tone="info">
-                <CheckIcon size={13} /> The redline replaced the open document. Use Word's Undo
-                (Ctrl+Z) to revert.
-              </Banner>
+              <div className="stack" style={{ gap: 6 }}>
+                <Banner tone="info">
+                  <CheckIcon size={13} /> The redline replaced the open document. Use Word's Undo
+                  (Ctrl+Z) to revert.
+                </Banner>
+                {/* Compare -> Changes loop: the redline's tracked changes are now
+                    in the open document, so hand them to the triage view. */}
+                <Button
+                  variant="default"
+                  size="sm"
+                  style={{ alignSelf: "flex-start" }}
+                  onClick={() => navigate("review", { kind: "openReviewSub", sub: "changes" })}
+                >
+                  Triage these changes
+                </Button>
+              </div>
             ) : confirmReplace ? (
               <div className="stack compare-confirm" style={{ gap: 6 }}>
                 <p className="small" style={{ margin: 0 }}>

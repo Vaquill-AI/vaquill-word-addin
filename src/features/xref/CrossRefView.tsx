@@ -5,6 +5,8 @@ import { Badge, Banner, Button, Spinner } from "@/ui/primitives";
 import { LocateIcon } from "@/ui/icons";
 import { readNumberedParagraphs } from "@/office/structure";
 import { locateInDocument } from "@/office/navigate";
+import { insertCommentAnchored } from "@/office/comments";
+import { useAppNav } from "@/app/nav";
 import { analyzeCrossReferences, type CrossRefReport } from "@/lib/cross-references";
 import { useDocumentAutoRefresh } from "@/lib/useDocumentAutoRefresh";
 import "./xref.css";
@@ -21,6 +23,7 @@ type State =
  * Find action that jumps to the reference in the document.
  */
 export function CrossRefView() {
+  const { navigate } = useAppNav();
   const [state, setState] = useState<State>({ status: "scanning" });
   const [note, setNote] = useState<string | null>(null);
 
@@ -53,6 +56,28 @@ export function CrossRefView() {
 
   // Auto-refresh: re-scan when the document changes while this view is open.
   useDocumentAutoRefresh(refresh);
+
+  // Cross-link: send a broken cross-reference to the Assistant for a fix.
+  function askAboutRef(label: string, count: number) {
+    navigate("assistant", {
+      kind: "assistantAsk",
+      prompt: `This contract references "${label}" ${count} time${count === 1 ? "" : "s"}, but that section or schedule does not appear to exist. Explain the risk and how to fix the cross-reference.`,
+      scope: "document",
+      autoSend: true,
+      documentOnly: true,
+    });
+  }
+
+  // Cross-link: drop a native Word comment on the broken reference.
+  async function commentOnRef(label: string) {
+    setNote(null);
+    const r = await insertCommentAnchored(
+      label,
+      "Broken cross-reference: this points to a section or schedule that does not appear to exist.",
+    );
+    if (r === "not_found") setNote(`Could not locate "${label}" to comment on.`);
+    else if (r === "unsupported_region") setNote("Word does not allow a comment in that location.");
+  }
 
   async function find(label: string) {
     setNote(null);
@@ -143,16 +168,36 @@ export function CrossRefView() {
                   </span>
                 )}
               </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => void find(b.label)}
-                aria-label={`Find ${b.label} in the document`}
-                title="Find in document"
-                data-tour="xref-find"
-              >
-                <LocateIcon size={13} /> Find
-              </Button>
+              <div className="row" style={{ gap: 4, flexShrink: 0 }}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => void find(b.label)}
+                  aria-label={`Find ${b.label} in the document`}
+                  title="Find in document"
+                  data-tour="xref-find"
+                >
+                  <LocateIcon size={13} /> Find
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => askAboutRef(b.label, b.count)}
+                  aria-label={`Ask the assistant about ${b.label}`}
+                  title="Ask the assistant about this"
+                >
+                  Ask
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => void commentOnRef(b.label)}
+                  aria-label={`Comment on ${b.label} in the document`}
+                  title="Add a comment in the document"
+                >
+                  Comment
+                </Button>
+              </div>
             </div>
           ))}
         </div>

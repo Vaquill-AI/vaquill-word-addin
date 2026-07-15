@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Banner, Button, Spinner, LiveRegion } from "@/ui/primitives";
 import { ViewHeader } from "@/ui/ViewHeader";
+import { useAppNav } from "@/app/nav";
 import { ElapsedSeconds } from "@/ui/ElapsedSeconds";
 import { ArrowLeftIcon } from "@/ui/icons";
 import { DistributionBar, type DistributionSegment } from "@/ui/DistributionBar";
@@ -161,6 +162,7 @@ function FitResults({
   hidden: ReadonlySet<string>;
   setHidden: (s: ReadonlySet<string>) => void;
 }) {
+  const { navigate } = useAppNav();
   const byVerdict = useMemo(() => groupByVerdict(results), [results]);
 
   const present = FIT_VERDICT_ORDER.filter((v) => byVerdict[v].length > 0);
@@ -198,7 +200,22 @@ function FitResults({
         }
       />
 
-      <div className="row" style={{ justifyContent: "flex-end" }}>
+      <div className="row" style={{ justifyContent: "space-between" }}>
+        {/* Fit-check -> full review loop: run the governed contract review with
+            this same playbook (redlines, sign-off gate, corrected export). */}
+        <Button
+          variant="default"
+          size="sm"
+          onClick={() =>
+            navigate("review", {
+              kind: "runPlaybook",
+              playbookId: playbook.id,
+              contractType: playbook.contractType,
+            })
+          }
+        >
+          Run full review
+        </Button>
         <Button variant="ghost" size="sm" onClick={onRerun}>
           Re-run
         </Button>

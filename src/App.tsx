@@ -128,6 +128,11 @@ function AppShell() {
   // A "quick check" handoff (NDA screen / compliance) opens that Review preset.
   const pendingPreset =
     tab === "review" && intent?.kind === "reviewPreset" ? intent.preset : null;
+  // A "View in review" handoff from the Deal cockpit: focus one clause's card.
+  const pendingFocus =
+    tab === "review" && intent?.kind === "focusClause"
+      ? { clauseKey: intent.clauseKey, clauseName: intent.clauseName }
+      : null;
   // reviewContract / checkCitations intents only steer navigation; consume them
   // once we have landed so they do not re-fire.
   useEffect(() => {
@@ -296,6 +301,7 @@ function AppShell() {
             <ReviewView
               pendingPlaybook={pendingPlaybook}
               pendingPreset={pendingPreset}
+              pendingFocus={pendingFocus}
               onPendingConsumed={clearIntent}
             />
           ) : reviewSub === "changes" ? (

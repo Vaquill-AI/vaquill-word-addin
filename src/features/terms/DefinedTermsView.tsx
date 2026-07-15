@@ -7,6 +7,8 @@ import { StatusGroup } from "@/ui/StatusGroup";
 import type { StatusTone } from "@/ui/status";
 import { readDocumentText } from "@/office/document";
 import { locateInDocument } from "@/office/navigate";
+import { insertCommentAnchored } from "@/office/comments";
+import { useAppNav } from "@/app/nav";
 import { useDocumentAutoRefresh } from "@/lib/useDocumentAutoRefresh";
 import {
   analyzeDefinedTerms,
@@ -42,6 +44,7 @@ type State =
  * defined-but-never-used, each with a Find action that jumps to it in the doc.
  */
 export function DefinedTermsView() {
+  const { navigate } = useAppNav();
   const [state, setState] = useState<State>({ status: "scanning" });
   const [note, setNote] = useState<string | null>(null);
 
@@ -80,6 +83,27 @@ export function DefinedTermsView() {
     setNote(null);
     const ok = await locateInDocument(term);
     if (!ok) setNote(`Could not locate "${term}" in the document.`);
+  }
+
+  // Cross-link: turn a defined-term finding into a doc-grounded Assistant question,
+  // so a hygiene flag can go straight to "explain the risk and how to fix it".
+  function askAboutTerm(term: string, issue: string) {
+    navigate("assistant", {
+      kind: "assistantAsk",
+      prompt: `In the open contract, the defined term "${term}" has this issue: ${issue}. Explain the risk and how to fix it.`,
+      scope: "document",
+      autoSend: true,
+      documentOnly: true,
+    });
+  }
+
+  // Cross-link: drop a native Word comment on the term so the flag travels in the
+  // file for a reviewer, not just in the pane.
+  async function commentOnTerm(term: string, issue: string) {
+    setNote(null);
+    const r = await insertCommentAnchored(term, `Defined-term issue: ${issue}.`);
+    if (r === "not_found") setNote(`Could not locate "${term}" to comment on.`);
+    else if (r === "unsupported_region") setNote("Word does not allow a comment in that location.");
   }
 
   const header = (
@@ -167,16 +191,36 @@ export function DefinedTermsView() {
                       </span>
                     )}
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => void find(f.term)}
-                    aria-label={`Find ${f.term} in the document`}
-                    title="Find in document"
-                    data-tour="terms-find"
-                  >
-                    <LocateIcon size={13} /> Find
-                  </Button>
+                  <div className="row" style={{ gap: 4, flexShrink: 0 }}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => void find(f.term)}
+                      aria-label={`Find ${f.term} in the document`}
+                      title="Find in document"
+                      data-tour="terms-find"
+                    >
+                      <LocateIcon size={13} /> Find
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => askAboutTerm(f.term, detail(f))}
+                      aria-label={`Ask the assistant about ${f.term}`}
+                      title="Ask the assistant about this"
+                    >
+                      Ask
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => void commentOnTerm(f.term, detail(f))}
+                      aria-label={`Comment on ${f.term} in the document`}
+                      title="Add a comment in the document"
+                    >
+                      Comment
+                    </Button>
+                  </div>
                 </div>
               ))}
             </StatusGroup>

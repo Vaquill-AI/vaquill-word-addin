@@ -183,19 +183,38 @@ export function DealCockpitView() {
                   <Badge tone={STATUS_TONE[status]}>{status}</Badge>
                 </div>
               </div>
-              <select
-                className="cockpit-status"
-                data-tour="cockpit-status-select"
-                aria-label={`Status of ${r.name}`}
-                value={status}
-                onChange={(e) => void setStatus(state, r.key, e.target.value as ClauseStatus)}
-              >
-                {STATUS_OPTIONS.map((o) => (
-                  <option key={o.value} value={o.value}>
-                    {o.label}
-                  </option>
-                ))}
-              </select>
+              <div className="cockpit-row__foot">
+                <select
+                  className="cockpit-status"
+                  data-tour="cockpit-status-select"
+                  aria-label={`Status of ${r.name}`}
+                  value={status}
+                  onChange={(e) => void setStatus(state, r.key, e.target.value as ClauseStatus)}
+                >
+                  {STATUS_OPTIONS.map((o) => (
+                    <option key={o.value} value={o.value}>
+                      {o.label}
+                    </option>
+                  ))}
+                </select>
+                {/* Cockpit -> Review deep-link: jump to the exact redline card this
+                    row tracks, so status and the underlying edit stay one tap apart. */}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() =>
+                    navigate("review", {
+                      kind: "focusClause",
+                      clauseKey: r.key,
+                      clauseName: r.name,
+                    })
+                  }
+                  title="Open this clause in Review"
+                  aria-label={`Open ${r.name} in Review`}
+                >
+                  View in review
+                </Button>
+              </div>
             </div>
           );
         })}

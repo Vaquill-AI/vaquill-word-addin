@@ -46,6 +46,12 @@ export type AppIntent =
       documentOnly?: boolean;
     }
   | { kind: "selectionTool"; tool: SelectionToolKey }
+  // Land on a specific Review sub-tab (e.g. Compare -> Changes triage).
+  | { kind: "openReviewSub"; sub: ReviewSub }
+  // Open Review -> Redlines and scroll to / highlight one clause's card
+  // (e.g. Deal cockpit row -> the redline it tracks). clauseKey is the
+  // redlineKey; clauseName is carried only for messaging.
+  | { kind: "focusClause"; clauseKey: string; clauseName?: string }
   // Draft + Tools
   | { kind: "draft" }
   | { kind: "openTool"; tool: ToolKey };
@@ -78,10 +84,12 @@ export function AppNavProvider({ children }: { children: ReactNode }) {
   const navigate = useCallback((nextTab: AppTab, nextIntent?: AppIntent) => {
     // Some intents also target a Review sub-tab.
     if (nextIntent?.kind === "checkCitations") setReviewSub("citations");
+    else if (nextIntent?.kind === "openReviewSub") setReviewSub(nextIntent.sub);
     else if (
       nextIntent?.kind === "reviewContract" ||
       nextIntent?.kind === "runPlaybook" ||
-      nextIntent?.kind === "reviewPreset"
+      nextIntent?.kind === "reviewPreset" ||
+      nextIntent?.kind === "focusClause"
     ) {
       setReviewSub("redlines");
     }

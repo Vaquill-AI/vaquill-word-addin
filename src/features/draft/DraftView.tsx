@@ -26,6 +26,7 @@ import { insertDraftFormatted } from "@/office/richInsert";
 import { JURISDICTIONS, labelOf } from "@/features/review/constants";
 import { getReviewPrefs } from "@/lib/prefs";
 import { SaveToVaquill } from "@/features/integration/SaveToVaquill";
+import { useAppNav } from "@/app/nav";
 import { config } from "@/config";
 import { TransplantView } from "@/features/transplant/TransplantView";
 import { FillView } from "@/features/fill/FillView";
@@ -44,6 +45,7 @@ function severityBadge(severity: DraftIssue["severity"]): { tone: "red" | "yello
 }
 
 export function DraftView() {
+  const { navigate } = useAppNav();
   // Draft has two modes: Generate a first draft from inputs, or Templates,
   // browse the firm library and insert one. Generate owns the toggle; Templates
   // renders its own copy so both surfaces switch from the same control.
@@ -332,6 +334,16 @@ export function DraftView() {
           <IconButton label={copied ? "Copied" : "Copy"} onClick={copy}>
             {copied ? <CheckIcon size={14} /> : <CopyIcon size={14} />}
           </IconButton>
+          {/* Generate -> review loop: once the draft is in the document, hand it
+              straight to Review (which reads the open document). */}
+          {inserted && (
+            <Button
+              variant="default"
+              onClick={() => navigate("review", { kind: "reviewContract" })}
+            >
+              Review this draft
+            </Button>
+          )}
         </div>
 
         {error && <Banner tone="danger">{error}</Banner>}

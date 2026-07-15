@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useState } from "react";
 import { ViewHeader } from "@/ui/ViewHeader";
-import { Banner, IconButton, Spinner } from "@/ui/primitives";
+import { Banner, Button, IconButton, Spinner } from "@/ui/primitives";
 import { CheckIcon, LocateIcon } from "@/ui/icons";
 import { readDocumentText } from "@/office/document";
 import { locateInDocument } from "@/office/navigate";
+import { insertCommentAnchored } from "@/office/comments";
+import { useAppNav } from "@/app/nav";
 import { useDocumentAutoRefresh } from "@/lib/useDocumentAutoRefresh";
 import { analyzeFigures, type FiguresReport } from "@/lib/figures";
 import { errorMessage } from "@/api/errors";
@@ -14,6 +16,7 @@ import "./figures.css";
  * next to it ("thirty (40) days"). Read-only, client-side; jump to any mismatch.
  */
 export function FiguresView() {
+  const { navigate } = useAppNav();
   const [report, setReport] = useState<FiguresReport | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -40,6 +43,36 @@ export function FiguresView() {
     } catch (e) {
       setError(errorMessage(e));
     }
+  }
+
+  // Cross-link: send a figures mismatch to the Assistant to resolve.
+  function askAboutFigure(
+    words: string,
+    wordsValue: string | number,
+    numeralValue: string | number,
+  ) {
+    navigate("assistant", {
+      kind: "assistantAsk",
+      prompt: `In the open contract, a figure is written inconsistently: the words "${words}" say ${wordsValue}, but the numeral beside it says ${numeralValue}. Which is likely correct, and how should I fix it?`,
+      scope: "document",
+      autoSend: true,
+      documentOnly: true,
+    });
+  }
+
+  // Cross-link: drop a native Word comment on the mismatched figure.
+  async function commentOnFigure(
+    anchor: string,
+    wordsValue: string | number,
+    numeralValue: string | number,
+  ) {
+    setError(null);
+    const r = await insertCommentAnchored(
+      anchor,
+      `Figures mismatch: the words say ${wordsValue} but the numeral says ${numeralValue}. Confirm which is correct.`,
+    );
+    if (r === "not_found") setError("Could not locate this figure to comment on.");
+    else if (r === "unsupported_region") setError("Word does not allow a comment in that location.");
   }
 
   return (
@@ -81,9 +114,29 @@ export function FiguresView() {
                   <span className="figures-words">{mm.words}</span> ({mm.wordsValue}) vs numeral (
                   {mm.numeral})
                 </span>
-                <IconButton label="Find in document" onClick={() => void find(mm.anchor)}>
-                  <LocateIcon size={13} />
-                </IconButton>
+                <span className="row" style={{ gap: 4, flexShrink: 0 }}>
+                  <IconButton label="Find in document" onClick={() => void find(mm.anchor)}>
+                    <LocateIcon size={13} />
+                  </IconButton>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => askAboutFigure(mm.words, mm.wordsValue, mm.numeralValue)}
+                    title="Ask the assistant about this"
+                    aria-label="Ask the assistant about this figure"
+                  >
+                    Ask
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => void commentOnFigure(mm.anchor, mm.wordsValue, mm.numeralValue)}
+                    title="Add a comment in the document"
+                    aria-label="Comment on this figure in the document"
+                  >
+                    Comment
+                  </Button>
+                </span>
               </div>
               <p className="small muted" style={{ margin: 0 }}>
                 Words say {mm.wordsValue}, numeral says {mm.numeralValue}. Confirm which is correct.

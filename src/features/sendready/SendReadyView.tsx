@@ -10,6 +10,7 @@ import {
   ShieldCheckIcon,
   TermsIcon,
   LinkIcon,
+  HashIcon,
   ChecklistIcon,
 } from "@/ui/icons";
 import { TONE_COLOR, TONE_TINT, type StatusTone } from "@/ui/status";
@@ -24,6 +25,7 @@ import { scanText } from "@/features/redact/detect";
 import { CATEGORIES } from "@/features/redact/categories";
 import { analyzeDefinedTerms } from "@/lib/defined-terms";
 import { analyzeCrossReferences } from "@/lib/cross-references";
+import { analyzeFigures } from "@/lib/figures";
 import { ScrubMetadata } from "@/features/integration/ScrubMetadata";
 import "./sendready.css";
 
@@ -37,6 +39,7 @@ interface Scan {
   redactCandidates: number;
   termIssues: number;
   xrefBroken: number;
+  figureIssues: number;
   signoff: string;
 }
 
@@ -83,6 +86,7 @@ export function SendReadyView() {
           redactCandidates: scanText(text, ALL_REDACT_KEYS).length,
           termIssues: analyzeDefinedTerms(text).findings.length,
           xrefBroken: analyzeCrossReferences(paragraphs).broken.length,
+          figureIssues: analyzeFigures(text).mismatches.length,
           signoff: ledger?.status ?? "none",
         },
       });
@@ -179,7 +183,10 @@ export function SendReadyView() {
 
   const s = state.scan;
   const blockers =
-    (s.comments > 0 ? 1 : 0) + (s.xrefBroken > 0 ? 1 : 0) + (s.signoff === "pending_signoff" ? 1 : 0);
+    (s.comments > 0 ? 1 : 0) +
+    (s.xrefBroken > 0 ? 1 : 0) +
+    (s.figureIssues > 0 ? 1 : 0) +
+    (s.signoff === "pending_signoff" ? 1 : 0);
 
   return (
     <div className="stack sendready-view">
@@ -277,6 +284,23 @@ export function SendReadyView() {
           action={
             s.xrefBroken > 0 ? (
               <Button size="sm" variant="ghost" onClick={() => openTool("xref")}>
+                Review
+              </Button>
+            ) : null
+          }
+        />
+        <Row
+          tone={s.figureIssues > 0 ? "red" : "green"}
+          icon={<HashIcon size={15} />}
+          label="Figures"
+          detail={
+            s.figureIssues > 0
+              ? `${s.figureIssues} number${s.figureIssues === 1 ? "" : "s"} written in words that do not match the numeral beside it.`
+              : "Words and numerals agree."
+          }
+          action={
+            s.figureIssues > 0 ? (
+              <Button size="sm" variant="ghost" onClick={() => openTool("figures")}>
                 Review
               </Button>
             ) : null

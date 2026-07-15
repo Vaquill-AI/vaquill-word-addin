@@ -3,7 +3,7 @@ import { AutoTextarea } from "@/ui/AutoTextarea";
 import { Badge, Button, IconButton } from "@/ui/primitives";
 import { OverflowMenu, type OverflowMenuItem } from "@/ui/OverflowMenu";
 import { SplitButton } from "@/ui/SplitButton";
-import { LocateIcon, CheckIcon, XIcon, UndoIcon, CopyIcon, EditIcon, WandIcon, ChevronIcon, AssistantIcon, ShieldCheckIcon } from "@/ui/icons";
+import { LocateIcon, CheckIcon, XIcon, UndoIcon, CopyIcon, EditIcon, WandIcon, ChevronIcon, AssistantIcon, ShieldCheckIcon, BookIcon } from "@/ui/icons";
 import { GroundingBadge } from "./GroundingBadge";
 import { InlineDiff } from "./InlineDiff";
 import { SeverityBadge } from "./SeverityBadge";
@@ -528,6 +528,19 @@ export function RedlineCard({
         // document, not the corpus / matter docs / web (which only add latency
         // and off-topic citations for an accept/reject call).
         documentOnly: true,
+      }),
+  });
+  overflowItems.push({
+    label: "Find US authority",
+    icon: <BookIcon size={14} />,
+    onSelect: () =>
+      navigate("assistant", {
+        kind: "assistantAsk",
+        prompt: `Find the controlling US case law or statute relevant to the "${active.clauseName}" clause in this contract. Give the citation(s) and briefly explain how each applies to this position.`,
+        scope: "document",
+        autoSend: true,
+        // Corpus ON (NOT document-only): this is the research-grounding case, so
+        // let it retrieve the controlling case / statute for the position.
       }),
   });
   overflowItems.push({

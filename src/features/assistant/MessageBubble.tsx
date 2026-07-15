@@ -8,6 +8,7 @@ import { stripMarkdown } from "@/lib/strings";
 import { config } from "@/config";
 import { Avatar } from "@/ui/Avatar";
 import { getUser } from "@/auth/session";
+import { SaveAnswerToNotes } from "@/features/integration/SaveAnswerToNotes";
 
 /** Signed-in user's name + photo for the avatar (Google OAuth picture when
  *  present; the Avatar falls back to initials if there is no photo). */
@@ -108,6 +109,9 @@ function AssistantActions({ message }: { message: AssistantMessage }) {
         <InsertGlyph />
         Insert
       </button>
+      {/* Cross-link: keep research done in Word from being lost to the local
+          session by saving the answer as a note on a Vaquill client. */}
+      <SaveAnswerToNotes content={message.content} />
       {note && <span className="small muted msg__actions-note">{note}</span>}
     </div>
   );

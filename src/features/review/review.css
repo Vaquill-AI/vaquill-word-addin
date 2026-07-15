@@ -437,10 +437,27 @@
   cursor: default;
 }
 
+/* Deep-link highlight: when the Deal cockpit sends you to a specific redline,
+   its card wrapper wears this ring briefly so the eye lands on the right one. */
+.redline-focus {
+  border-radius: var(--radius-lg);
+  animation: redlineFocus 2.6s ease-out;
+}
+@keyframes redlineFocus {
+  0%,
+  55% {
+    box-shadow: 0 0 0 2px var(--brand-border);
+  }
+  100% {
+    box-shadow: 0 0 0 2px transparent;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .redline--enter,
   .redline--accepted,
   .redline--rejected,
+  .redline-focus,
   .streaming__pulse,
   .streaming__skeleton span,
   .progressbar__fill {
