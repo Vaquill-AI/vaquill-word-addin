@@ -16,7 +16,7 @@ There is no separate upload step: the open document is the subject.
 > To run it, follow [SELF_HOSTING.md](SELF_HOSTING.md) (step by step). For what it can do, see [COMMUNITY.md](COMMUNITY.md).
 > The default (cloud) build in this repo still targets the hosted backend (see [Backend requirement](#backend-requirement)).
 
-### What works in each edition
+## What works in each edition
 
 | Capability | Vaquill (hosted) | Community (your own key) |
 | --- | --- | --- |
@@ -42,6 +42,36 @@ There is no separate upload step: the open document is the subject.
 | Hosting | Nothing to run, we host it | You run it, on your machine or your own server |
 | Account | Vaquill account | No account, just your key |
 | Cost | Subscription | You pay your AI provider directly |
+
+## Try it on your own computer (community edition)
+
+You need Node.js (from https://nodejs.org) and Microsoft Word.
+It works on Word for Windows, Word for Mac, and Word on the web.
+
+Set up once:
+
+```
+git clone https://github.com/Vaquill-AI/vaquill-word-addin.git
+cd vaquill-word-addin
+npm install
+npx office-addin-dev-certs install
+```
+
+Start it, and leave the window open:
+
+```
+npm run dev:community
+```
+
+Then:
+
+1. Load it into Word by sideloading `manifest.localhost.xml`. On Word on the web, open Add-ins, then "Upload My Add-in". The Mac and Windows steps are in [SELF_HOSTING.md](SELF_HOSTING.md).
+2. In Word, click "Open Vaquill", then paste your OpenAI or Anthropic key.
+
+Two guides cover the rest:
+
+- [SELF_HOSTING.md](SELF_HOSTING.md): how to run it, step by step, on your computer or a server, for every version of Word.
+- [COMMUNITY.md](COMMUNITY.md): what the community edition can do, and its limits.
 
 ---
 
@@ -190,6 +220,10 @@ src/
 ## Documentation
 
 Deeper design and reference material lives in [docs/](docs/): architecture, the feature spec, the Office.js capability map, the design system, and the competitive landscape.
+
+## Contributing
+
+Issues and pull requests are welcome.
 
 ## License
 
