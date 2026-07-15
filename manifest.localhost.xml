@@ -8,7 +8,7 @@
 
   <!-- Community (bring-your-own-key) manifest for running on your OWN computer.
        Points at the local dev server (https://localhost:3000). Sideload this one
-       after running `npm run dev:community`. No editing needed. See SELF_HOSTING.md. -->
+       after running `npm run dev:community`. No editing needed. See the README. -->
   <Id>c0ffee00-10ca-4b0a-9e62-3c5d1a8b6f04</Id>
   <Version>1.0.0.0</Version>
   <ProviderName>Vaquill AI Community</ProviderName>

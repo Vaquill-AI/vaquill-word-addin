@@ -13,7 +13,7 @@ There is no separate upload step: the open document is the subject.
 > **Community edition (bring-your-own-key).**
 > A standalone, self-hostable **community build that runs on your own API key (OpenAI or Anthropic)** is available.
 > It runs the add-in against your own provider, with no hosted Vaquill AI backend.
-> To run it, follow [SELF_HOSTING.md](SELF_HOSTING.md) (step by step). For what it can do, see [COMMUNITY.md](COMMUNITY.md).
+> To run it, see [Run it yourself](#run-it-yourself-community-edition) below.
 > The default (cloud) build in this repo still targets the hosted backend (see [Backend requirement](#backend-requirement)).
 
 ## What works in each edition
@@ -43,35 +43,72 @@ There is no separate upload step: the open document is the subject.
 | Account | Vaquill AI account | No account, just your key |
 | Cost | Subscription | You pay your AI provider directly |
 
-## Try it on your own computer (community edition)
+## Run it yourself (community edition)
 
-You need Node.js (from https://nodejs.org) and Microsoft Word.
+The community edition runs the add-in on your own OpenAI or Anthropic key, with no Vaquill AI backend.
+Your documents and prompts go only to the AI provider you choose.
 It works on Word for Windows, Word for Mac, and Word on the web.
 
-Set up once:
+### Before you start
 
-```
+- Install Node.js from https://nodejs.org (the version labeled "LTS").
+- Have Microsoft Word.
+- Get an API key from OpenAI (https://platform.openai.com/api-keys) or Anthropic (https://console.anthropic.com/settings/keys). You paste it into the add-in later.
+
+Then download the code:
+
+```bash
 git clone https://github.com/Vaquill-AI/vaquill-word-addin.git
 cd vaquill-word-addin
 npm install
+```
+
+### Run it on your own computer
+
+**1. Trust a local certificate (once).** Word only loads add-ins served over HTTPS, even on your own machine:
+
+```bash
 npx office-addin-dev-certs install
 ```
 
-Start it, and leave the window open:
+**2. Start the app** and leave the window open. It serves at https://localhost:3000:
 
-```
+```bash
 npm run dev:community
 ```
 
-Then:
+**3. Load it into Word** by sideloading `manifest.localhost.xml`. Do the part for your version of Word:
 
-1. Load it into Word by sideloading `manifest.localhost.xml`. On Word on the web, open Add-ins, then "Upload My Add-in". The Mac and Windows steps are in [SELF_HOSTING.md](SELF_HOSTING.md).
-2. In Word, click "Open Vaquill AI", then paste your OpenAI or Anthropic key.
+- **Word on the web:** open a document, click Add-ins (or Insert, then Add-ins), click "Upload My Add-in", and choose `manifest.localhost.xml`.
+- **Word on Mac:** copy `manifest.localhost.xml` into `~/Library/Containers/com.microsoft.Word/Data/Documents/wef` (create the `wef` folder if it is missing), quit and reopen Word, then click Add-ins, My Add-ins, and pick Vaquill AI under Developer Add-ins.
+- **Word on Windows:** put `manifest.localhost.xml` in a folder and share the folder with yourself (right-click, Properties, Sharing). In Word go to File, Options, Trust Center, Trust Center Settings, Trusted Add-in Catalogs, add the folder's network path, tick "Show in Menu", reopen Word, and pick Vaquill AI from the Shared Folder tab.
 
-Two guides cover the rest:
+**4. Open it.** In Word, click "Open Vaquill AI". The first time, choose OpenAI or Anthropic, paste your key, click Test, then Save. Your key stays on your device and is sent only to that provider.
 
-- [SELF_HOSTING.md](SELF_HOSTING.md): how to run it, step by step, on your computer or a server, for every version of Word.
-- [COMMUNITY.md](COMMUNITY.md): what the community edition can do, and its limits.
+### Run it on a server for your firm
+
+Use this when a team should have it without anyone keeping a terminal open.
+
+1. Build it with `npm run build:community`. This creates a `dist` folder, which is the whole app as plain files.
+2. Serve the contents of `dist` over HTTPS on an address you control, for example `https://vaquill.yourfirm.com`. Any static hosting works, and HTTPS is required.
+3. Copy `manifest.community.xml`, replace every `YOUR-DOMAIN.example.com` with your address, and replace the `<Id>` line with a new unique id (create one at https://guidgenerator.com).
+4. Give that manifest to each person to sideload with the steps above. Each person adds their own key.
+
+### What it can do, and what needs a Vaquill AI account
+
+The comparison table above lists this in full.
+In short, these work with just your key: the assistant, drafting, contract review and redlines, playbooks, NDA triage, the prompt and clause libraries, and all the document tools.
+These need a Vaquill AI account: statute verification, good-law treatment, document compare, authored tracked-changes export, and saving to the hosted product.
+Case-law existence checking works if you add your own free CourtListener token in Settings (get one at https://www.courtlistener.com/help/api/rest/).
+
+### Updating and troubleshooting
+
+To update, run `git pull` then `npm install`, and start it again (or rebuild `dist` for a server).
+
+- Pane is blank or will not load: make sure `npm run dev:community` is still running, and that you ran `npx office-addin-dev-certs install`.
+- Word will not load the add-in: close Word completely and reopen it after sideloading.
+- A feature says it needs a Vaquill AI account: that feature uses Vaquill AI's hosted data and is not in the community edition.
+- Attaching a PDF does not work: this edition reads `.docx`, `.txt`, and `.md`; save a PDF as `.docx` first.
 
 ---
 
@@ -152,7 +189,7 @@ Once the add-in is loaded, it opens on the **Assistant** tab.
 
 - A Microsoft 365 account and Word (Windows desktop, Mac desktop, or Word on the web).
 - Office.js requirement floor **WordApi 1.6**.
-- The **Vaquill AI backend** (not included; see below). The upcoming community edition removes this in favor of BYOK.
+- The **Vaquill AI backend** (not included; see below), for the hosted build only. The community edition removes this: bring your own key, no backend.
 
 ## Getting started (development)
 
@@ -184,7 +221,7 @@ The hosted add-in requires the Vaquill AI backend.
 The only backend change needed to run it is CORS: add the add-in origin (`https://word.vaquill.ai`, plus `https://localhost:3000` for dev) to the backend's allowed origins.
 Everything else reuses existing endpoints.
 
-The **community edition (in progress)** will lift this requirement: bring your own API key and point the add-in at your own model and infrastructure, so it runs 100% locally with no hosted dependency.
+The **community edition** lifts this requirement: bring your own API key, with no hosted dependency. See [Run it yourself](#run-it-yourself-community-edition).
 
 ## Architecture
 
