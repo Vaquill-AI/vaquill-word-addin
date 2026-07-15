@@ -1,11 +1,11 @@
-import { useEffect, useState, type CSSProperties } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
 import type { TourStep } from "./types";
 import "./tour.css";
 
 const HOLE_PAD = 6;
-// Rough tooltip height used only to decide above/below placement.
-const TIP_ROOM = 180;
+const TIP_MARGIN = 12;
+const VIEWPORT_PAD = 8;
 const MAX_MEASURE_TRIES = 24;
 
 /**
@@ -32,6 +32,8 @@ export function TourOverlay({
   onClose: () => void;
 }) {
   const [rect, setRect] = useState<DOMRect | null>(null);
+  const tipRef = useRef<HTMLDivElement>(null);
+  const [tipH, setTipH] = useState(0);
 
   // Locate + measure the target. After a nav the view may still be mounting, so
   // retry across a few frames before giving up and centering the card.
@@ -49,7 +51,10 @@ export function TourOverlay({
       if (el) {
         const r = el.getBoundingClientRect();
         if (r.width > 0 || r.height > 0) {
-          setRect(r);
+          // Bring the target into view so the spotlight lands on visible content,
+          // then re-measure at its scrolled position.
+          el.scrollIntoView({ block: "center", behavior: "auto" });
+          setRect(el.getBoundingClientRect());
           return;
         }
       }
@@ -87,10 +92,12 @@ export function TourOverlay({
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose, onNext, onPrev]);
 
+  // Measure the card's height so it can be clamped fully on-screen below.
+  useLayoutEffect(() => {
+    if (tipRef.current) setTipH(tipRef.current.offsetHeight);
+  }, [index, rect, step.title, step.body]);
+
   const centered = !rect;
-  const preferBelow = step.placement !== "top";
-  const roomBelow = rect ? rect.bottom + TIP_ROOM < window.innerHeight : false;
-  const below = rect ? (preferBelow ? roomBelow || rect.top < TIP_ROOM : !(rect.top > TIP_ROOM)) : false;
 
   const holeStyle = rect
     ? {
@@ -101,11 +108,21 @@ export function TourOverlay({
       }
     : undefined;
 
-  const tipStyle: CSSProperties = rect
-    ? below
-      ? { top: rect.bottom + 12 }
-      : { bottom: window.innerHeight - rect.top + 12 }
-    : {};
+  // Position the card near the target but ALWAYS fully within the viewport, so
+  // Next / Skip are never off-screen (which would trap the user behind the
+  // backdrop). Prefer the requested side; fall back to whichever side fits.
+  const vh = window.innerHeight;
+  let top: number;
+  if (!rect) {
+    top = (vh - tipH) / 2;
+  } else {
+    const fitsBelow = rect.bottom + tipH + TIP_MARGIN <= vh - VIEWPORT_PAD;
+    const fitsAbove = rect.top - tipH - TIP_MARGIN >= VIEWPORT_PAD;
+    const placeBelow = step.placement === "top" ? !fitsAbove && fitsBelow : fitsBelow || !fitsAbove;
+    top = placeBelow ? rect.bottom + TIP_MARGIN : rect.top - tipH - TIP_MARGIN;
+  }
+  top = Math.min(Math.max(VIEWPORT_PAD, top), Math.max(VIEWPORT_PAD, vh - tipH - VIEWPORT_PAD));
+  const tipStyle: CSSProperties = { top };
 
   const last = index + 1 >= total;
 
@@ -113,7 +130,7 @@ export function TourOverlay({
     <div className="tour-root" role="dialog" aria-modal="true" aria-label={`${title} walkthrough`}>
       <div className={`tour-backdrop${centered ? " tour-backdrop--dim" : ""}`} />
       {rect && <div className="tour-hole" style={holeStyle} aria-hidden />}
-      <div className={`tour-tip${centered ? " tour-tip--center" : ""}`} style={tipStyle}>
+      <div ref={tipRef} className={`tour-tip${centered ? " tour-tip--center" : ""}`} style={tipStyle}>
         <div className="tour-tip__head">
           <span className="tour-tip__count small muted">
             {index + 1} / {total}
