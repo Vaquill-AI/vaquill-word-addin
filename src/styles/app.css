@@ -140,11 +140,35 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  /* `safe center` keeps the short account form vertically centered but falls
+     back to top-aligned (never clipped) when the taller BYOK form overflows;
+     overflow-y lets that longer form scroll instead of being cut off. */
+  justify-content: safe center;
+  overflow-y: auto;
   text-align: center;
   gap: 14px;
   height: 100%;
+  box-sizing: border-box;
   padding: 24px;
+}
+/* Every block in the login column shares one width and centers, so the header,
+   the tab switch, and the form read as a single aligned column rather than a
+   centered header sitting above a left-aligned form. */
+.login > .stack,
+.login > .seg,
+.login > .login__form,
+.login > .login__divider,
+.login > .login__register {
+  width: 100%;
+  max-width: 280px;
+}
+/* On the login screen the tab switch spans the column with two even halves,
+   overriding the compact flush-left toggle used in dense inline rows. */
+.login > .seg {
+  align-self: center;
+}
+.login > .seg .seg__btn {
+  flex: 1 1 0;
 }
 .login__mark {
   border-radius: var(--radius-lg);
