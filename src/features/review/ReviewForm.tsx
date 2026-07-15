@@ -11,6 +11,7 @@ import {
   type ReviewScope,
 } from "./constants";
 import { config } from "@/config";
+import { isCommunity } from "@/community/edition";
 import { ImproveButton } from "@/ui/ImproveButton";
 import { useImprovePrompt } from "@/lib/useImprovePrompt";
 import { improveLegalToolPrompt } from "@/api/improve-prompt";
@@ -213,12 +214,16 @@ export function ReviewForm({
             <PlaybookPicker contractType={contractType} value={playbookId} onChange={setPlaybookId} />
           </div>
 
-          <p className="small muted" style={{ margin: 0 }}>
-            <a href={`${config.appBase}/playbooks`} target="_blank" rel="noreferrer">
-              Manage playbooks
-            </a>{" "}
-            in Vaquill AI.
-          </p>
+          {/* The hosted playbook manager is an account surface. In BYOK playbooks
+              live locally (edited from the Playbook tab), so hide this link. */}
+          {!isCommunity() && (
+            <p className="small muted" style={{ margin: 0 }}>
+              <a href={`${config.appBase}/playbooks`} target="_blank" rel="noreferrer">
+                Manage playbooks
+              </a>{" "}
+              in Vaquill AI.
+            </p>
+          )}
 
           <ClientRulesCard />
 

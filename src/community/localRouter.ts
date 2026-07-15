@@ -4,6 +4,7 @@ import {
   citationStylePrompt,
   classifyContractPrompt,
   compliancePrompt,
+  editDocumentPrompt,
   explainPrompt,
   guidelinesPrompt,
   improvePrompt,
@@ -164,9 +165,63 @@ async function handleLlm(path: string, body: Record<string, unknown>): Promise<u
       const p = playbookFitPrompt(str(body.documentText), positions);
       return runJson(p.system, p.user);
     }
+    case "/api/v1/drafting/edit-document": {
+      // Whole-document instruction edits run on the user's own model. Not
+      // proprietary (like contract review, it is a grounded-redline task), so it
+      // works in BYOK with a client-side grounding gate below.
+      const documentText = str(body.documentText);
+      const priorEdits = (Array.isArray(body.priorEdits) ? body.priorEdits : []).map((e) => {
+        const o = bodyObj(e);
+        return {
+          label: str(o.label),
+          currentLanguage: str(o.currentLanguage),
+          proposedLanguage: str(o.proposedLanguage),
+        };
+      });
+      const p = editDocumentPrompt(
+        documentText,
+        str(body.instruction),
+        str(body.contractType) || undefined,
+        strArray(body.priorInstructions),
+        priorEdits,
+      );
+      const raw = (await runJson(p.system, p.user)) as Record<string, unknown>;
+      return groundEdits(documentText, raw);
+    }
     default:
       return null;
   }
+}
+
+/**
+ * Grounding gate for edit-document, mirroring the backend: keep only edits whose
+ * currentLanguage is a verbatim substring of the document (so the redline can be
+ * located and applied), plus explicit insertions. A non-verbatim edit is dropped
+ * rather than applied against text that is not there.
+ */
+function groundEdits(documentText: string, raw: Record<string, unknown>): unknown {
+  const list = Array.isArray(raw.edits) ? raw.edits : [];
+  const edits = list
+    .map((item) => bodyObj(item))
+    .map((e) => {
+      const currentLanguage = str(e.currentLanguage);
+      const isInsertion = str(e.grounding) === "insertion" || currentLanguage === "";
+      const verbatim = currentLanguage !== "" && documentText.includes(currentLanguage);
+      return { e, currentLanguage, isInsertion, verbatim };
+    })
+    .filter(({ isInsertion, verbatim }) => isInsertion || verbatim)
+    .map(({ e, currentLanguage, isInsertion }) => ({
+      label: str(e.label, "Edit"),
+      sectionReference: str(e.sectionReference),
+      currentLanguage,
+      proposedLanguage: str(e.proposedLanguage),
+      rationale: str(e.rationale),
+      fallbackPosition: typeof e.fallbackPosition === "string" ? e.fallbackPosition : null,
+      grounding: isInsertion ? "insertion" : "verified",
+      nature:
+        e.nature === "housekeeping" ? "housekeeping" : e.nature === "substantive" ? "substantive" : undefined,
+    }));
+  return { overview: str(raw.overview), edits, summary: str(raw.summary) };
 }
 
 interface StoredPlaybook {

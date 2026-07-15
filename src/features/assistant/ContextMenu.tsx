@@ -1,6 +1,8 @@
 import { useEffect, type ReactNode } from "react";
 import { CheckIcon, FolderIcon, GlobeIcon, ScaleIcon, UploadIcon } from "@/ui/icons";
 import { ATTACH_ACCEPT } from "@/api/context";
+import { isCommunity } from "@/community/edition";
+import { HOSTED_URL, LockIcon } from "@/ui/UpgradeGate";
 import { AttachmentChips } from "./AttachmentChips";
 import { MAX_ATTACHMENTS, type AttachedFile } from "./useAttachments";
 import "./context-menu.css";
@@ -35,6 +37,9 @@ const SOURCES: Source[] = [
 
 /** Count of active sources, for the trigger badge. */
 export function activeContextCount(config: ContextConfig, hasMatter: boolean): number {
+  // In the community/BYOK edition these sources are locked and never contribute,
+  // so the "+" badge must not advertise them.
+  if (isCommunity()) return 0;
   let n = 0;
   if (config.corpus) n += 1;
   if (config.web) n += 1;
@@ -76,7 +81,12 @@ export function ContextMenu({
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
 
-  const rows = SOURCES.filter((s) => !s.needsMatter || hasMatter);
+  // These three sources (US corpus, matter documents, web search) all run on the
+  // Vaquill AI backend/account. In the community/BYOK edition none of them apply,
+  // so show them locked (rather than as live toggles that would silently do
+  // nothing) and keep the attach-file section below, which works on-device.
+  const community = isCommunity();
+  const rows = community ? SOURCES : SOURCES.filter((s) => !s.needsMatter || hasMatter);
 
   return (
     <>
@@ -91,6 +101,26 @@ export function ContextMenu({
           <strong className="small">Add context</strong>
         </div>
         {rows.map((s) => {
+          if (community) {
+            return (
+              <a
+                key={s.key}
+                className="ctx-source ctx-source--locked"
+                href={HOSTED_URL}
+                target="_blank"
+                rel="noreferrer"
+                title="Available on the Vaquill AI hosted plan"
+              >
+                <span className="ctx-source__icon" aria-hidden>
+                  {s.icon}
+                </span>
+                <span className="ctx-source__label">{s.label}</span>
+                <span className="ctx-source__check" aria-hidden>
+                  <LockIcon size={13} />
+                </span>
+              </a>
+            );
+          }
           const on = config[s.key];
           return (
             <button
@@ -111,8 +141,15 @@ export function ContextMenu({
             </button>
           );
         })}
-        {!hasMatter && (
-          <p className="ctx-menu__note small muted">Set an active matter to search its documents.</p>
+        {community ? (
+          <p className="ctx-menu__note small muted">
+            Case law, matter documents, and web search are on the Vaquill AI hosted plan. Attach a
+            file below to add your own context.
+          </p>
+        ) : (
+          !hasMatter && (
+            <p className="ctx-menu__note small muted">Set an active matter to search its documents.</p>
+          )
         )}
 
         <div className="ctx-attach">

@@ -1,9 +1,9 @@
 import type { ReactNode } from "react";
 
 /** Where the "Get Vaquill AI hosted" upsell points. One place to change it. */
-export const HOSTED_URL = "https://www.vaquill.ai";
+export const HOSTED_URL = "https://app.vaquill.ai/auth/signup";
 
-function LockIcon({ size = 16 }: { size?: number }) {
+export function LockIcon({ size = 16 }: { size?: number }) {
   return (
     <svg
       width={size}

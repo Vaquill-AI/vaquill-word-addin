@@ -57,6 +57,17 @@
   outline-offset: -2px;
 }
 
+/* Locked source (community/BYOK): a hosted-only source shown muted with a lock,
+   linking to the hosted plan instead of toggling. */
+.ctx-source--locked {
+  color: var(--text-muted);
+  text-decoration: none;
+  opacity: 0.75;
+}
+.ctx-source--locked .ctx-source__check {
+  color: var(--text-muted);
+}
+
 .ctx-source__icon {
   flex: none;
   display: inline-flex;

@@ -19,6 +19,7 @@ import {
 } from "@/lib/prefs";
 import { JURISDICTIONS } from "@/features/review/constants";
 import { isCommunity } from "@/community/edition";
+import { UpgradeLink } from "@/ui/UpgradeGate";
 import { AiProvidersCard } from "./AiProvidersCard";
 import { CourtListenerCard } from "./CourtListenerCard";
 import "./settings.css";
@@ -196,15 +197,18 @@ export function SettingsView({
               <span className="small muted">{email || "Not signed in"}</span>
               {/* One organization row: a switcher when the user owns more than one
                   workspace, otherwise static text (so the active org is not shown
-                  twice). */}
-              <div className="row settings-account__org">
-                <span className="small muted">Organization</span>
-                {orgCount > 1 ? (
-                  <OrgSwitcher />
-                ) : (
-                  <span className="small">{orgName ?? "Personal"}</span>
-                )}
-              </div>
+                  twice). Organizations are an account concept, so hide the row
+                  entirely in the community/BYOK edition. */}
+              {!isCommunity() && (
+                <div className="row settings-account__org">
+                  <span className="small muted">Organization</span>
+                  {orgCount > 1 ? (
+                    <OrgSwitcher />
+                  ) : (
+                    <span className="small">{orgName ?? "Personal"}</span>
+                  )}
+                </div>
+              )}
             </div>
           </div>
           <Button variant="ghost" size="sm" onClick={clearSession}>
@@ -227,17 +231,26 @@ export function SettingsView({
       <div className="card settings-card">
         <h2 className="settings-heading">Workspace defaults</h2>
         <p className="small muted settings-heading__hint">
-          Set your matter and jurisdiction once. New reviews and the assistant use them
-          automatically, so you never re-pick them.
+          {isCommunity()
+            ? "Set your default jurisdiction once. New reviews and the assistant use it automatically, so you never re-pick it."
+            : "Set your matter and jurisdiction once. New reviews and the assistant use them automatically, so you never re-pick them."}
         </p>
         <div className="form-grid">
-          <MatterPicker
-            value={prefs.matterId}
-            onChange={(id) => setReviewPrefs({ matterId: id })}
-            label="Default matter"
-            emptyLabel="General matter"
-            showWhenEmpty
-          />
+          {/* Matters live in the hosted account; in BYOK show a lock, keep the
+              local jurisdiction default. */}
+          {isCommunity() ? (
+            <Field label="Default matter">
+              <UpgradeLink label="Matters (hosted)" />
+            </Field>
+          ) : (
+            <MatterPicker
+              value={prefs.matterId}
+              onChange={(id) => setReviewPrefs({ matterId: id })}
+              label="Default matter"
+              emptyLabel="General matter"
+              showWhenEmpty
+            />
+          )}
           <Field label="Default jurisdiction">
             <Combobox
               value={prefs.jurisdiction}

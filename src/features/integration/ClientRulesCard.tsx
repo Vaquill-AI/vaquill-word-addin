@@ -10,6 +10,8 @@ import {
   setClientRules,
 } from "@/lib/clientRules";
 import { resolveActiveClientId } from "@/lib/activeClient";
+import { isCommunity } from "@/community/edition";
+import { UpgradeGate } from "@/ui/UpgradeGate";
 
 /**
  * Editor for a client's standing rules. Picks the active client (defaulting to
@@ -49,6 +51,15 @@ export function ClientRulesCard({ onRulesText }: { onRulesText?: (text: string) 
     onRulesText?.(clientId ? clientRulesContext(clientId) : "");
   }, [clientId, onRulesText]);
 
+  // Clients live in the hosted account, so in the community/BYOK edition show a
+  // lock explaining what the account adds rather than silently rendering nothing.
+  if (isCommunity())
+    return (
+      <UpgradeGate title="Client rules">
+        Set standing per-client positions that auto-apply every time you review that client's paper,
+        with a Vaquill AI account.
+      </UpgradeGate>
+    );
   if (clients === null || clients.length === 0) return null;
 
   function pick(id: string) {

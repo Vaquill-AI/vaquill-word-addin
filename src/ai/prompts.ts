@@ -243,6 +243,36 @@ export function clauseFixPrompt(clauseName: string, currentLanguage: string, jur
   };
 }
 
+export function editDocumentPrompt(
+  documentText: string,
+  instruction: string,
+  contractType: string | undefined,
+  priorInstructions: string[],
+  priorEdits: { label: string; currentLanguage: string; proposedLanguage: string }[],
+): Prompt2 {
+  const ctx = contractType ? ` This is a ${contractType}.` : "";
+  const priorBlock =
+    priorInstructions.length || priorEdits.length
+      ? `\n\nThis refines the edits already on screen rather than starting over. ` +
+        `Prior instructions: ${priorInstructions.join(" | ") || "(none)"}. Existing edits:\n` +
+        priorEdits
+          .map((e, i) => `${i + 1}. ${e.label}: "${e.currentLanguage}" -> "${e.proposedLanguage}"`)
+          .join("\n")
+      : "";
+  return {
+    system:
+      `${GROUNDING} Apply the lawyer's instruction to the open document as a set of grounded redline edits.${ctx} ` +
+      `currentLanguage MUST be copied VERBATIM from the document (an exact substring) so it can be located and replaced; ` +
+      `if you are ADDING new language with no existing text to replace, set currentLanguage to "" and grounding to "insertion". ` +
+      `Set grounding to "verified" only when currentLanguage is an exact substring of the document, else "unverified". ` +
+      `Produce only the changed passages, not the whole document. ${JSON_ONLY} ` +
+      `Schema: {"overview": string, "edits": [{"label": string, "sectionReference": string|null, ` +
+      `"currentLanguage": string, "proposedLanguage": string, "rationale": string, "fallbackPosition": string|null, ` +
+      `"grounding": "verified"|"unverified"|"insertion", "nature": "substantive"|"housekeeping"}], "summary": string}.`,
+    user: `Instruction: ${instruction}${priorBlock}\n\nDocument:\n${documentText.slice(0, 200_000)}`,
+  };
+}
+
 export function playbookFitPrompt(
   documentText: string,
   positions: Record<string, { standardPosition: string; fallbackLadder: string[]; dealBreaker: string | null }>,

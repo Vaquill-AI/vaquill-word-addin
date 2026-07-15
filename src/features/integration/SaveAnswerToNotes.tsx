@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { Button } from "@/ui/primitives";
 import { listClients, createClientNote, type Client } from "@/api/platform";
 import { errorMessage } from "@/api/errors";
+import { isCommunity } from "@/community/edition";
+import { UpgradeLink } from "@/ui/UpgradeGate";
 
 /**
  * Save an assistant answer as a note on a Vaquill AI client. Lazy: it loads
@@ -75,6 +77,11 @@ export function SaveAnswerToNotes({
     }
   }
 
+  // Saving to a client note needs a hosted Vaquill AI account (clients live in
+  // the platform). In the community/BYOK edition show a lock instead of a button
+  // that would only ever report "no clients". Placed after the hooks so hook
+  // order stays stable (rules-of-hooks).
+  if (isCommunity()) return <UpgradeLink label="Save to notes (hosted)" />;
   if (done) return <span className="small muted msg__note-status">Saved to notes.</span>;
   if (!open) {
     return (

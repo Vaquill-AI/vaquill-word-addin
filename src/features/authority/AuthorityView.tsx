@@ -13,7 +13,7 @@ import { insertTableOfAuthorities } from "@/office/citations";
 import { canAnnotate, paintCritiques, clearCritiques, type CritiqueItem } from "@/office/annotations";
 import type { AuthorityResult } from "@/api/authority";
 import { citationAuthorityAvailable } from "@/community/gating";
-import { UpgradeLink } from "@/ui/UpgradeGate";
+import { UpgradeGate } from "@/ui/UpgradeGate";
 import "./authority.css";
 
 /** Which summary bucket a citation result falls in (drives the filter chips). */
@@ -116,13 +116,10 @@ export function AuthorityView() {
             Check citations
           </Button>
         ) : (
-          <div className="stack" style={{ gap: 8 }}>
-            <Banner tone="info">
-              To check whether cited cases exist, add your free CourtListener API token in Settings.
-              Statute verification and good-law checks are part of the Vaquill AI hosted plan.
-            </Banner>
-            <UpgradeLink label="Get Vaquill AI hosted" />
-          </div>
+          <UpgradeGate title="Statute & good-law checks are on the hosted plan">
+            To check whether cited cases exist, add your free CourtListener API token in Settings.
+            Full statute verification and good-law treatment are part of the Vaquill AI hosted plan.
+          </UpgradeGate>
         )}
       </div>
     );
