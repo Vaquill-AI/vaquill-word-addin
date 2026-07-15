@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { Banner, Badge } from "@/ui/primitives";
 import type { ReviewApprovalGate } from "@/api/types";
 
@@ -12,8 +13,12 @@ const LEVEL_LABEL: Record<string, string> = {
  * travels with the document: before sending to a counterparty, it tells you
  * whether the deal needs manager, partner, or GC approval and why.
  * Never recomputed client-side.
+ *
+ * `action` (the "Record sign-off in document" button) renders INSIDE the banner
+ * so the primary action sits with its context, matching the "Re-run review"
+ * button in the stale-document banner.
  */
-export function SignoffGate({ gate }: { gate: ReviewApprovalGate }) {
+export function SignoffGate({ gate, action }: { gate: ReviewApprovalGate; action?: ReactNode }) {
   if (!gate.required) {
     return (
       <Banner tone="info">
@@ -22,6 +27,7 @@ export function SignoffGate({ gate }: { gate: ReviewApprovalGate }) {
           <Badge tone="green">Clear to send</Badge>
         </div>
         {gate.summary && <p className="small muted" style={{ margin: "4px 0 0" }}>{gate.summary}</p>}
+        {action && <div className="signoff__action">{action}</div>}
       </Banner>
     );
   }
@@ -48,6 +54,7 @@ export function SignoffGate({ gate }: { gate: ReviewApprovalGate }) {
           ))}
         </ul>
       )}
+      {action && <div className="signoff__action">{action}</div>}
     </Banner>
   );
 }

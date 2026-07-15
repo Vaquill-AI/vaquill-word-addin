@@ -1,4 +1,5 @@
 import { Badge, Banner } from "@/ui/primitives";
+import { PlusIcon } from "@/ui/icons";
 import type {
   ContractReviewResponse,
   CounterpartyMatch,
@@ -125,16 +126,25 @@ export function ReviewSummary({ result }: { result: ContractReviewResponse }) {
       {liability && <LiabilityPanel liability={liability} />}
 
       {result.missingClauses.length > 0 && (
-        <div className="stack" style={{ gap: 4 }}>
-          <h3 className="small muted">Missing clauses</h3>
-          <div className="row" style={{ flexWrap: "wrap", gap: 6 }}>
-            {result.missingClauses.map((c) => (
-              <Badge key={c} tone="yellow">
-                {c}
-              </Badge>
-            ))}
+        <section className="missing-clauses">
+          <div className="missing-clauses__head">
+            <h3 className="missing-clauses__title">Missing clauses</h3>
+            <span className="missing-clauses__count">{result.missingClauses.length}</span>
           </div>
-        </div>
+          <p className="missing-clauses__intro small muted">
+            Clauses this type of contract usually has that were not found in the document.
+          </p>
+          <ul className="missing-clauses__list">
+            {result.missingClauses.map((c) => (
+              <li key={c} className="missing-clauses__item">
+                <span className="missing-clauses__glyph" aria-hidden>
+                  <PlusIcon size={12} />
+                </span>
+                <span className="missing-clauses__text">{c}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
       )}
 
       {result.negotiationPriorities.length > 0 && (

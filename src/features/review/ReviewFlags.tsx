@@ -1,3 +1,4 @@
+import { FlagIcon } from "@/ui/icons";
 import type { ReviewFlag } from "@/api/types";
 import "./review-flags.css";
 
@@ -16,25 +17,28 @@ export function ReviewFlags({ flags }: { flags: ReviewFlag[] }) {
   return (
     <section className="review-flags card" aria-label="Flag for discussion">
       <div className="review-flags__head">
-        <span className="review-flags__dot" aria-hidden />
-        <h2 className="review-flags__title">
-          Flag for discussion
-          <span className="review-flags__count">{flags.length}</span>
-        </h2>
+        <span className="review-flags__icon" aria-hidden>
+          <FlagIcon size={13} />
+        </span>
+        <h2 className="review-flags__title">Flag for discussion</h2>
+        <span className="review-flags__count">{flags.length}</span>
       </div>
-      <p className="review-flags__intro small">
-        Noticed but not changed. Confirm before sending.
-      </p>
+      <p className="review-flags__intro small">Noticed but not changed. Confirm before sending.</p>
       <ul className="review-flags__list">
         {flags.map((flag, i) => (
           <li className="review-flags__item" key={`${flag.clauseName}-${i}`}>
-            <div className="review-flags__meta">
-              <span className="review-flags__clause">{flag.clauseName}</span>
-              {flag.sectionReference && (
-                <span className="review-flags__section">{flag.sectionReference}</span>
-              )}
+            <span className="review-flags__num" aria-hidden>
+              {i + 1}
+            </span>
+            <div className="review-flags__body">
+              <div className="review-flags__meta">
+                <span className="review-flags__clause">{flag.clauseName}</span>
+                {flag.sectionReference && (
+                  <span className="review-flags__section">{flag.sectionReference}</span>
+                )}
+              </div>
+              <p className="review-flags__observation">{flag.observation}</p>
             </div>
-            <p className="review-flags__observation">{flag.observation}</p>
           </li>
         ))}
       </ul>

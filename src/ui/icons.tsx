@@ -421,3 +421,27 @@ export function CleanIcon({ size = 15 }: P) {
     </svg>
   );
 }
+
+/** Pennant flag: an item noticed for discussion (not an edit). */
+export function FlagIcon({ size = 15 }: P) {
+  return (
+    <svg {...base(size)} aria-hidden>
+      <path d="M4 21V4" />
+      <path d="M4 4h12l-2 4 2 4H4" />
+    </svg>
+  );
+}
+
+/** Microsoft Word brand mark (Office flat style). Multicolor, so it does not
+ *  follow currentColor; used on the corrected-.docx download action. */
+export function MicrosoftWordIcon({ size = 16 }: P) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+      <path d="M28.806 3H10.194A2.194 2.194 0 0 0 8 5.194V11h20V5.194A2.194 2.194 0 0 0 28.806 3z" fill="#41A5EE" />
+      <path d="M28 11H8v8h20v-8z" fill="#2B7CD3" />
+      <path d="M28 19H8v5.806A2.194 2.194 0 0 0 10.194 27h18.612A2.194 2.194 0 0 0 31 24.806V19h-3z" fill="#185ABD" />
+      <path d="M14 7H4.194A2.194 2.194 0 0 0 2 9.194v13.612A2.194 2.194 0 0 0 4.194 25H14V7z" fill="#103F91" />
+      <path d="m6.4 12.6 1.2 6.4 1.5-4 1.5 4 1.2-6.4h-1l-.7 4-1.4-4h-1l-1.4 4-.7-4h-1.2z" fill="#fff" />
+    </svg>
+  );
+}

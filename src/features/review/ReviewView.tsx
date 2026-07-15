@@ -305,17 +305,19 @@ export function ReviewView({
       <div className="review review--results">
         <div className="review__header">
           <SetupSummary parts={summaryParts} onNew={reset} />
-          {gate?.required && (
-            <div className="signoff-pill">
-              <Badge tone="red">{gate.level ? SIGNOFF_LABEL[gate.level] : "Sign-off required"}</Badge>
-            </div>
-          )}
           <ReviewToolbar
             total={redlines.length}
             addressed={addressed}
             filter={filter}
             onFilter={setFilter}
             counts={counts}
+            signoff={
+              gate?.required ? (
+                <Badge tone="red">
+                  {gate.level ? SIGNOFF_LABEL[gate.level] : "Sign-off required"}
+                </Badge>
+              ) : undefined
+            }
           />
         </div>
 
@@ -347,16 +349,20 @@ export function ReviewView({
               </div>
             </Banner>
           )}
-          {gate && <SignoffGate gate={gate} />}
           {gate && (
-            <RecordGovernance
+            <SignoffGate
               gate={gate}
-              meta={{
-                contractType: result.contractType ?? params?.contractType,
-                playbookId: params?.playbookId,
-                matterId: params?.matterId,
-                draftId: savedDraftId ?? undefined,
-              }}
+              action={
+                <RecordGovernance
+                  gate={gate}
+                  meta={{
+                    contractType: result.contractType ?? params?.contractType,
+                    playbookId: params?.playbookId,
+                    matterId: params?.matterId,
+                    draftId: savedDraftId ?? undefined,
+                  }}
+                />
+              }
             />
           )}
           <ReviewSummary result={result} />

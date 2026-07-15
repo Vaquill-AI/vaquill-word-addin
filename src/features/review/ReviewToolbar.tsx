@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { SegmentedControl } from "@/ui/primitives";
 
 export type RedlineFilter = "all" | "high" | "unresolved";
@@ -5,7 +6,8 @@ export type RedlineFilter = "all" | "high" | "unresolved";
 /**
  * Sticky review header: a progress bar showing how much of the review has been
  * addressed, plus filters to triage. Stays pinned while the redline list scrolls
- * beneath it so the reviewer always knows where they stand.
+ * beneath it so the reviewer always knows where they stand. An optional sign-off
+ * chip sits inline with the progress count so the header stays compact.
  */
 export function ReviewToolbar({
   total,
@@ -13,22 +15,27 @@ export function ReviewToolbar({
   filter,
   onFilter,
   counts,
+  signoff,
 }: {
   total: number;
   addressed: number;
   filter: RedlineFilter;
   onFilter: (f: RedlineFilter) => void;
   counts: { all: number; high: number; unresolved: number };
+  signoff?: ReactNode;
 }) {
   const pct = total === 0 ? 100 : Math.round((addressed / total) * 100);
 
   return (
     <div className="review-toolbar">
       <div className="review-toolbar__progress">
-        <div className="row" style={{ justifyContent: "space-between" }}>
-          <span className="small" style={{ fontWeight: 600 }}>
-            {addressed} of {total} addressed
-          </span>
+        <div className="review-toolbar__status">
+          <div className="review-toolbar__status-left">
+            {signoff}
+            <span className="small" style={{ fontWeight: 600 }}>
+              {addressed} of {total} addressed
+            </span>
+          </div>
           <span className="small muted">{pct}%</span>
         </div>
         <div

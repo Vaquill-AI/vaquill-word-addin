@@ -30,7 +30,7 @@ export function RecordGovernance({ gate, meta }: { gate: GateLike; meta: ReviewM
   return (
     <div className="stack" style={{ gap: 4 }}>
       <Button
-        variant="default"
+        variant="primary"
         size="sm"
         onClick={record}
         loading={status === "busy"}

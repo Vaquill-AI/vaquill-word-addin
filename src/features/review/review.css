@@ -468,3 +468,92 @@
 
 /* The counterparty comment thread (avatar, timestamp, replies, resolve/reply)
    lives in comment-card.css and its CommentCard component. */
+
+/* Compact status row: the sign-off chip and the progress count share one line
+   so the sticky header stays short. */
+.review-toolbar__status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.review-toolbar__status-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+/* The sign-off action button lives inside the sign-off banner, matching the
+   "Re-run review" button in the stale-document banner. */
+.signoff__action {
+  margin-top: 10px;
+}
+
+/* Missing clauses: a clean advisory list instead of a row of colored pills. */
+.missing-clauses {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.missing-clauses__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.missing-clauses__title {
+  margin: 0;
+  font-size: var(--fs-control);
+  font-weight: 700;
+  color: var(--text);
+}
+.missing-clauses__count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--surface-muted);
+  color: var(--text-muted);
+  font-size: var(--fs-micro);
+  font-weight: 700;
+}
+.missing-clauses__intro {
+  margin: 0;
+}
+.missing-clauses__list {
+  list-style: none;
+  margin: 2px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.missing-clauses__item {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+}
+.missing-clauses__glyph {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  flex: 0 0 auto;
+  margin-top: 1px;
+  border-radius: 999px;
+  background: var(--brand-tint);
+  color: var(--brand);
+}
+.missing-clauses__text {
+  font-size: var(--fs-caption);
+  line-height: 1.45;
+  color: var(--text);
+}

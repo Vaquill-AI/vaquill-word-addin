@@ -1,4 +1,5 @@
 import { Button } from "@/ui/primitives";
+import { PlusIcon } from "@/ui/icons";
 
 /**
  * After a review runs, the setup form collapses to this one-line chip so the
@@ -8,8 +9,8 @@ export function SetupSummary({ parts, onNew }: { parts: string[]; onNew: () => v
   return (
     <div className="setup-summary">
       <span className="setup-summary__parts small">{parts.filter(Boolean).join("  ·  ")}</span>
-      <Button variant="ghost" size="sm" onClick={onNew}>
-        New review
+      <Button variant="default" size="sm" onClick={onNew} title="Start a new review">
+        <PlusIcon size={13} /> New review
       </Button>
     </div>
   );

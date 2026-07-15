@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { Button, Banner, LiveRegion } from "@/ui/primitives";
-import { isCommunity } from "@/community/edition";
-import { UpgradeLink } from "@/ui/UpgradeGate";
+import { DownloadDocxButton } from "./DownloadDocxButton";
 import { exportCorrectedDocx } from "@/api/contract-review";
 import { downloadDocx } from "@/office/export";
 import { readDocumentText } from "@/office/document";
@@ -164,19 +163,7 @@ export function ReviewActionBar({
               ? `Apply all open (${openApplicable.length})`
               : "All addressed"}
         </Button>
-        {isCommunity() ? (
-          <UpgradeLink label="Download .docx (hosted)" />
-        ) : (
-          <Button
-            variant="default"
-            block
-            onClick={download}
-            loading={downloading}
-            title="Download a redlined .docx"
-          >
-            {downloading ? "Preparing..." : "Download .docx"}
-          </Button>
-        )}
+        <DownloadDocxButton onDownload={download} downloading={downloading} />
       </div>
     </div>
   );
