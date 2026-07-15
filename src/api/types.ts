@@ -1,5 +1,5 @@
 /**
- * TypeScript mirrors of the Vaquill backend schemas the add-in consumes.
+ * TypeScript mirrors of the Vaquill AI backend schemas the add-in consumes.
  * Field names are the camelCase serialization aliases the API emits.
  * Source of truth: app/models/legal_tools_schemas.py in the backend repo.
  */

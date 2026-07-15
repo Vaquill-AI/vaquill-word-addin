@@ -17,7 +17,7 @@
 
 // Fixed public URLs, selected by build mode. No env var needed.
 const apiBase = import.meta.env.PROD ? "https://api.vaquill.ai" : "http://localhost:8000";
-// The Vaquill web app, for deep-linking back to saved drafts, matters, etc.
+// The Vaquill AI web app, for deep-linking back to saved drafts, matters, etc.
 const appBase = import.meta.env.PROD ? "https://app.vaquill.ai" : "http://localhost:3000";
 
 export const config = {
@@ -45,6 +45,6 @@ export function assertConfigured(): void {
     : (["supabaseUrl", "supabaseAnonKey", "addinOrigin"] as const);
   const missing = required.filter((k) => !config[k]);
   if (missing.length) {
-    throw new Error(`Vaquill add-in misconfigured. Missing: ${missing.join(", ")}`);
+    throw new Error(`Vaquill AI add-in misconfigured. Missing: ${missing.join(", ")}`);
   }
 }

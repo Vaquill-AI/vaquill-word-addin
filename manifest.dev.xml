@@ -12,7 +12,7 @@
   <ProviderName>Vaquill AI</ProviderName>
   <DefaultLocale>en-US</DefaultLocale>
   <DisplayName DefaultValue="Vaquill AI for Word (Dev)" />
-  <Description DefaultValue="Local development build of the Vaquill Word add-in." />
+  <Description DefaultValue="Local development build of the Vaquill AI Word add-in." />
   <IconUrl DefaultValue="https://localhost:3000/assets/icon-32.png" />
   <HighResolutionIconUrl DefaultValue="https://localhost:3000/assets/icon-80.png" />
   <SupportUrl DefaultValue="https://www.vaquill.ai/support" />
@@ -87,7 +87,7 @@
         <bt:String id="Vaquill.OpenPane.Label" DefaultValue="Open Vaquill AI" />
       </bt:ShortStrings>
       <bt:LongStrings>
-        <bt:String id="Vaquill.OpenPane.Tip" DefaultValue="Open the Vaquill pane to review the open contract." />
+        <bt:String id="Vaquill.OpenPane.Tip" DefaultValue="Open the Vaquill AI pane to review the open contract." />
       </bt:LongStrings>
     </Resources>
   </VersionOverrides>

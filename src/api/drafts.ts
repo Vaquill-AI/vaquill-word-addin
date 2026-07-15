@@ -1,7 +1,7 @@
 import { request, requestBinary } from "./http";
 
 /**
- * Saved drafts: list the user's prior Vaquill drafts and pull one into the open
+ * Saved drafts: list the user's prior Vaquill AI drafts and pull one into the open
  * document. Reuses the same server export the web app uses, so a draft inserts
  * with its formatting preserved (via `insertDocxAtCursorOrDownload`). Continuity
  * for a lawyer resuming work that started on the web or in an earlier session.

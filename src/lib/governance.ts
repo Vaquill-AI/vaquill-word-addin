@@ -40,7 +40,7 @@ export interface GovernanceLedger {
   matterId?: string;
   /**
    * The saved Vaquill AI draft id, present only when the reviewed contract was
-   * saved to Vaquill (which yields a draft id). Its presence is what lets the
+   * saved to Vaquill AI (which yields a draft id). Its presence is what lets the
    * sign-off run through the backend's authority-enforced approval instead of
    * the in-file attestation.
    */

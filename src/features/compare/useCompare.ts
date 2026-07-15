@@ -133,7 +133,7 @@ export function useCompare() {
             original,
             revised,
             title: `Compare: ${doc.filename}`,
-            authorLabel: "Vaquill Compare",
+            authorLabel: "Vaquill AI Compare",
           },
           signal,
         );

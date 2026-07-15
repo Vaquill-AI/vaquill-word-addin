@@ -27,16 +27,41 @@ type Status =
 
 const PROVIDERS: ProviderId[] = ["openai", "anthropic"];
 
+/** Sentinel dropdown value that reveals the free-text model id field. */
+const CUSTOM = "__custom__";
+
+function isKnownModel(provider: ProviderId, model: string): boolean {
+  return MODEL_OPTIONS[provider].some((m) => m.id === model);
+}
+
 export function ProviderKeyForm({ onSaved }: { onSaved?: () => void }) {
   const [provider, setProvider] = useState<ProviderId>(getActiveProvider());
   const [model, setModelValue] = useState<string>(getModel(getActiveProvider()));
+  // A saved model that is not in the curated list (a newer or provider-specific
+  // one the user typed) starts the form in custom mode so it stays editable.
+  const [custom, setCustom] = useState<boolean>(
+    () => !isKnownModel(getActiveProvider(), getModel(getActiveProvider())),
+  );
   const [key, setKeyValue] = useState<string>(getKey(getActiveProvider()) ?? "");
   const [status, setStatus] = useState<Status>({ kind: "idle" });
 
   function switchProvider(p: ProviderId) {
+    const nextModel = getModel(p);
     setProvider(p);
-    setModelValue(getModel(p));
+    setModelValue(nextModel);
+    setCustom(!isKnownModel(p, nextModel));
     setKeyValue(getKey(p) ?? "");
+    setStatus({ kind: "idle" });
+  }
+
+  function onModelSelect(value: string) {
+    if (value === CUSTOM) {
+      setCustom(true);
+      setModelValue("");
+    } else {
+      setCustom(false);
+      setModelValue(value);
+    }
     setStatus({ kind: "idle" });
   }
 
@@ -44,6 +69,10 @@ export function ProviderKeyForm({ onSaved }: { onSaved?: () => void }) {
     const k = key.trim();
     if (!k) {
       setStatus({ kind: "error", message: "Enter your API key first." });
+      return;
+    }
+    if (!model.trim()) {
+      setStatus({ kind: "error", message: "Enter a model id first." });
       return;
     }
     setStatus({ kind: "testing" });
@@ -57,7 +86,7 @@ export function ProviderKeyForm({ onSaved }: { onSaved?: () => void }) {
 
   function save() {
     setKey(provider, key.trim());
-    setModel(provider, model);
+    setModel(provider, model.trim());
     setActiveProvider(provider);
     onSaved?.();
   }
@@ -80,13 +109,32 @@ export function ProviderKeyForm({ onSaved }: { onSaved?: () => void }) {
       </Field>
 
       <Field label="Model">
-        <select value={model} onChange={(e) => setModelValue(e.target.value)} style={{ width: "100%" }}>
+        <select
+          value={custom ? CUSTOM : model}
+          onChange={(e) => onModelSelect(e.target.value)}
+          style={{ width: "100%" }}
+        >
           {MODEL_OPTIONS[provider].map((m) => (
             <option key={m.id} value={m.id}>
               {m.label}
             </option>
           ))}
+          <option value={CUSTOM}>Other (enter model id)</option>
         </select>
+        {custom && (
+          <input
+            type="text"
+            value={model}
+            autoComplete="off"
+            spellCheck={false}
+            placeholder="e.g. gpt-5.5-pro"
+            onChange={(e) => {
+              setModelValue(e.target.value);
+              setStatus({ kind: "idle" });
+            }}
+            style={{ width: "100%", marginTop: 6 }}
+          />
+        )}
       </Field>
 
       <Field label={`${PROVIDER_LABELS[provider]} API key`}>
@@ -107,7 +155,7 @@ export function ProviderKeyForm({ onSaved }: { onSaved?: () => void }) {
         <Button variant="default" size="sm" loading={status.kind === "testing"} onClick={runTest}>
           Test
         </Button>
-        <Button variant="primary" size="sm" disabled={!key.trim()} onClick={save}>
+        <Button variant="primary" size="sm" disabled={!key.trim() || !model.trim()} onClick={save}>
           Save
         </Button>
         {status.kind === "ok" && (

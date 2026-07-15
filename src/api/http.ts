@@ -5,7 +5,7 @@ import { ApiError, errorFromResponse } from "./errors";
 import { isCommunity } from "@/community/edition";
 
 /**
- * Authenticated JSON fetch against the Vaquill backend.
+ * Authenticated JSON fetch against the Vaquill AI backend.
  * Attaches the Supabase bearer, and on a 401 does a single silent
  * refresh-and-retry before surfacing an unauthorized error.
  */

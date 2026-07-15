@@ -46,7 +46,7 @@ function PlaybookRow({
  * Searchable list of the user's playbooks, as a PICKER for acting on the open
  * document: open one to insert a rung, or run it against the document. Playbook
  * MANAGEMENT - create, rename, set-default, delete, versioning, analytics -
- * lives in the Vaquill web app, which is a far richer surface than a 300px pane;
+ * lives in the Vaquill AI web app, which is a far richer surface than a 300px pane;
  * `manageHref` deep-links to it rather than reimplementing a worse copy here.
  *
  * Each row surfaces the real metadata the API emits: the per-contract-type
@@ -86,7 +86,7 @@ export function PlaybookLibrary({
       className="small"
       style={{ color: "var(--brand)" }}
     >
-      Manage in Vaquill
+      Manage in Vaquill AI
     </a>
   );
 
@@ -95,11 +95,11 @@ export function PlaybookLibrary({
       <div className="stack playbook-empty">
         <span className="playbook-empty__title">No playbooks yet</span>
         <span className="small muted">
-          Create and edit playbooks in the Vaquill web app, then run them here against your document.
+          Create and edit playbooks in the Vaquill AI web app, then run them here against your document.
         </span>
         <div className="row playbook-empty__cta">
           <a className="btn btn--primary btn--sm" href={manageHref} target="_blank" rel="noreferrer">
-            <PlaybookIcon size={14} /> Create a playbook in Vaquill
+            <PlaybookIcon size={14} /> Create a playbook in Vaquill AI
           </a>
         </div>
       </div>

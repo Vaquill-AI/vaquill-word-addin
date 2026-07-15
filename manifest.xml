@@ -85,7 +85,7 @@
               </Group>
             </OfficeTab>
           </ExtensionPoint>
-          <!-- Right-click a text selection to open Vaquill where the cursor is. -->
+          <!-- Right-click a text selection to open Vaquill AI where the cursor is. -->
           <ExtensionPoint xsi:type="ContextMenu">
             <OfficeMenu id="ContextMenuText">
               <Control xsi:type="Button" id="Vaquill.ContextReview">
@@ -126,7 +126,7 @@
         <bt:String id="Vaquill.Context.Label" DefaultValue="Review with Vaquill AI" />
       </bt:ShortStrings>
       <bt:LongStrings>
-        <bt:String id="GetStarted.Description" DefaultValue="Open the Vaquill pane to review this contract, apply grounded redlines, and draft clauses." />
+        <bt:String id="GetStarted.Description" DefaultValue="Open the Vaquill AI pane to review this contract, apply grounded redlines, and draft clauses." />
         <bt:String id="Vaquill.OpenPane.Tip" DefaultValue="Review the open contract, apply tracked-change redlines, and run drafting and research." />
       </bt:LongStrings>
     </Resources>

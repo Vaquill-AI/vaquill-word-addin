@@ -110,7 +110,7 @@ function AssistantActions({ message }: { message: AssistantMessage }) {
         Insert
       </button>
       {/* Cross-link: keep research done in Word from being lost to the local
-          session by saving the answer as a note on a Vaquill client. */}
+          session by saving the answer as a note on a Vaquill AI client. */}
       <SaveAnswerToNotes content={message.content} />
       {note && <span className="small muted msg__actions-note">{note}</span>}
     </div>

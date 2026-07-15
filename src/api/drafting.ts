@@ -455,7 +455,7 @@ export async function generateDraftQueued(
       throw new ApiError(
         "unknown",
         0,
-        "Draft generation is taking longer than expected. Open Vaquill to find it in your drafts.",
+        "Draft generation is taking longer than expected. Open Vaquill AI to find it in your drafts.",
         "POLL_TIMEOUT",
       );
     }

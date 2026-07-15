@@ -29,7 +29,7 @@ import { del, getAll, put } from "./store";
  *
  * Anything not implemented here throws a REQUIRES_ACCOUNT error, which the UI
  * already renders as a friendly message. That is the default gate: a feature that
- * needs Vaquill's hosted data or account says so instead of failing oddly.
+ * needs Vaquill AI's hosted data or account says so instead of failing oddly.
  */
 
 interface StoredPrompt {

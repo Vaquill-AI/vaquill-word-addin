@@ -1,7 +1,7 @@
 import { request, requestForm } from "./http";
 
 /**
- * Cross-links into the Vaquill platform: list matters, save the reviewed or
+ * Cross-links into the Vaquill AI platform: list matters, save the reviewed or
  * drafted work back as a draft (optionally under a matter, with redlines as
  * tracked changes), and save the open document as a reusable template.
  *

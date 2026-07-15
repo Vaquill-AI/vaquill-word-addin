@@ -1,6 +1,7 @@
 import { config } from "@/config";
 import { request } from "./http";
 import { ApiError } from "./errors";
+import { isCommunity } from "@/community/edition";
 import { isStatuteCitation, type CitationKind } from "@/features/authority/extract";
 import type { ContextSnippet } from "@/lib/context-snippet";
 
@@ -98,7 +99,7 @@ interface ResolveResponse {
   url?: string;
 }
 
-/** Turn a (relative) in-app path into an absolute link to the Vaquill web app. */
+/** Turn a (relative) in-app path into an absolute link to the Vaquill AI web app. */
 function buildAppUrl(url?: string): string | undefined {
   if (!url) return undefined;
   if (url.startsWith("http")) return url;
@@ -110,10 +111,19 @@ function cleanCourt(court?: string): string | undefined {
   return court;
 }
 
-/** Build the in-app case link from the cluster id. Customer-facing links point
- *  to the Vaquill app so citations resolve inside the product, never to an
- *  external host. */
-function buildCaseUrl(clusterId?: number): string | undefined {
+/**
+ * Build the case link. Hosted: the in-app case page, so citations resolve
+ * inside the product, never to an external host. Community (bring-your-own-key):
+ * there is no hosted case page, so link to CourtListener's own opinion page
+ * (the `absolute_url` the search returned) rather than a dead in-app URL.
+ */
+function buildCaseUrl(clusterId?: number, absoluteUrl?: string): string | undefined {
+  if (isCommunity()) {
+    if (!absoluteUrl) return undefined;
+    return absoluteUrl.startsWith("http")
+      ? absoluteUrl
+      : `https://www.courtlistener.com${absoluteUrl.startsWith("/") ? "" : "/"}${absoluteUrl}`;
+  }
   return clusterId !== undefined ? `${config.appBase}/cases/${clusterId}` : undefined;
 }
 
@@ -205,7 +215,7 @@ export async function verifyCitation(
         court: cleanCourt(cluster.court ?? cluster.court_id),
         year: (cluster.date_filed ?? "").slice(0, 4) || undefined,
         clusterId,
-        caseUrl: buildCaseUrl(clusterId),
+        caseUrl: buildCaseUrl(clusterId, cluster.absolute_url),
         citedByCount,
       };
     }

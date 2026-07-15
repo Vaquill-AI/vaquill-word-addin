@@ -99,7 +99,7 @@ function AppShell() {
         if (!alive) return;
         if (me.initialized === false) {
           setAuthNotice(
-            "You do not have a Vaquill account yet. Create one on the web, then sign in here.",
+            "You do not have a Vaquill AI account yet. Create one on the web, then sign in here.",
           );
           clearSession(); // -> subscribe fires user=null -> back to the login screen
         } else {

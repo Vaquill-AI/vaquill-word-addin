@@ -5,7 +5,7 @@ import { ApiError, errorFromResponse } from "./errors";
 import { isCommunity } from "@/community/edition";
 
 /**
- * POST + Server-Sent-Events reader for the Vaquill streaming endpoints.
+ * POST + Server-Sent-Events reader for the Vaquill AI streaming endpoints.
  *
  * The backend streams `init -> progress -> result -> done` (plus `error`).
  * EventSource cannot POST or set Authorization, so we read the body stream

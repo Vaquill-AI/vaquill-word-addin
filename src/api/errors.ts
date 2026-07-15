@@ -1,5 +1,5 @@
 /**
- * Typed API errors mapped from the Vaquill backend error contract.
+ * Typed API errors mapped from the Vaquill AI backend error contract.
  * Lets the UI show precise states (quota, document too large, no access)
  * instead of a generic failure.
  */
@@ -75,7 +75,7 @@ export async function errorFromResponse(res: Response): Promise<ApiError> {
 export function friendlyMessage(err: ApiError): string {
   switch (err.kind) {
     case "quota":
-      return "You have reached your usage limit for this plan. Open Vaquill to upgrade or wait for your quota to reset.";
+      return "You have reached your usage limit for this plan. Open Vaquill AI to upgrade or wait for your quota to reset.";
     case "too_large":
       return "This document is too large to review in full. Try selecting the section you want reviewed.";
     case "not_found":
@@ -85,7 +85,7 @@ export function friendlyMessage(err: ApiError): string {
     case "network":
       return "Cannot reach Vaquill. Check your connection and try again.";
     case "server":
-      return "Vaquill had a problem completing that. Please try again.";
+      return "Vaquill AI had a problem completing that. Please try again.";
     default:
       return err.message || "Something went wrong. Please try again.";
   }
