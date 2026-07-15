@@ -185,7 +185,7 @@ export function SendReadyView() {
     <div className="stack sendready-view">
       <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
         <h1 className="view-title">Send-ready</h1>
-        <Button variant="ghost" size="sm" onClick={() => void scan()}>
+        <Button variant="ghost" size="sm" data-tour="sr-rescan" onClick={() => void scan()}>
           Rescan
         </Button>
       </div>
@@ -204,7 +204,7 @@ export function SendReadyView() {
 
       {note && <Banner tone="danger">{note}</Banner>}
 
-      <div className="stack sendready-list">
+      <div className="stack sendready-list" data-tour="sr-checklist">
         <Row
           tone={s.trackedChanges > 0 ? "yellow" : "green"}
           icon={<EditIcon size={15} />}

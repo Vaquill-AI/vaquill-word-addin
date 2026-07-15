@@ -97,7 +97,7 @@ export function CrossRefView() {
     <div className="stack xref-view">
       <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
         <h1 className="view-title">Cross-references</h1>
-        <Button variant="ghost" size="sm" onClick={() => void scan()}>
+        <Button variant="ghost" size="sm" onClick={() => void scan()} data-tour="xref-rescan">
           Rescan
         </Button>
       </div>
@@ -126,7 +126,7 @@ export function CrossRefView() {
           {report.scheduleCount > 0 ? " or schedule" : ""}.
         </Banner>
       ) : (
-        <div className="stack" style={{ gap: 0 }}>
+        <div className="stack" style={{ gap: 0 }} data-tour="xref-broken">
           {report.broken.map((b) => (
             <div key={`${b.kind}-${b.label}`} className="xref-row">
               <div className="stack" style={{ gap: 0, minWidth: 0 }}>
@@ -149,6 +149,7 @@ export function CrossRefView() {
                 onClick={() => void find(b.label)}
                 aria-label={`Find ${b.label} in the document`}
                 title="Find in document"
+                data-tour="xref-find"
               >
                 <LocateIcon size={13} /> Find
               </Button>

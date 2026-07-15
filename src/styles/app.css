@@ -17,7 +17,7 @@
   z-index: 5;
 }
 .app-header__mark {
-  border-radius: 5px;
+  border-radius: var(--radius-sm);
   display: block;
 }
 .app-header__wordmark {
@@ -54,7 +54,7 @@
   margin-right: 2px;
 }
 .appbar__mark {
-  border-radius: 5px;
+  border-radius: var(--radius-sm);
   display: block;
 }
 .appbar__tabs {
@@ -82,32 +82,43 @@
   align-items: center;
   gap: 6px;
   white-space: nowrap;
-  padding: 9px 10px;
+  padding: 9px 11px;
   border: none;
   background: none;
   color: var(--text-muted);
-  font-size: 13px;
+  font-size: var(--fs-control);
   font-weight: 600;
   cursor: pointer;
+  transition: color 0.12s ease, background 0.12s ease;
 }
 .tabnav__tab svg {
-  opacity: 0.9;
+  opacity: 0.85;
+  transition: opacity 0.12s ease;
 }
 .tabnav__tab:hover {
   color: var(--text);
+  background: var(--fill-subtle);
 }
+.tabnav__tab:hover svg {
+  opacity: 1;
+}
+/* Active tab: a branded accent (text + icon + underline) reads more modern and
+   on-brand than the previous flat black. */
 .tabnav__tab--on {
-  color: var(--text);
+  color: var(--brand);
+}
+.tabnav__tab--on svg {
+  opacity: 1;
 }
 .tabnav__tab--on::after {
   content: "";
   position: absolute;
-  left: 8px;
-  right: 8px;
+  left: 9px;
+  right: 9px;
   bottom: -1px;
   height: 2px;
   border-radius: 2px 2px 0 0;
-  background: var(--text);
+  background: var(--brand);
 }
 
 /* Second-level nav (e.g. the Review hub: Redlines / Citations / Sign-off). */
@@ -136,15 +147,18 @@
   padding: 24px;
 }
 .login__mark {
-  border-radius: 16px;
+  border-radius: var(--radius-lg);
   box-shadow: var(--shadow);
 }
 .login__title {
-  font-size: 16px;
+  font-size: var(--fs-subtitle);
 }
 .login__sub {
   max-width: 240px;
   color: var(--text-muted);
+}
+.login__register {
+  margin: 0;
 }
 .login__form {
   display: flex;
@@ -161,12 +175,12 @@
   padding: 8px 10px;
   font: inherit;
   color: var(--text);
-  background: var(--surface, #fff);
+  background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius-md);
 }
 .login__form input:focus-visible {
-  outline: 2px solid var(--accent, #5b3a29);
+  outline: 2px solid var(--accent);
   outline-offset: 1px;
   border-color: transparent;
 }
@@ -177,7 +191,7 @@
   width: 100%;
   max-width: 280px;
   color: var(--text-muted);
-  font-size: 12px;
+  font-size: var(--fs-caption);
 }
 .login__divider::before,
 .login__divider::after {

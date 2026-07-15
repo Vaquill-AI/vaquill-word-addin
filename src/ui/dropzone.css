@@ -54,7 +54,7 @@
   color: var(--btn-primary-fg);
   box-shadow: var(--btn-primary-sheen);
   font-weight: 600;
-  font-size: 13px;
+  font-size: var(--fs-control);
   cursor: pointer;
 }
 

@@ -1,0 +1,32 @@
+.navigator {
+  gap: 12px;
+}
+
+.navigator-hit {
+  gap: 6px;
+}
+
+.navigator-row {
+  gap: 4px;
+  padding: 10px 12px;
+}
+
+.navigator-term {
+  font-size: var(--fs-control);
+  font-weight: 600;
+}
+
+.navigator-def {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* In the list, clamp the definition to a few lines so the glossary scans fast.
+   The looked-up card (navigator-hit) shows the definition in full. */
+.navigator-row .navigator-def {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}

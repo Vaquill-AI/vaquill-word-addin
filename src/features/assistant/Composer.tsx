@@ -1,6 +1,7 @@
 import { forwardRef, useImperativeHandle, useRef, useState } from "react";
 import { IconButton, SegmentedControl, Spinner } from "@/ui/primitives";
 import { AutoTextarea } from "@/ui/AutoTextarea";
+import { useVoiceInput } from "@/lib/useVoiceInput";
 import { StopIcon, WandIcon } from "@/ui/icons";
 import { useImprovePrompt } from "@/lib/useImprovePrompt";
 import { improveChatPrompt, improveDraftingPrompt } from "@/api/improve-prompt";
@@ -25,12 +26,23 @@ function PlusGlyph() {
 }
 
 /** Sparkles glyph for the "Improve" affordance (distinct from the prompt-library
- *  wand). Signals an AI rewrite of the current input. */
+ *  wand). Signals an AI rewrite of the current input. 14px to match the sibling
+ *  Prompts glyph in the same labeled-tool row. */
 function SparklesGlyph() {
   return (
-    <svg viewBox="0 0 24 24" width={16} height={16} fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+    <svg viewBox="0 0 24 24" width={14} height={14} fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
       <path d="M12 3l1.9 4.6L18.5 9.5 13.9 11.4 12 16l-1.9-4.6L5.5 9.5 10.1 7.6 12 3z" />
       <path d="M19 15l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8.8-2z" />
+    </svg>
+  );
+}
+
+/** Microphone glyph for voice dictation. */
+function MicGlyph() {
+  return (
+    <svg viewBox="0 0 24 24" width={16} height={16} fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <rect x="9" y="3" width="6" height="11" rx="3" />
+      <path d="M5 11a7 7 0 0 0 14 0M12 18v3" />
     </svg>
   );
 }
@@ -131,6 +143,22 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
     requestAnimationFrame(focusEnd);
   }
 
+  // Voice dictation: transcript is appended after whatever the user already
+  // typed (captured when recording starts), so speaking never wipes the draft.
+  const micBaseRef = useRef("");
+  const voice = useVoiceInput((t) => {
+    const base = micBaseRef.current;
+    onChange(base ? `${base} ${t}` : t);
+  });
+  function toggleMic() {
+    if (voice.listening) {
+      voice.stop();
+      return;
+    }
+    micBaseRef.current = value.trim();
+    voice.start();
+  }
+
   return (
     <div className="composer">
       {libraryOpen && (
@@ -149,7 +177,7 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
           onClose={() => setContextOpen(false)}
         />
       )}
-      <div className="composer__box">
+      <div className="composer__box" data-tour="composer">
         {improve.note && <span className="composer__improve-note small muted">{improve.note}</span>}
         {attachments.length > 0 && (
           <AttachmentChips
@@ -177,16 +205,18 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
           }}
         />
         <div className="composer__actions">
-          <SegmentedControl<ComposerMode>
-            label="Assistant mode"
-            options={[
-              { value: "ask", label: "Ask" },
-              { value: "edit", label: "Edit" },
-            ]}
-            value={mode}
-            onChange={onMode}
-          />
-          <span className="composer__ctx-trigger">
+          <span data-tour="composer-modes" style={{ display: "inline-flex" }}>
+            <SegmentedControl<ComposerMode>
+              label="Assistant mode"
+              options={[
+                { value: "ask", label: "Ask" },
+                { value: "edit", label: "Edit" },
+              ]}
+              value={mode}
+              onChange={onMode}
+            />
+          </span>
+          <span className="composer__ctx-trigger" data-tour="add-context">
             <IconButton
               label={`Add context${ctxCount > 0 ? ` (${ctxCount} on)` : ""}`}
               onClick={() => setContextOpen((v) => !v)}
@@ -206,6 +236,7 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
             onClick={() => setLibraryOpen((v) => !v)}
             aria-pressed={libraryOpen}
             title="Saved prompts"
+            data-tour="prompts"
           >
             <WandIcon size={14} /> Prompts
           </button>
@@ -223,6 +254,18 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
           )}
           <span className="composer__spacer" />
           {mode === "ask" && <FocusControl scope={scope} onScope={onScope} />}
+          {voice.supported && !disabled && (
+            <button
+              type="button"
+              className={`composer__mic${voice.listening ? " composer__mic--on" : ""}`}
+              onClick={toggleMic}
+              aria-pressed={voice.listening}
+              aria-label={voice.listening ? "Stop dictation" : "Dictate with your voice"}
+              title={voice.listening ? "Stop dictation" : "Dictate with your voice"}
+            >
+              <MicGlyph />
+            </button>
+          )}
           {disabled && onStop ? (
             <button
               type="button"
@@ -231,7 +274,7 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
               aria-label="Stop generating"
               title="Stop"
             >
-              <StopIcon size={14} />
+              <StopIcon size={16} />
             </button>
           ) : (
             <button

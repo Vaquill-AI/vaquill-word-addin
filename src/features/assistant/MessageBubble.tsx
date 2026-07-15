@@ -2,8 +2,29 @@ import { useRef, useState } from "react";
 import { Markdown, type CitationCtx } from "./markdown";
 import { IconButton } from "@/ui/primitives";
 import { CopyIcon, EditIcon, CheckIcon } from "@/ui/icons";
-import { insertClauseTracked } from "@/office/richInsert";
+import { insertHtmlAtCursor } from "@/office/richInsert";
+import { markdownToSafeHtml } from "@/api/research";
+import { stripMarkdown } from "@/lib/strings";
 import { config } from "@/config";
+import { Avatar } from "@/ui/Avatar";
+import { getUser } from "@/auth/session";
+
+/** Signed-in user's name + photo for the avatar (Google OAuth picture when
+ *  present; the Avatar falls back to initials if there is no photo). */
+function currentUser(): { name: string; avatarUrl: string | null } {
+  const u = getUser();
+  const m = (u?.user_metadata ?? {}) as Record<string, unknown>;
+  const name =
+    (typeof m.full_name === "string" && m.full_name) ||
+    (typeof m.name === "string" && m.name) ||
+    u?.email ||
+    "You";
+  const avatarUrl =
+    (typeof m.avatar_url === "string" && m.avatar_url) ||
+    (typeof m.picture === "string" && m.picture) ||
+    null;
+  return { name, avatarUrl };
+}
 import type { AssistantMessage } from "./useAssistant";
 import type { ChatSource } from "@/api/chat";
 
@@ -27,18 +48,43 @@ function AssistantActions({ message }: { message: AssistantMessage }) {
   const [copied, setCopied] = useState(false);
 
   async function copy() {
+    // Put BOTH a formatted HTML flavor and a clean plain-text flavor on the
+    // clipboard: pasting into Word keeps the formatting (consistent with Insert),
+    // while plain targets get readable text instead of literal "##" / "**".
+    // Falls back to plain text if the rich clipboard API is unavailable.
+    const plain = stripMarkdown(message.content);
     try {
-      await navigator.clipboard.writeText(message.content);
+      if (typeof ClipboardItem !== "undefined" && navigator.clipboard?.write) {
+        const html = markdownToSafeHtml(message.content);
+        await navigator.clipboard.write([
+          new ClipboardItem({
+            "text/html": new Blob([html], { type: "text/html" }),
+            "text/plain": new Blob([plain], { type: "text/plain" }),
+          }),
+        ]);
+      } else {
+        await navigator.clipboard.writeText(plain);
+      }
       setCopied(true);
       setTimeout(() => setCopied(false), 1200);
     } catch {
-      // Clipboard blocked; ignore (non-destructive).
+      // Rich copy blocked/unsupported: fall back to plain text, ignore if that
+      // also fails (non-destructive).
+      try {
+        await navigator.clipboard.writeText(plain);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 1200);
+      } catch {
+        // Clipboard fully blocked; nothing to do.
+      }
     }
   }
 
   async function insert() {
     try {
-      await insertClauseTracked(message.content);
+      // The answer is markdown; convert it to Word HTML so headings, bold, and
+      // lists insert as real formatting instead of literal "##" / "**" text.
+      await insertHtmlAtCursor(markdownToSafeHtml(message.content));
       setNote("Inserted as tracked change");
       setTimeout(() => setNote(null), 1800);
     } catch {
@@ -140,17 +186,31 @@ function Sources({
   );
 }
 
-/** Collapsible "Finished in N steps" reasoning trace. Labels are sanitized at
- *  the source (sanitizeStepLabel in api/chat.ts), so no vendor/MCP/URL leaks. */
+/** Sparkle for the reasoning-trace header (marks the agent's plan). */
+function SparkGlyph({ size = 13 }: { size?: number }) {
+  return (
+    <svg viewBox="0 0 24 24" width={size} height={size} fill="currentColor" aria-hidden>
+      <path d="M12 2l1.7 4.9L18.6 8.6 13.7 10.3 12 15.2 10.3 10.3 5.4 8.6 10.3 6.9z" />
+      <path d="M18.5 14l.9 2.6 2.6.9-2.6.9-.9 2.6-.9-2.6-2.6-.9 2.6-.9z" />
+    </svg>
+  );
+}
+
+/** Collapsible reasoning trace, rendered as a vertical step timeline. Labels are
+ *  sanitized at the source (sanitizeStepLabel in api/chat.ts), so no vendor / MCP
+ *  / URL leaks. */
 function StepsTrace({ steps }: { steps: string[] }) {
   return (
     <details className="msg__steps">
       <summary>
+        <SparkGlyph />
         Finished in {steps.length} step{steps.length === 1 ? "" : "s"}
       </summary>
-      <ol>
+      <ol className="msg__timeline">
         {steps.map((s, i) => (
-          <li key={i}>{s}</li>
+          <li key={i} className="msg__timeline-step">
+            {s}
+          </li>
         ))}
       </ol>
     </details>
@@ -200,10 +260,14 @@ export function MessageBubble({
   const bodyRef = useRef<HTMLDivElement>(null);
 
   if (message.role === "user") {
+    const me = currentUser();
     return (
-      <div className="msg msg--user">
-        <p>{message.content}</p>
-        {onEdit && <UserActions message={message} onEdit={onEdit} />}
+      <div className="msg__urow">
+        <div className="msg msg--user">
+          <p>{message.content}</p>
+          {onEdit && <UserActions message={message} onEdit={onEdit} />}
+        </div>
+        <Avatar name={me.name} src={me.avatarUrl} size={24} />
       </div>
     );
   }

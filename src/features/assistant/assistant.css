@@ -9,9 +9,26 @@
 .assistant__bar {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
-  gap: 4px;
+  justify-content: space-between;
+  gap: 8px;
   padding: 6px 10px 0;
+}
+/* Active conversation title on the left; truncates so the controls always fit. */
+.assistant__bar-title {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--fs-small);
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.assistant__bar-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
 }
 .assistant__bar-btn {
   display: inline-flex;
@@ -24,14 +41,14 @@
   cursor: pointer;
   padding: 6px 8px;
   border-radius: var(--radius-sm);
-  font-size: 12.5px;
+  font-size: var(--fs-small);
   font-weight: 500;
 }
 .assistant__bar-label {
   line-height: 1;
 }
 .assistant__bar-btn:hover:not(:disabled) {
-  background: var(--surface-muted);
+  background: var(--fill-subtle);
   color: var(--text);
 }
 .assistant__bar-btn:disabled {
@@ -123,7 +140,7 @@
   border-radius: 999px;
   background: var(--surface);
   color: var(--text);
-  font-size: 12.5px;
+  font-size: var(--fs-small);
   font-weight: 500;
   line-height: 1.2;
   cursor: pointer;
@@ -187,13 +204,42 @@
   margin: 0;
 }
 
+/* ---- Edit conversation (agent prose around the redline cards) ---- */
+.edit-transcript__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.edit-turn {
+  gap: 8px;
+}
+/* The dynamic overview (above the cards) and summary (below): readable prose so
+   the turn reads as an agent explaining its work, not a bare stack of cards. */
+.edit-turn__prose {
+  margin: 0;
+  font-size: var(--fs-body);
+  line-height: 1.5;
+  color: var(--text);
+}
+.edit-turn__prose--summary {
+  color: var(--text-muted);
+}
+
 /* ---- Message bubbles ---- */
 .msg {
   max-width: 100%;
 }
-.msg--user {
+/* User turn: the bubble sits next to the sender's avatar, right-aligned. */
+.msg__urow {
   align-self: flex-end;
-  max-width: 85%;
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  max-width: 90%;
+}
+.msg--user {
+  max-width: 100%;
   background: var(--fill-subtle);
   color: var(--text);
   padding: 8px 12px;
@@ -218,14 +264,14 @@
   margin-bottom: 5px;
 }
 .msg__ident-avatar {
-  width: 20px;
-  height: 20px;
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
   flex-shrink: 0;
   object-fit: cover;
 }
 .msg__ident-name {
-  font-size: 12px;
+  font-size: var(--fs-caption);
   font-weight: 600;
   color: var(--text-muted);
 }
@@ -253,10 +299,10 @@
 }
 .msg__body code {
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: var(--fs-caption);
   background: var(--surface-muted);
   padding: 1px 4px;
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
   word-break: break-word;
 }
 .msg__caret {
@@ -273,7 +319,7 @@
 }
 .msg__sources {
   margin-top: 6px;
-  font-size: 12px;
+  font-size: var(--fs-caption);
 }
 .msg__sources summary {
   cursor: pointer;
@@ -330,7 +376,7 @@
   font-weight: 600;
   cursor: pointer;
   padding: 0 4px;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   min-width: 14px;
 }
 .msg__cite:hover {
@@ -340,9 +386,12 @@
 /* Collapsible "Finished in N steps" reasoning trace under an assistant reply. */
 .msg__steps {
   margin-top: 6px;
-  font-size: 12px;
+  font-size: var(--fs-caption);
 }
 .msg__steps > summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   cursor: pointer;
   color: var(--text-muted);
   font-weight: 600;
@@ -359,6 +408,38 @@
   flex-direction: column;
   gap: 2px;
 }
+/* Reasoning trace as a vertical timeline: a dot per step, connected by a line. */
+.msg__timeline {
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 0;
+  color: var(--text-muted);
+}
+.msg__timeline-step {
+  position: relative;
+  padding: 3px 0 3px 18px;
+  font-size: var(--fs-caption);
+  line-height: 1.4;
+}
+.msg__timeline-step::before {
+  content: "";
+  position: absolute;
+  left: 2px;
+  top: 8px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--border-strong);
+}
+.msg__timeline-step:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  left: 4.5px;
+  top: 13px;
+  bottom: -3px;
+  width: 1px;
+  background: var(--border);
+}
 
 /* Copy / Edit actions inside a user bubble. Hidden until the bubble is hovered
    or focused, so the transcript stays calm. */
@@ -374,21 +455,6 @@
 .msg__actions--user:focus-within {
   opacity: 1;
 }
-.msg__action {
-  border: none;
-  background: transparent;
-  color: var(--text-muted);
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  padding: 2px 6px;
-  border-radius: var(--radius-sm);
-}
-.msg__action:hover {
-  color: var(--text);
-  background: var(--fill-subtle-hover);
-}
-
 .assistant__thinking {
   display: flex;
   align-items: center;
@@ -414,7 +480,7 @@
   border: 1px solid var(--border-strong);
   background: var(--surface);
   color: var(--text);
-  font-size: 12px;
+  font-size: var(--fs-small);
   font-weight: 500;
   cursor: pointer;
   padding: 4px 10px;
@@ -434,7 +500,7 @@
   background: none;
   padding: 0;
   color: var(--brand);
-  font-size: 12px;
+  font-size: var(--fs-caption);
   font-weight: 600;
   cursor: pointer;
 }
@@ -448,7 +514,7 @@
   padding: 4px 8px;
   border: 1px solid var(--control-border);
   border-radius: var(--radius-sm);
-  font-size: 12px;
+  font-size: var(--fs-caption);
   font-family: inherit;
   background: var(--surface);
   color: var(--text);
@@ -485,7 +551,7 @@
   border-radius: var(--radius-sm);
   background: var(--surface);
   color: var(--text);
-  font-size: 12.5px;
+  font-size: var(--fs-small);
   cursor: pointer;
   transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease;
 }
@@ -569,7 +635,7 @@
   border-radius: 999px;
   background: var(--brand);
   color: var(--on-brand);
-  font-size: 9px;
+  font-size: var(--fs-micro);
   font-weight: 700;
   line-height: 1;
   pointer-events: none;
@@ -589,6 +655,40 @@
   box-shadow: var(--btn-primary-sheen);
   cursor: pointer;
   transition: background 0.12s ease, opacity 0.12s ease;
+}
+/* Voice dictation: a circular mic that turns red and pulses while listening. */
+.composer__mic {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  border: 1px solid var(--border-strong);
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease, border-color 0.12s ease;
+}
+.composer__mic:hover {
+  color: var(--text);
+  background: var(--fill-subtle);
+}
+.composer__mic--on {
+  background: var(--danger);
+  border-color: transparent;
+  color: #fff;
+  animation: mic-pulse 1.4s ease-in-out infinite;
+}
+@keyframes mic-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(164, 38, 44, 0.45);
+  }
+  50% {
+    box-shadow: 0 0 0 5px rgba(164, 38, 44, 0);
+  }
 }
 .composer__send:hover:not(:disabled) {
   background: var(--btn-primary-bg-hover);
@@ -649,7 +749,7 @@
 }
 .assistant__recent-title {
   font-weight: 600;
-  font-size: 13px;
+  font-size: var(--fs-control);
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -673,16 +773,16 @@
   margin-top: 0;
 }
 .msg__body .msg__heading--1 {
-  font-size: 15px;
+  font-size: var(--fs-body-lg);
 }
 .msg__body .msg__heading--2 {
-  font-size: 14px;
+  font-size: var(--fs-body);
 }
 .msg__body .msg__heading--3 {
-  font-size: 13px;
+  font-size: var(--fs-control);
 }
 .msg__body .msg__heading--4 {
-  font-size: 12.5px;
+  font-size: var(--fs-small);
   color: var(--text-muted);
 }
 .msg__body a {
@@ -711,7 +811,7 @@
   border-collapse: collapse;
   width: max-content;
   min-width: 100%;
-  font-size: 12.5px;
+  font-size: var(--fs-small);
 }
 .msg__body .msg__table th,
 .msg__body .msg__table td {
@@ -729,7 +829,7 @@
 .msg__body .msg__img {
   max-width: 100%;
   height: auto;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   margin: 4px 0;
 }
 
@@ -744,9 +844,9 @@
   flex-wrap: wrap;
   margin: 0 12px 8px;
   padding: 8px 12px;
-  border: 1px solid var(--brand-border, #d6e0f5);
+  border: 1px solid var(--brand-border);
   border-radius: var(--radius-md);
-  background: var(--brand-tint, #f4f7fe);
+  background: var(--brand-tint);
 }
 .assistant__suggest-text {
   min-width: 0;
@@ -778,8 +878,8 @@
   border: none;
   background: transparent;
   color: var(--text-muted);
-  font-size: 12px;
-  font-weight: 600;
+  font-size: var(--fs-small);
+  font-weight: 500;
   border-radius: var(--radius-sm);
   cursor: pointer;
   flex-shrink: 0;

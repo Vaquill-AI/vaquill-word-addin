@@ -9,6 +9,12 @@
   letter-spacing: 0.02em;
   user-select: none;
 }
+/* Photo variant (e.g. a Google OAuth picture); falls back to the chip on error. */
+.avatar--img {
+  object-fit: cover;
+  border-radius: 50%;
+  flex: 0 0 auto;
+}
 
 /* Shared author + timestamp line used next to an avatar. */
 .author-line {
@@ -19,7 +25,7 @@
   flex: 1;
 }
 .author-name {
-  font-size: 12.5px;
+  font-size: var(--fs-small);
   font-weight: 600;
   color: var(--text);
   white-space: nowrap;
@@ -27,7 +33,7 @@
   text-overflow: ellipsis;
 }
 .author-time {
-  font-size: 11px;
+  font-size: var(--fs-micro);
   color: var(--text-muted);
   white-space: nowrap;
   flex: 0 0 auto;

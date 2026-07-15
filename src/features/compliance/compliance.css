@@ -71,8 +71,8 @@
   display: inline-block;
   margin-right: 4px;
   padding: 1px 5px;
-  border-radius: 3px;
-  font-size: 10px;
+  border-radius: var(--radius-xs);
+  font-size: var(--fs-micro);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.03em;

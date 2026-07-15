@@ -18,7 +18,7 @@
 
 .clause-card__title {
   font-weight: 600;
-  font-size: 13px;
+  font-size: var(--fs-control);
 }
 
 /* Content preview stays to a couple of lines so the list scans quickly. */

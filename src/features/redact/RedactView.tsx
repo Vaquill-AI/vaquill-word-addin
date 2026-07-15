@@ -48,7 +48,7 @@ export function RedactView() {
 
         {state.status === "error" && <Banner tone="danger">{state.error}</Banner>}
 
-        <div className="stack" style={{ gap: 6 }}>
+        <div className="stack" style={{ gap: 6 }} data-tour="redact-scope">
           <span className="small" style={{ fontWeight: 600 }}>Scope</span>
           <SegmentedControl
             options={SCOPE_OPTIONS}
@@ -63,7 +63,7 @@ export function RedactView() {
           </p>
         </div>
 
-        <div className="stack" style={{ gap: 6 }}>
+        <div className="stack" style={{ gap: 6 }} data-tour="redact-categories">
           <span className="small" style={{ fontWeight: 600 }}>Categories to scan</span>
           <FilterChips
             options={categoryChips}
@@ -81,6 +81,7 @@ export function RedactView() {
         <Button
           variant="primary"
           className="btn--cta"
+          data-tour="redact-scan"
           onClick={() => void scan(categories, scope)}
           disabled={categories.size === 0}
         >
@@ -291,7 +292,7 @@ function RedactReview({
         })}
       </div>
 
-      <div className="action-bar">
+      <div className="action-bar" data-tour="redact-apply">
         <div className="action-bar__row">
           <Button
             variant="primary"

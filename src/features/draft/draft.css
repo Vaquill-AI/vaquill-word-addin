@@ -27,7 +27,7 @@
   border: 1px solid var(--border);
   border-radius: var(--radius);
   background: var(--surface-muted);
-  font-size: 12.5px;
+  font-size: var(--fs-small);
   line-height: 1.55;
   white-space: pre-wrap;
   word-break: break-word;
@@ -81,7 +81,7 @@
 }
 .template-card__title {
   font-weight: 600;
-  font-size: 13px;
+  font-size: var(--fs-control);
 }
 .template-card__desc {
   display: -webkit-box;

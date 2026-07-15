@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import type { User } from "@supabase/supabase-js";
 import type { ReactNode } from "react";
 import { Header } from "@/ui/Header";
-import { Button, SegmentedControl } from "@/ui/primitives";
+import { Button, IconButton, SegmentedControl, Spinner } from "@/ui/primitives";
 import { Avatar } from "@/ui/Avatar";
 import {
   ReviewIcon,
@@ -10,8 +10,10 @@ import {
   AssistantIcon,
   ArrowLeftIcon,
   ToolsIcon,
+  HelpIcon,
 } from "@/ui/icons";
-import { subscribe } from "@/auth/session";
+import { subscribe, clearSession } from "@/auth/session";
+import { getMe } from "@/api/account";
 import { LoginView } from "@/features/auth/LoginView";
 import { ReviewView } from "@/features/review/ReviewView";
 import { ChangesView } from "@/features/review/ChangesView";
@@ -25,6 +27,10 @@ import { ReviewProvider } from "@/features/review/ReviewProvider";
 import { SettingsView } from "@/features/settings/SettingsView";
 import { ContextBar } from "@/features/shell/ContextBar";
 import { AppNavProvider, useAppNav, type AppTab, type ReviewSub } from "@/app/nav";
+import { TourProvider, useTour } from "@/tour/TourProvider";
+import { GuidesMenu } from "@/tour/GuidesMenu";
+import { WELCOME_TOUR_ID } from "@/tour/registry";
+import { resetToursSeen } from "@/tour/tourStore";
 import { subscribeActiveOrg } from "@/lib/org";
 import "./styles/app.css";
 
@@ -35,12 +41,13 @@ import "./styles/app.css";
  * document (case-law research, playbook + template + draft libraries) lives on
  * the web app and is reached by a deep-link, not a tab.
  */
-// Order leads with the primary in-document jobs (Review is the flagship and the
-// most frequent task for an in-house transactional user), then the utilities.
+// Order leads with the Assistant (the default landing tab and the most flexible
+// entry point: ask about the doc, or switch to Edit for redlines), then the
+// structured in-document jobs, then the utilities.
 const TABS: { id: AppTab; label: string; icon: (p: { size?: number }) => ReactNode }[] = [
+  { id: "assistant", label: "Assistant", icon: AssistantIcon },
   { id: "review", label: "Review", icon: ReviewIcon },
   { id: "draft", label: "Draft", icon: DraftIcon },
-  { id: "assistant", label: "Assistant", icon: AssistantIcon },
   { id: "tools", label: "Tools", icon: ToolsIcon },
 ];
 
@@ -48,7 +55,9 @@ export function App() {
   return (
     <ReviewProvider>
       <AppNavProvider>
-        <AppShell />
+        <TourProvider>
+          <AppShell />
+        </TourProvider>
       </AppNavProvider>
     </ReviewProvider>
   );
@@ -56,14 +65,60 @@ export function App() {
 
 function AppShell() {
   const { tab, setTab, reviewSub, setReviewSub, intent, navigate, clearIntent } = useAppNav();
+  const { startIfUnseen, start } = useTour();
   const [user, setUser] = useState<User | null>(null);
+  // Registration gate: a valid Supabase session is not enough. A bare OAuth
+  // identity that authenticated but never signed up (no account) must not reach
+  // the app. "checking" while we confirm via /auth/me; "ok" once confirmed.
+  const [regState, setRegState] = useState<"idle" | "checking" | "ok">("idle");
+  const [authNotice, setAuthNotice] = useState<string | null>(null);
   // Bumped whenever the active organization changes, to remount the data views
   // (matters/drafts/playbooks/clients) so they refetch under the new org.
   const [orgVersion, setOrgVersion] = useState(0);
   const [showSettings, setShowSettings] = useState(false);
+  const [showGuides, setShowGuides] = useState(false);
 
   useEffect(() => subscribe(setUser), []);
   useEffect(() => subscribeActiveOrg(() => setOrgVersion((v) => v + 1)), []);
+
+  // When a session appears, confirm the identity is actually a registered account
+  // before showing the app. An unregistered identity is signed out and sent to
+  // sign up. Fail open: a transient /auth/me failure must never lock out a real
+  // user, so only an explicit initialized === false blocks.
+  useEffect(() => {
+    if (!user) {
+      setRegState("idle");
+      return;
+    }
+    let alive = true;
+    setRegState("checking");
+    getMe()
+      .then((me) => {
+        if (!alive) return;
+        if (me.initialized === false) {
+          setAuthNotice(
+            "You do not have a Vaquill account yet. Create one on the web, then sign in here.",
+          );
+          clearSession(); // -> subscribe fires user=null -> back to the login screen
+        } else {
+          setRegState("ok");
+        }
+      })
+      .catch(() => {
+        if (alive) setRegState("ok");
+      });
+    return () => {
+      alive = false;
+    };
+  }, [user]);
+
+  const authed = !!user && regState === "ok";
+
+  // First run: once the user is confirmed, start the welcome walkthrough unless
+  // they have already completed (or skipped) it. It drives the tabs itself.
+  useEffect(() => {
+    if (authed) startIfUnseen(WELCOME_TOUR_ID);
+  }, [authed, startIfUnseen]);
 
   // A "Run this playbook" handoff resolves to the Review form's pending state.
   const pendingPlaybook =
@@ -85,7 +140,7 @@ function AppShell() {
           one compact bar carrying the logo, the tab nav, and the account controls,
           so the mode nav no longer costs a second row. The wordmark is dropped
           here; the logo alone identifies the app. */}
-      {!user ? (
+      {!authed ? (
         <Header />
       ) : (
         <header className="appbar">
@@ -145,6 +200,16 @@ function AppShell() {
             })}
           </nav>
           <div className="appbar__right">
+            <div className="appbar__guides" data-tour="help" style={{ position: "relative" }}>
+              <IconButton
+                label="Guides and walkthroughs"
+                onClick={() => setShowGuides((v) => !v)}
+                active={showGuides}
+              >
+                <HelpIcon size={16} />
+              </IconButton>
+              {showGuides && <GuidesMenu onClose={() => setShowGuides(false)} />}
+            </div>
             <Button
               variant="ghost"
               size="sm"
@@ -160,6 +225,11 @@ function AppShell() {
                   user.email ||
                   "Account"
                 }
+                src={
+                  (user.user_metadata?.avatar_url as string) ||
+                  (user.user_metadata?.picture as string) ||
+                  null
+                }
                 size={22}
               />
             </Button>
@@ -167,7 +237,7 @@ function AppShell() {
         </header>
       )}
 
-      {user && !showSettings && tab === "review" && (
+      {authed && !showSettings && tab === "review" && (
         <div className="subnav">
           <SegmentedControl<ReviewSub>
             label="Review section"
@@ -184,17 +254,24 @@ function AppShell() {
         </div>
       )}
 
-      {user && !showSettings && <ContextBar />}
+      {authed && !showSettings && <ContextBar />}
 
       <div
         className="app-body"
         id="app-panel"
         key={orgVersion}
-        role={user ? "tabpanel" : undefined}
-        aria-labelledby={user ? `tab-${tab}` : undefined}
+        role={authed ? "tabpanel" : undefined}
+        aria-labelledby={authed ? `tab-${tab}` : undefined}
       >
-        {!user ? (
-          <LoginView />
+        {!authed ? (
+          regState === "checking" ? (
+            <div className="login">
+              <Spinner />
+              <p className="login__sub small">Signing you in...</p>
+            </div>
+          ) : (
+            <LoginView notice={authNotice} />
+          )
         ) : showSettings ? (
           <div className="stack" style={{ gap: 8 }}>
             <Button
@@ -206,7 +283,13 @@ function AppShell() {
             >
               <ArrowLeftIcon size={14} /> Back
             </Button>
-            <SettingsView />
+            <SettingsView
+              onReplayWalkthrough={() => {
+                setShowSettings(false);
+                resetToursSeen();
+                start(WELCOME_TOUR_ID);
+              }}
+            />
           </div>
         ) : tab === "review" ? (
           reviewSub === "redlines" ? (

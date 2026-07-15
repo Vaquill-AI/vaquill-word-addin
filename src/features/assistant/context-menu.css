@@ -16,28 +16,25 @@
   margin-bottom: 6px;
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  padding: 8px;
+  gap: 1px;
+  padding: 6px;
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   background: var(--surface-raised);
-  box-shadow: var(--shadow-16, 0 8px 24px rgba(0, 0, 0, 0.18));
+  box-shadow: var(--shadow-16);
 }
 
 .ctx-menu__head {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 2px 6px 6px;
+  padding: 3px 8px 5px;
 }
 
+/* One compact line per source: type icon, label, on/off check. */
 .ctx-source {
   display: flex;
-  align-items: flex-start;
-  gap: 8px;
+  align-items: center;
+  gap: 9px;
   width: 100%;
-  padding: 8px;
+  padding: 7px 8px;
   border: none;
   border-radius: var(--radius-sm);
   background: none;
@@ -54,6 +51,32 @@
   outline-offset: -2px;
 }
 
+.ctx-source__icon {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ctx-source__icon svg {
+  opacity: 0.7;
+}
+
+.ctx-source--on .ctx-source__icon {
+  color: var(--brand);
+}
+
+.ctx-source--on .ctx-source__icon svg {
+  opacity: 1;
+}
+
+.ctx-source__label {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--fs-control);
+  font-weight: 500;
+}
+
 .ctx-source__check {
   flex: none;
   display: inline-flex;
@@ -61,9 +84,8 @@
   justify-content: center;
   width: 16px;
   height: 16px;
-  margin-top: 1px;
   border: 1.5px solid var(--border-strong);
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
   color: var(--on-brand);
 }
 
@@ -72,31 +94,22 @@
   border-color: var(--brand);
 }
 
-.ctx-source__text {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-  min-width: 0;
-}
-
-.ctx-source__label {
-  font-weight: 600;
-}
-
-.ctx-source__blurb {
-  line-height: 1.35;
-}
-
 .ctx-menu__note {
-  margin: 4px 6px 2px;
+  margin: 3px 8px;
 }
 
-/* Attach-files section divider inside the menu (chip + control styles are shared
-   in ui/attachments.css). */
+/* Attach-files section: a divider, then an inline upload button + short hint
+   (chip + control styles are shared in ui/attachments.css). */
 .ctx-attach {
   margin-top: 4px;
-  padding-top: 8px;
-  padding-left: 2px;
-  padding-right: 2px;
+  padding-top: 6px;
   border-top: 1px solid var(--border);
+}
+
+.ctx-attach__row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 2px;
 }

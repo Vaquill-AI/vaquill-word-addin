@@ -42,16 +42,16 @@
   gap: 3px;
   padding: 2px 7px;
   border-radius: 999px;
-  font-size: 10.5px;
+  font-size: var(--fs-micro);
   font-weight: 600;
-  color: var(--success, #15803d);
+  color: var(--success);
   background: var(--success-tint, rgba(21, 128, 61, 0.1));
   white-space: nowrap;
 }
 
 .cc__text {
   margin: 0;
-  font-size: 12.5px;
+  font-size: var(--fs-small);
   line-height: 1.5;
   white-space: pre-wrap;
   word-break: break-word;
@@ -85,7 +85,7 @@
 }
 .cc__reply-text {
   margin: 0;
-  font-size: 12px;
+  font-size: var(--fs-caption);
   line-height: 1.45;
   white-space: pre-wrap;
   word-break: break-word;
@@ -115,7 +115,7 @@
   border: 1px solid var(--control-border);
   border-radius: var(--radius-sm);
   font-family: inherit;
-  font-size: 12.5px;
+  font-size: var(--fs-small);
   background: var(--surface);
   color: var(--text);
 }

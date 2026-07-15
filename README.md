@@ -2,19 +2,131 @@
 
 A Microsoft Word add-in (task pane) that brings Vaquill AI contract review, grounded redlining, drafting, and US legal research into Word.
 
-It is a **thin client**: it reads the open document through the Office JavaScript API, calls the Vaquill AI backend, and applies the results back into the document as native Word tracked changes, comments, and content controls. It does not perform contract analysis, retrieval, or generation on its own; the legal intelligence lives in the backend. It will not run standalone with only an LLM API key.
+Today it is a **thin client**.
+It reads the open document through the Office JavaScript API, calls the Vaquill AI backend, and applies the results back into the document as native Word tracked changes, comments, and content controls.
+It does not perform contract analysis, retrieval, or generation on its own.
+The legal intelligence lives in the backend, so the hosted add-in will not run standalone with only an LLM API key.
 
-## What it does
+Everything operates on the document you already have open in Word.
+There is no separate upload step: the open document is the subject.
 
-- **Review** a contract into grounded redlines applied as native tracked changes, with severity, inline diff, a server-computed sign-off gate (manager / partner / GC), and a corrected `.docx` export.
-- **Triage** the counterparty's tracked changes and comments, with per-author bulk accept/reject.
-- **Authority** check: verify every case citation against the US case-law corpus.
-- **Sign-off** governance stored inside the `.docx` (custom XML), so it travels with the file.
-- **Playbooks**: insert your negotiation positions and fallback ladders as tracked changes.
-- **Draft** a first-draft agreement and insert it as formatted content.
-- **Assistant**: grounded chat over the open contract, plus select-to-rewrite/explain.
-- **In the document**: highlight issues, push rationales as native comments, bookmark clauses, tag key fields as content controls, jump via a clause outline.
-- **Cross-links** back into the platform: save the review or draft to a matter, save as a template, add to the vendor registry, push a clause to a playbook, save an answer as a note.
+> **Community edition (in progress).**
+> A standalone, self-hostable **community version that works with your own API key (BYOK)** is under active development.
+> It will let you run the add-in 100% locally against your own model and infrastructure, without the hosted Vaquill backend.
+> Until it lands, the add-in in this repo targets the hosted backend (see [Backend requirement](#backend-requirement)).
+
+---
+
+## Features
+
+The task pane has four tabs.
+The **Assistant** is the default landing tab and the most flexible entry point; the others are structured, single-purpose workflows.
+
+### Assistant
+
+A grounded chat and redline surface over the open contract, with two modes in one composer.
+
+**Ask** answers questions about the open document, grounded in the document itself and (optionally) the US legal corpus and your matter's files.
+
+- Every answer carries checkable **sources**: a numbered list where citation `[N]` maps to source N, with links out where the backend provides them.
+- Inline citations are **hoverable and clickable** (hover shows the source; click scrolls to it).
+- **Multi-turn memory**: follow-ups are understood in the context of the conversation.
+- **Add context** menu: choose what the answer draws on (US case law and statutes, your matter's documents, and web search as an off-by-default opt-in).
+- **Attach files** as extra context, with opt-in OCR for scanned PDFs.
+- A **prompt library**, an AI **Improve** for your prompt, and a **focus control** to answer about the whole document or just your selection.
+- **Copy** (formatted paste into Word, clean text elsewhere) and **Insert into document** (as a tracked change) on every answer.
+- Device-local **history** of past chats.
+
+**Edit** turns a plain-English instruction into grounded redlines across the whole document.
+
+- Each edit quotes verbatim current language, so it anchors to real text and applies as a tracked change you accept or reject.
+- The set is **agentic**: a dynamic overview explains what it understood and did, each card carries a rationale and a fallback position, and a closing summary says what to check.
+- It is **conversational**: a follow-up refines the current set ("make those stronger", "drop #2", "also cap liability") instead of starting over, and your accept/reject decisions carry across refinements.
+- Edits are gated against your doc-type playbook for approval level (manager / partner / GC) and deal-breaker flags, and against an anti-hallucination grounding check.
+
+**Selection tools** act on highlighted text: rewrite, explain, plain-English, risk assessment, and compliance check.
+
+The Assistant can also route a chat message into a document action (redline, navigate to a clause, add a comment, accept all changes, make a clean copy), always behind an explicit confirm.
+
+### Review
+
+Turn the open contract into a structured set of grounded redlines.
+
+- Contract type and your side are auto-detected (and adjustable), then the review runs against your playbook.
+- Redlines show **severity**, an **inline diff** (with a Redline / Final toggle), the **why**, and a **fallback if rejected**.
+- A server-computed **sign-off gate** (manager / partner / GC) and **deal-breaker** flags tell you what needs approval before sending.
+- Apply changes as native tracked changes, or export a corrected `.docx` with tracked changes and comments baked in.
+- Per-clause **"draft a stronger fix"** runs an agentic diagnose to draft to validate to critique loop.
+- Sub-tabs: **Redlines**, **Changes** (triage the counterparty's tracked changes and comments with per-author bulk accept/reject), **Compare** (two versions, with a hidden-revision detector), **Citations** (verify every case citation against the US case-law corpus), and **Playbooks**.
+
+### Draft
+
+Generate a first-draft agreement from a plain-English brief and insert it as formatted content, template-constrained to reduce hallucination.
+Reuse saved templates and drafts.
+
+### Tools
+
+Finalize and QA utilities: clean copy (accept all changes and remove comments), defined-term consistency, cross-reference check, a send-ready check, redaction, and document formatting.
+
+### In the document
+
+Highlight issues, push rationales as native comments, bookmark clauses for durable navigation, tag key fields as content controls, and jump around via a clause outline.
+
+### Cross-links back to the platform
+
+Save a review or draft to a matter, save as a template, add to the vendor registry, push a clause to a playbook, and save an answer as a note.
+
+---
+
+## How to use it
+
+Once the add-in is loaded, it opens on the **Assistant** tab.
+
+- **Ask a question.** Type into the composer and send. You get a grounded answer with numbered sources; click a citation to jump to its source, then Copy or Insert the answer.
+- **Make a change.** Switch the composer to **Edit**, describe the change ("cap the confidentiality term at three years and add the standard carve-outs"), and review the redline cards. Accept or reject each; ask a follow-up to refine the set.
+- **Review a contract.** Open the **Review** tab, confirm the detected type and side, and run it. Work through the redlines, watch the sign-off gate, then apply in place or download a corrected `.docx`.
+- **Draft something new.** Open **Draft**, describe the agreement, and insert it.
+- **Finalize.** Use **Tools** to make a clean copy, redact, or run the send-ready check before the document leaves your desk.
+
+---
+
+## Requirements
+
+- A Microsoft 365 account and Word (Windows desktop, Mac desktop, or Word on the web).
+- Office.js requirement floor **WordApi 1.6**.
+- The **Vaquill AI backend** (not included; see below). The upcoming community edition removes this in favor of BYOK.
+
+## Getting started (development)
+
+Requires Node 20+.
+
+```bash
+npm install
+cp .env.example .env                 # set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY
+npx office-addin-dev-certs install    # trusted HTTPS for localhost
+npm run dev                           # serves the task pane on https://localhost:3000
+npm run sideload                      # loads manifest.dev.xml into Word and opens it
+```
+
+Verify and build:
+
+```bash
+npm run type-check                    # tsc, no emit
+npm run build                         # outputs dist/ (deploy behind HTTPS)
+npm run validate:manifest             # validate the production manifest
+```
+
+The change gate for a contribution is a green `npm run type-check` and `npm run build`.
+
+Deployment (Docker plus a hardened nginx with security headers and CSP) is documented in [DEPLOY.md](DEPLOY.md).
+
+## Backend requirement
+
+The hosted add-in requires the Vaquill AI backend.
+The only backend change needed to run it is CORS: add the add-in origin (`https://word.vaquill.ai`, plus `https://localhost:3000` for dev) to the backend's allowed origins.
+Everything else reuses existing endpoints.
+
+The **community edition (in progress)** will lift this requirement: bring your own API key and point the add-in at your own model and infrastructure, so it runs 100% locally with no hosted dependency.
 
 ## Architecture
 
@@ -24,7 +136,7 @@ Word (desktop / Mac / web)
         |
         |  Supabase JWT (Bearer) + SSE
         v
-  Vaquill AI backend (api.vaquill.ai)   [required, not included]
+  Vaquill AI backend (api.vaquill.ai)   [required today; BYOK in the community edition]
 ```
 
 ## Tech stack
@@ -32,32 +144,26 @@ Word (desktop / Mac / web)
 - Vite + React 18 + TypeScript task pane, served as static HTTPS assets.
 - Office.js from the Microsoft CDN, requirement floor WordApi 1.6.
 - Add-in-only XML manifest (Windows, Mac, web).
-- Supabase auth via the Office Dialog API + PKCE (session in memory only).
+- Supabase auth via the Office Dialog API and PKCE (session held in memory only).
 - Word-level tracked-change diff via `office-word-diff` (Apache-2.0); see [NOTICE](NOTICE).
 
-## Getting started
+## Project layout
 
-Requires Node 20+, a Microsoft 365 account, and Word (desktop or web).
-
-```bash
-npm install
-cp .env.example .env          # set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY
-npx office-addin-dev-certs install   # trusted HTTPS for localhost
-npm run dev                   # serves the task pane on https://localhost:3000
-npm run sideload              # loads manifest.dev.xml into Word and opens it
+```text
+src/
+  app/          app shell + tab navigation
+  features/     one folder per surface (assistant, review, draft, tools, ...)
+  office/       Office.js helpers: search/anchoring, redline apply, comments, ...
+  api/          typed backend clients (chat, contract-review, edit, research, ...)
+  ui/           shared primitives and design-system components
+  lib/          framework-agnostic helpers
 ```
 
-```bash
-npm run type-check
-npm run build                 # outputs dist/ (deploy behind HTTPS)
-```
+## Documentation
 
-Deployment (Docker + hardened nginx, security headers, CSP) is documented in [DEPLOY.md](DEPLOY.md).
-
-## Backend requirement
-
-This client requires the Vaquill AI backend. The only backend change to run it is CORS: add the add-in origin (`https://word.vaquill.ai`, and `https://localhost:3000` for dev) to the backend's allowed origins. Everything else reuses existing endpoints.
+Deeper design and reference material lives in [docs/](docs/): architecture, the feature spec, the Office.js capability map, the design system, and the competitive landscape.
 
 ## License
 
-Apache License 2.0. See [LICENSE](LICENSE) and [NOTICE](NOTICE).
+Apache License 2.0.
+See [LICENSE](LICENSE) and [NOTICE](NOTICE).

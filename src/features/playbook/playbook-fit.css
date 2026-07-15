@@ -67,7 +67,7 @@
 .fit-ladder__caption {
   text-transform: uppercase;
   letter-spacing: 0.03em;
-  font-size: 10px;
+  font-size: var(--fs-micro);
   font-weight: 700;
 }
 
@@ -107,11 +107,11 @@
 .fit-rung__label {
   flex: 1;
   font-weight: 600;
-  font-size: 12px;
+  font-size: var(--fs-caption);
 }
 
 .fit-rung__here {
-  font-size: 10px;
+  font-size: var(--fs-micro);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.03em;
@@ -123,7 +123,7 @@
 
 .fit-rung__text {
   margin: 2px 0 0;
-  font-size: 12.5px;
+  font-size: var(--fs-small);
   white-space: pre-wrap;
   word-break: break-word;
   color: var(--text);

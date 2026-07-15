@@ -27,7 +27,7 @@
 
 /* The in-context preview: surrounding text + the value struck + a black bar. */
 .redact-row__preview {
-  font-size: 12px;
+  font-size: var(--fs-caption);
   line-height: 1.5;
   word-break: break-word;
 }
@@ -37,13 +37,13 @@
 .redact-strike {
   color: var(--danger);
   text-decoration: line-through;
-  text-decoration-color: rgba(124, 28, 20, 0.6);
+  text-decoration-color: rgba(164, 38, 44, 0.6);
 }
 /* A solid black bar, mirroring what redaction inserts into the document. */
 .redact-bar {
   color: #000;
   background: #000;
-  border-radius: 2px;
+  border-radius: var(--radius-xs);
   letter-spacing: -0.5px;
   vertical-align: baseline;
 }
@@ -71,7 +71,7 @@
   background: none;
   padding: 0;
   color: var(--brand-fg);
-  font-size: 12px;
+  font-size: var(--fs-caption);
   font-weight: 600;
   cursor: pointer;
 }

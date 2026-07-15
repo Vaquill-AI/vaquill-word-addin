@@ -96,7 +96,7 @@
 }
 .attach__list--compact .attach__name {
   font-weight: 500;
-  font-size: 12px;
+  font-size: var(--fs-caption);
   max-width: 160px;
 }
 
@@ -111,7 +111,7 @@
   border-radius: var(--radius-sm);
   background: var(--surface);
   color: var(--text);
-  font-size: 13px;
+  font-size: var(--fs-control);
   font-weight: 600;
   cursor: pointer;
 }

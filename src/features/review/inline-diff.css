@@ -3,7 +3,7 @@
   padding: 7px 9px;
   border-radius: var(--radius-sm);
   background: var(--surface-muted);
-  font-size: 12.5px;
+  font-size: var(--fs-small);
   white-space: pre-wrap;
   word-break: break-word;
   line-height: 1.55;
@@ -20,6 +20,6 @@
   color: var(--success);
   text-decoration: none;
   background: var(--success-tint);
-  border-radius: 3px;
+  border-radius: var(--radius-xs);
   padding: 0 2px;
 }

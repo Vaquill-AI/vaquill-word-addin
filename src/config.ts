@@ -23,6 +23,9 @@ const appBase = import.meta.env.PROD ? "https://app.vaquill.ai" : "http://localh
 export const config = {
   apiBase,
   appBase,
+  // Where a new user registers. There is no sign-up inside Word (by design): the
+  // login screen sends people here to create an account, then they sign in.
+  signupUrl: `${appBase}/auth/signup`,
   supabaseUrl: import.meta.env.VITE_SUPABASE_URL ?? "",
   supabaseAnonKey: import.meta.env.VITE_SUPABASE_ANON_KEY ?? "",
   // The add-in is served from its own origin; derive it rather than configure it.

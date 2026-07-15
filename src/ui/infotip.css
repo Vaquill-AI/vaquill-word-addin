@@ -37,7 +37,7 @@
   -webkit-backdrop-filter: var(--acrylic-blur);
   border: 1px solid var(--border);
   box-shadow: var(--shadow-16);
-  font-size: 12px;
+  font-size: var(--fs-caption);
   font-weight: 400;
   line-height: 1.5;
   color: var(--text);

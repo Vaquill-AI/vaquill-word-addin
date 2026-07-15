@@ -1,5 +1,6 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { Button } from "@/ui/primitives";
+import { ViewHeader } from "@/ui/ViewHeader";
 import type { AppIntent } from "@/app/nav";
 import {
   ArrowLeftIcon,
@@ -8,6 +9,10 @@ import {
   TermsIcon,
   LinkIcon,
   SendIcon,
+  FormatIcon,
+  BookIcon,
+  GaugeIcon,
+  HashIcon,
 } from "@/ui/icons";
 import { ToolCard, ToolCardList } from "@/ui/ToolCard";
 import { RedactView } from "@/features/redact/RedactView";
@@ -15,6 +20,10 @@ import { CleanCopyView } from "@/features/cleancopy/CleanCopyView";
 import { DefinedTermsView } from "@/features/terms/DefinedTermsView";
 import { CrossRefView } from "@/features/xref/CrossRefView";
 import { SendReadyView } from "@/features/sendready/SendReadyView";
+import { ProperFormatView } from "@/features/properformat/ProperFormatView";
+import { TermNavigatorView } from "@/features/navigator/TermNavigatorView";
+import { DealCockpitView } from "@/features/cockpit/DealCockpitView";
+import { FiguresView } from "@/features/figures/FiguresView";
 import "./toolshub.css";
 
 // ToolKey is shared with the nav intent bus (@/app/nav). Kept in sync there.
@@ -23,7 +32,11 @@ type ToolKey =
   | "terms"
   | "xref"
   | "sendready"
-  | "redact";
+  | "redact"
+  | "properFormat"
+  | "termnav"
+  | "cockpit"
+  | "figures";
 
 // Tools are grouped by where they sit in the lawyer's flow, so the launcher
 // reads as a workflow (understand the doc -> change it -> prepare to send) rather
@@ -62,6 +75,30 @@ const TOOLS: ToolDef[] = [
     icon: <LinkIcon size={18} />,
     view: <CrossRefView />,
   },
+  {
+    key: "termnav",
+    group: "check",
+    title: "Reading navigator",
+    description: "Look up a defined term or a cross-reference, and jump to it, without leaving the clause.",
+    icon: <BookIcon size={18} />,
+    view: <TermNavigatorView />,
+  },
+  {
+    key: "cockpit",
+    group: "check",
+    title: "Deal cockpit",
+    description: "Track where each reviewed clause stands: open, agreed, conceded, or rejected.",
+    icon: <GaugeIcon size={18} />,
+    view: <DealCockpitView />,
+  },
+  {
+    key: "figures",
+    group: "check",
+    title: "Figures check",
+    description: "Find numbers written in words that do not match the numeral beside them.",
+    icon: <HashIcon size={18} />,
+    view: <FiguresView />,
+  },
   // Send: prepare the document to leave the building.
   {
     key: "sendready",
@@ -70,6 +107,14 @@ const TOOLS: ToolDef[] = [
     description: "Pre-flight: everything that still needs fixing before this document is sent.",
     icon: <SendIcon size={18} />,
     view: <SendReadyView />,
+  },
+  {
+    key: "properFormat",
+    group: "send",
+    title: "Proper format",
+    description: "Unify body font, size, and spacing. Tables, numbering, and signatures stay untouched.",
+    icon: <FormatIcon size={18} />,
+    view: <ProperFormatView />,
   },
   {
     key: "cleancopy",
@@ -129,13 +174,12 @@ export function ToolsHub({
   }
 
   return (
-    <div className="stack toolshub">
-      <div className="stack" style={{ gap: 4 }}>
-        <h1 className="view-title">Tools</h1>
-        <p className="small muted" style={{ margin: 0 }}>
-          Work on the open document: review it, revise it, prepare it to send.
-        </p>
-      </div>
+    <div className="stack toolshub" data-tour="tools-grid">
+      <ViewHeader
+        tourId="tools"
+        title="Tools"
+        subtitle="Work on the open document: review it, revise it, prepare it to send."
+      />
       {GROUP_ORDER.map((g) => {
         const tools = TOOLS.filter((t) => t.group === g.key);
         if (tools.length === 0) return null;

@@ -32,7 +32,24 @@ export interface EditItem {
 }
 
 interface EditResponse {
+  overview?: string;
   edits: EditItem[];
+  summary?: string;
+}
+
+/** A whole edit turn: the dynamic prose the agent shows around the cards
+ *  (overview above, summary below) plus the grounded edits. */
+export interface EditResult {
+  overview: string;
+  edits: EditItem[];
+  summary: string;
+}
+
+/** Follow-up context so the server refines the set instead of starting over:
+ *  the earlier instructions this session + the edits currently on screen. */
+export interface EditPriorContext {
+  priorInstructions?: string[];
+  priorEdits?: { label: string; currentLanguage: string; proposedLanguage: string }[];
 }
 
 export async function editDocument(
@@ -41,16 +58,21 @@ export async function editDocument(
   /** System doc-type playbook slug (nda / msa / ...). When set, the server gates
    *  each edit against that playbook for approval level + deal-breaker. */
   contractType?: string,
+  /** Prior turn context. When present, the server treats this instruction as a
+   *  refinement of the edits already on screen. */
+  prior?: EditPriorContext,
   signal?: AbortSignal,
-): Promise<EditItem[]> {
+): Promise<EditResult> {
   const body: Record<string, unknown> = { documentText, instruction };
   if (contractType) body.contractType = contractType;
+  if (prior?.priorInstructions?.length) body.priorInstructions = prior.priorInstructions;
+  if (prior?.priorEdits?.length) body.priorEdits = prior.priorEdits;
   const res = await request<EditResponse>("/api/v1/drafting/edit-document", {
     method: "POST",
     body,
     signal,
   });
-  return res.edits ?? [];
+  return { overview: res.overview ?? "", edits: res.edits ?? [], summary: res.summary ?? "" };
 }
 
 /**

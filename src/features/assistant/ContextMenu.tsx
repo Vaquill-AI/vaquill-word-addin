@@ -1,5 +1,5 @@
-import { useEffect } from "react";
-import { CheckIcon } from "@/ui/icons";
+import { useEffect, type ReactNode } from "react";
+import { CheckIcon, FolderIcon, GlobeIcon, ScaleIcon, UploadIcon } from "@/ui/icons";
 import { ATTACH_ACCEPT } from "@/api/context";
 import { AttachmentChips } from "./AttachmentChips";
 import { MAX_ATTACHMENTS, type AttachedFile } from "./useAttachments";
@@ -22,15 +22,15 @@ export interface ContextConfig {
 interface Source {
   key: keyof ContextConfig;
   label: string;
-  blurb: string;
+  icon: ReactNode;
   /** Only offered when the user has an active matter. */
   needsMatter?: boolean;
 }
 
 const SOURCES: Source[] = [
-  { key: "corpus", label: "US case law & statutes", blurb: "Ground answers in Vaquill's US legal corpus." },
-  { key: "matterDocs", label: "My matter's documents", blurb: "Search the documents in your active matter.", needsMatter: true },
-  { key: "web", label: "Web search", blurb: "Bring in current information from the web." },
+  { key: "corpus", label: "US case law & statutes", icon: <ScaleIcon size={16} /> },
+  { key: "matterDocs", label: "Matter documents", icon: <FolderIcon size={16} />, needsMatter: true },
+  { key: "web", label: "Web search", icon: <GlobeIcon size={16} /> },
 ];
 
 /** Count of active sources, for the trigger badge. */
@@ -89,7 +89,6 @@ export function ContextMenu({
       <div className="ctx-menu" role="dialog" aria-modal="true" aria-label="Context sources">
         <div className="ctx-menu__head">
           <strong className="small">Add context</strong>
-          <span className="small muted">What the assistant draws on</span>
         </div>
         {rows.map((s) => {
           const on = config[s.key];
@@ -102,55 +101,43 @@ export function ContextMenu({
               aria-checked={on}
               onClick={() => onChange({ ...config, [s.key]: !on })}
             >
+              <span className="ctx-source__icon" aria-hidden>
+                {s.icon}
+              </span>
+              <span className="ctx-source__label">{s.label}</span>
               <span className="ctx-source__check" aria-hidden>
                 {on && <CheckIcon size={12} />}
-              </span>
-              <span className="ctx-source__text">
-                <span className="ctx-source__label">{s.label}</span>
-                <span className="ctx-source__blurb small muted">{s.blurb}</span>
               </span>
             </button>
           );
         })}
         {!hasMatter && (
-          <p className="ctx-menu__note small muted">
-            Set an active matter in Settings to search its documents.
-          </p>
+          <p className="ctx-menu__note small muted">Set an active matter to search its documents.</p>
         )}
 
-        <div className="attach ctx-attach">
-          <div className="attach__head">
-            <span className="ctx-source__label">Attach files</span>
-            <span className="small muted">Upload documents to ground this question</span>
+        <div className="ctx-attach">
+          <AttachmentChips files={attachments} onRemove={onRemoveAttachment} onOcr={onOcrAttachment} />
+          <div className="ctx-attach__row">
+            <label className={`attach__add${atCap ? " attach__add--disabled" : ""}`}>
+              <input
+                type="file"
+                accept={ATTACH_ACCEPT}
+                multiple
+                disabled={atCap}
+                className="attach__input"
+                onChange={(e) => {
+                  const picked = Array.from(e.target.files ?? []);
+                  for (const file of picked) onAttach(file);
+                  // Reset so re-picking the same file after removal fires onChange.
+                  e.target.value = "";
+                }}
+              />
+              <UploadIcon size={14} /> Attach file
+            </label>
+            <span className="small muted">
+              {atCap ? `Limit reached (${MAX_ATTACHMENTS})` : `PDF, Word, text · up to ${MAX_ATTACHMENTS}`}
+            </span>
           </div>
-
-          <AttachmentChips
-            files={attachments}
-            onRemove={onRemoveAttachment}
-            onOcr={onOcrAttachment}
-          />
-
-          <label className={`attach__add${atCap ? " attach__add--disabled" : ""}`}>
-            <input
-              type="file"
-              accept={ATTACH_ACCEPT}
-              multiple
-              disabled={atCap}
-              className="attach__input"
-              onChange={(e) => {
-                const picked = Array.from(e.target.files ?? []);
-                for (const file of picked) onAttach(file);
-                // Reset so re-picking the same file after removal fires onChange.
-                e.target.value = "";
-              }}
-            />
-            <span aria-hidden>+</span> Attach file
-          </label>
-          <p className="attach__hint small muted">
-            {atCap
-              ? `Attachment limit reached (${MAX_ATTACHMENTS} files).`
-              : `PDF, Word, or text. Up to ${MAX_ATTACHMENTS} files.`}
-          </p>
         </div>
       </div>
     </>

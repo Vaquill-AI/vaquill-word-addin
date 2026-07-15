@@ -45,7 +45,7 @@
 }
 .streaming__skeleton span {
   height: 9px;
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
   background: linear-gradient(90deg, var(--border) 25%, var(--surface) 37%, var(--border) 63%);
   background-size: 400% 100%;
   animation: shimmer 1.4s ease infinite;
@@ -196,10 +196,10 @@
   min-width: 18px;
   height: 18px;
   padding: 0 4px;
-  border-radius: 5px;
+  border-radius: var(--radius-sm);
   background: var(--brand-tint);
   color: var(--brand);
-  font-size: 11px;
+  font-size: var(--fs-micro);
   font-weight: 700;
 }
 .redline__ref {
@@ -209,7 +209,7 @@
   margin: 0;
   padding: 7px 9px;
   border-radius: var(--radius-sm);
-  font-size: 12.5px;
+  font-size: var(--fs-small);
   white-space: pre-wrap;
   word-break: break-word;
 }
@@ -217,7 +217,7 @@
   background: var(--red-tint);
   color: var(--danger);
   text-decoration: line-through;
-  text-decoration-color: rgba(124, 28, 20, 0.5);
+  text-decoration-color: rgba(164, 38, 44, 0.5);
 }
 .redline__text--ins {
   background: var(--green-tint);
@@ -300,7 +300,7 @@
   border-left: 2px solid var(--border);
   background: var(--surface-muted);
   border-radius: var(--radius-sm);
-  font-size: 12px;
+  font-size: var(--fs-caption);
   font-style: italic;
   color: var(--text-muted);
   white-space: pre-wrap;
@@ -309,7 +309,7 @@
 .liability__carveouts {
   margin: 0;
   padding-left: 18px;
-  font-size: 12px;
+  font-size: var(--fs-caption);
 }
 
 /* ---- Counterparty changes triage ---- */
@@ -360,7 +360,7 @@
   padding: 4px 6px;
   border-radius: var(--radius-sm);
   color: var(--text);
-  font-size: 12.5px;
+  font-size: var(--fs-small);
   cursor: pointer;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -395,7 +395,7 @@
 }
 .change-item__text {
   margin: 0;
-  font-size: 12.5px;
+  font-size: var(--fs-small);
   white-space: pre-wrap;
   word-break: break-word;
 }
@@ -427,7 +427,7 @@
   border: none;
   background: none;
   color: var(--brand);
-  font-size: 12px;
+  font-size: var(--fs-caption);
   font-weight: 600;
   cursor: pointer;
   padding: 2px;

@@ -1,0 +1,24 @@
+.figures {
+  gap: 12px;
+}
+
+.figures-row {
+  gap: 4px;
+  padding: 10px 12px;
+}
+
+.figures-row__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.figures-phrase {
+  min-width: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.figures-words {
+  font-weight: 600;
+}

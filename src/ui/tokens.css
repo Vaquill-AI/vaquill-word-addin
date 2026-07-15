@@ -79,7 +79,10 @@
     "Segoe UI Web (West European)", -apple-system, BlinkMacSystemFont, Roboto,
     "Helvetica Neue", sans-serif;
   --font-mono: "Cascadia Code", "SFMono-Regular", ui-monospace, Menlo, Consolas, monospace;
+  --fs-micro: 11px; /* sub-caption micro labels: badges, timestamps, dense meta */
   --fs-caption: 12px; /* meta / secondary labels */
+  --fs-small: 12.5px; /* compact controls: toolbar buttons, chips, bar labels */
+  --fs-control: 13px; /* interactive control labels: tabs, segmented controls */
   --fs-body: 14px; /* comfortable body (was 13; the pane reads modern, not dense) */
   --fs-body-lg: 15px;
   --fs-view-title: 18px; /* per-view heading -- a clear, prominent title */
@@ -89,6 +92,7 @@
   --fw-semibold: 600;
 
   /* ---- Radii (softer, modern) ---- */
+  --radius-xs: 4px; /* tiny: inline code, nested chips, thin bars */
   --radius-sm: 6px; /* controls: buttons, inputs, chips */
   --radius-md: 8px;
   --radius-lg: 12px; /* cards */

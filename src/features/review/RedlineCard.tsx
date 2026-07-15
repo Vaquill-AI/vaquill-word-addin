@@ -18,6 +18,7 @@ import { streamClauseFix } from "@/api/contract-review";
 import { recordRedlineFeedback } from "@/api/feedback";
 import { errorMessage } from "@/api/errors";
 import { AddToPlaybook } from "@/features/integration/AddToPlaybook";
+import { SaveAsClause } from "@/features/integration/SaveAsClause";
 import { useAppNav } from "@/app/nav";
 import { CommentAction } from "./CommentAction";
 import type { RedlineSuggestion } from "@/api/types";
@@ -464,6 +465,9 @@ export function RedlineCard({
             <LocateIcon size={14} />
           </IconButton>
         )}
+        {/* Capture the position you just took: one tap turns the applied language
+            into a reusable clause, so the library compounds as you accept. */}
+        <SaveAsClause name={active.clauseName} content={proposed} />
       </div>
     );
   }
@@ -742,6 +746,7 @@ export function RedlineCard({
           />
         )}
         <AddToPlaybook redline={active} />
+        <SaveAsClause name={active.clauseName} content={proposed} />
       </div>
     </div>
   );

@@ -1,3 +1,4 @@
+import { useState } from "react";
 import "./avatar.css";
 
 /** Up-to-two-letter initials from a person's name, for the avatar chip. */
@@ -15,8 +16,41 @@ export function hueOf(name: string): number {
   return h;
 }
 
-/** A small circular initials chip, colored deterministically from the name. */
-export function Avatar({ name, size = 26 }: { name: string; size?: number }) {
+/**
+ * A small circular avatar. Renders the user's photo (`src`, e.g. a Google OAuth
+ * picture) when available, falling back to a deterministic initials chip if no
+ * photo is provided or the image fails to load (broken URL, blocked by CSP).
+ */
+export function Avatar({
+  name,
+  src,
+  size = 26,
+}: {
+  name: string;
+  /** Photo URL. Only http(s) is used; anything else falls back to initials. */
+  src?: string | null;
+  size?: number;
+}) {
+  const [imgFailed, setImgFailed] = useState(false);
+  const showPhoto = !!src && /^https?:\/\//i.test(src) && !imgFailed;
+
+  if (showPhoto) {
+    return (
+      <img
+        className="avatar avatar--img"
+        src={src ?? undefined}
+        alt=""
+        aria-hidden
+        width={size}
+        height={size}
+        // Google avatar hosts 403 when a referrer is sent; suppress it.
+        referrerPolicy="no-referrer"
+        style={{ width: size, height: size }}
+        onError={() => setImgFailed(true)}
+      />
+    );
+  }
+
   const hue = hueOf(name);
   return (
     <span

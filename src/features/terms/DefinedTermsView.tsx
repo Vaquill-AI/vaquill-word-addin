@@ -123,7 +123,7 @@ export function DefinedTermsView() {
     <div className="stack terms-view">
       <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
         <h1 className="view-title">Defined terms</h1>
-        <Button variant="ghost" size="sm" onClick={() => void scan()}>
+        <Button variant="ghost" size="sm" onClick={() => void scan()} data-tour="terms-rescan">
           Rescan
         </Button>
       </div>
@@ -145,7 +145,7 @@ export function DefinedTermsView() {
             : " No defined terms were detected in this document."}
         </Banner>
       ) : (
-        <div className="stack" style={{ gap: 8 }}>
+        <div className="stack" style={{ gap: 8 }} data-tour="terms-findings">
           {byKind.map(({ kind, items }) => (
             <StatusGroup
               key={kind}
@@ -173,6 +173,7 @@ export function DefinedTermsView() {
                     onClick={() => void find(f.term)}
                     aria-label={`Find ${f.term} in the document`}
                     title="Find in document"
+                    data-tour="terms-find"
                   >
                     <LocateIcon size={13} /> Find
                   </Button>

@@ -1,4 +1,5 @@
 import { streamAssistant } from "@/api/chat";
+import { request } from "@/api/http";
 import type { PlaybookPosition } from "@/api/playbooks";
 
 /**
@@ -12,16 +13,27 @@ export interface RawVerdict {
   i: number;
   verdict: Verdict;
   reason: string;
+  /** 1-3 word playbook clause the change relates to, when a playbook was given. */
+  clause?: string;
 }
 
-export type VerdictMap = Record<string, { verdict: Verdict; reason: string }>;
+/**
+ * Verdicts keyed by the change's INDEX in the input list, not its text. Two
+ * tracked changes can share identical snippet text (a counterparty striking the
+ * same phrase in two places), so a text key silently collapses them; the index
+ * is the stable identity that matches how the document resolves a change.
+ */
+export type VerdictMap = Record<number, { verdict: Verdict; reason: string; clause?: string }>;
 
 const PROMPT =
   "You are triaging a counterparty's tracked changes to a contract, on behalf of the party reviewing " +
   "it (our preferred positions are in the playbook, if provided). For EACH numbered change output a " +
   'verdict: "accept" if it is harmless or improves our position, "review" if a human should look, or ' +
-  '"reject" if it worsens our position, is one-sided against us, or hits a deal-breaker. ' +
-  'Return ONLY a JSON array, one object per change, exactly like [{"i":0,"verdict":"accept","reason":"short reason"}]. ' +
+  '"reject" if it worsens our position, is one-sided against us, or hits a deal-breaker. When a playbook ' +
+  'is provided, also add "clause": a 1 to 3 word label of the playbook clause the change relates to ' +
+  "(omit it if none applies). " +
+  'Return ONLY a JSON array, one object per change, exactly like ' +
+  '[{"i":0,"verdict":"accept","reason":"short reason","clause":"Liability cap"}]. ' +
   "Keep each reason under 14 words. Output nothing except the JSON array.";
 
 /** Compact, capped playbook context for the classifier. */
@@ -46,7 +58,13 @@ function parseVerdicts(text: string): RawVerdict[] | null {
       const i = (x as { i?: unknown }).i;
       const verdict = (x as { verdict?: unknown }).verdict;
       if (typeof i === "number" && (verdict === "accept" || verdict === "review" || verdict === "reject")) {
-        out.push({ i, verdict, reason: String((x as { reason?: unknown }).reason ?? "") });
+        const clause = (x as { clause?: unknown }).clause;
+        out.push({
+          i,
+          verdict,
+          reason: String((x as { reason?: unknown }).reason ?? ""),
+          clause: typeof clause === "string" && clause.trim() ? clause.trim().slice(0, 40) : undefined,
+        });
       }
     }
     return out;
@@ -55,7 +73,7 @@ function parseVerdicts(text: string): RawVerdict[] | null {
   }
 }
 
-export async function triageChanges(
+async function triageViaChat(
   texts: string[],
   positions: string | null,
   signal?: AbortSignal,
@@ -104,7 +122,69 @@ export async function triageChanges(
 
   const map: VerdictMap = {};
   for (const v of parsed) {
-    if (v.i >= 0 && v.i < texts.length) map[texts[v.i]] = { verdict: v.verdict, reason: v.reason };
+    if (v.i >= 0 && v.i < texts.length) {
+      map[v.i] = { verdict: v.verdict, reason: v.reason, clause: v.clause };
+    }
   }
   return map;
+}
+
+interface EndpointVerdict {
+  i?: number;
+  verdict?: string;
+  reason?: string;
+  clause?: string;
+}
+
+/**
+ * Structured triage via the backend endpoint. Throws to trigger the chat
+ * fallback when the endpoint is unavailable (e.g. not yet deployed) or returns
+ * nothing usable.
+ */
+async function triageViaEndpoint(
+  texts: string[],
+  positions: string | null,
+  signal?: AbortSignal,
+): Promise<VerdictMap> {
+  const res = await request<{ verdicts?: EndpointVerdict[] }>(
+    "/api/v1/legal-tools/contract-review/triage-changes",
+    { method: "POST", body: { changes: texts, positionsText: positions ?? undefined }, signal },
+  );
+  const map: VerdictMap = {};
+  for (const v of res.verdicts ?? []) {
+    if (
+      typeof v.i === "number" &&
+      v.i >= 0 &&
+      v.i < texts.length &&
+      (v.verdict === "accept" || v.verdict === "review" || v.verdict === "reject")
+    ) {
+      const clause = v.clause?.trim();
+      map[v.i] = {
+        verdict: v.verdict,
+        reason: String(v.reason ?? ""),
+        clause: clause ? clause.slice(0, 40) : undefined,
+      };
+    }
+  }
+  if (Object.keys(map).length === 0) throw new Error("empty triage response");
+  return map;
+}
+
+/**
+ * Triage the counterparty's tracked changes. Prefers the structured backend
+ * endpoint; falls back to the client-side chat triage when it is unavailable or
+ * returns nothing usable, so triage always works.
+ */
+export async function triageChanges(
+  texts: string[],
+  positions: string | null,
+  signal?: AbortSignal,
+): Promise<VerdictMap> {
+  if (texts.length === 0) return {};
+  try {
+    return await triageViaEndpoint(texts, positions, signal);
+  } catch (e) {
+    if ((e as Error).name === "AbortError") throw e;
+    return triageViaChat(texts, positions, signal);
+  }
 }

@@ -3,6 +3,7 @@ import { AutoTextarea } from "@/ui/AutoTextarea";
 import { Button, Field, SegmentedControl, Toggle, Spinner } from "@/ui/primitives";
 import { Combobox } from "@/ui/Combobox";
 import { PlaybookPicker } from "./PlaybookPicker";
+import { ClientRulesCard } from "@/features/integration/ClientRulesCard";
 import {
   CONTRACT_TYPES,
   USER_SIDES,
@@ -172,7 +173,13 @@ export function ReviewForm({
             )}
           </span>
         )}
-        <Button type="button" variant="ghost" size="sm" onClick={() => setShowOptions((v) => !v)}>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={() => setShowOptions((v) => !v)}
+          data-tour="rl-setup"
+        >
           {showOptions ? "Done" : "Adjust"}
         </Button>
       </div>
@@ -212,6 +219,8 @@ export function ReviewForm({
             </a>{" "}
             in Vaquill AI.
           </p>
+
+          <ClientRulesCard />
 
           <div className="field field--inline">
             <label>Scope</label>
@@ -272,7 +281,7 @@ export function ReviewForm({
       </Field>
       {focus.note && <span className="small muted">{focus.note}</span>}
 
-      <Button type="submit" variant="primary" className="btn--cta" loading={busy}>
+      <Button type="submit" variant="primary" className="btn--cta" loading={busy} data-tour="rl-run">
         Review this contract
       </Button>
     </form>

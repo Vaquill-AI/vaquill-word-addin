@@ -33,7 +33,7 @@
 }
 .sel__text {
   margin: 0;
-  font-size: 12.5px;
+  font-size: var(--fs-small);
   color: var(--text);
   white-space: pre-wrap;
   word-break: break-word;
@@ -47,7 +47,7 @@
   border-radius: 999px;
   background: var(--surface);
   color: var(--text-muted);
-  font-size: 12px;
+  font-size: var(--fs-caption);
   font-weight: 500;
   cursor: pointer;
   transition: background 0.12s ease, color 0.12s ease, border-color 0.12s ease;

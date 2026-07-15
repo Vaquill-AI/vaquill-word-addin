@@ -201,7 +201,7 @@ export function CleanCopyView() {
             )}
 
             <div className="stack cleancopy-options" style={{ gap: 8 }}>
-              <div className="row cleancopy-option">
+              <div className="row cleancopy-option" data-tour="cc-accept">
                 <Toggle
                   checked={acceptChanges}
                   onChange={setAcceptChanges}
@@ -214,7 +214,7 @@ export function CleanCopyView() {
                   <span className="small muted">Turn every edit into final text.</span>
                 </div>
               </div>
-              <div className="row cleancopy-option">
+              <div className="row cleancopy-option" data-tour="cc-comments">
                 <Toggle
                   checked={removeComments}
                   onChange={setRemoveComments}
@@ -256,6 +256,7 @@ export function CleanCopyView() {
               <Button
                 variant="primary"
                 className="btn--cta"
+                data-tour="cc-produce"
                 onClick={() => setPhase({ status: "confirm", scan: scanData })}
                 disabled={nothingSelected}
               >

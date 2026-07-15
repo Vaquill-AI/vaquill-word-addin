@@ -1,7 +1,19 @@
 import { type FormEvent, useState } from "react";
 import { login } from "@/auth/dialog-login";
 import { loginWithPassword } from "@/auth/password-login";
+import { config } from "@/config";
 import { Banner, Button, Field } from "@/ui/primitives";
+
+/** Open the web sign-up in the system browser. There is no sign-up inside Word:
+ *  a new user registers on the web app, then comes back here to sign in. Prefer
+ *  the Office host opener so the link escapes the sandboxed task-pane webview. */
+function openRegister() {
+  try {
+    Office.context.ui.openBrowserWindow(config.signupUrl);
+  } catch {
+    window.open(config.signupUrl, "_blank", "noopener");
+  }
+}
 
 /** The official multicolor Google "G" for the OAuth button (the one place a
  *  non-monochrome mark belongs). */
@@ -33,7 +45,7 @@ function GoogleGlyph({ size = 16 }: { size?: number }) {
  *   - Email + password: runs entirely in the task pane (no dialog).
  *   - Google: opens the Office dialog and completes Supabase PKCE in the pane.
  */
-export function LoginView() {
+export function LoginView({ notice }: { notice?: string | null } = {}) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState<null | "password" | "google">(null);
@@ -81,6 +93,7 @@ export function LoginView() {
         </p>
       </div>
 
+      {notice && !error && <Banner tone="info">{notice}</Banner>}
       {error && <Banner tone="danger">{error}</Banner>}
 
       <form className="login__form" onSubmit={onPasswordSignIn}>
@@ -125,6 +138,13 @@ export function LoginView() {
           <GoogleGlyph /> Continue with Google
         </Button>
       </div>
+
+      <p className="login__register small muted">
+        New to Vaquill?{" "}
+        <button type="button" className="linkaction" onClick={openRegister} disabled={disabled}>
+          Create an account
+        </button>
+      </p>
     </div>
   );
 }

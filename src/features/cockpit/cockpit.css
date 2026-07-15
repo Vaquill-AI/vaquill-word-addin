@@ -1,0 +1,25 @@
+.cockpit {
+  gap: 12px;
+}
+
+.cockpit-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.cockpit-row {
+  gap: 8px;
+  padding: 10px 12px;
+}
+
+.cockpit-row__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.cockpit-status {
+  width: 100%;
+}

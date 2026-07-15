@@ -60,6 +60,6 @@
 }
 
 .toolcard__desc {
-  font-size: 12px;
+  font-size: var(--fs-caption);
   color: var(--text-muted);
 }

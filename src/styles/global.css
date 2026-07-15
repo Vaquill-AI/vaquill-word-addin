@@ -89,7 +89,7 @@ a {
    with the hit highlighted (used by defined-terms, cross-references). */
 .ctx-line {
   margin: 2px 0 0;
-  font-size: 12px;
+  font-size: var(--fs-caption);
   line-height: 1.5;
   color: var(--text-muted);
   word-break: break-word;
@@ -97,7 +97,7 @@ a {
 .ctx-hit {
   background: var(--brand-tint);
   color: var(--brand);
-  border-radius: 3px;
+  border-radius: var(--radius-xs);
   padding: 0 2px;
   font-weight: 600;
 }

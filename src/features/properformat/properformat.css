@@ -1,0 +1,46 @@
+.properformat {
+  gap: 12px;
+}
+
+.pf-summary {
+  margin: 0;
+}
+
+/* The fixes read as one grouped list, matching the tinted, bordered wells used
+   elsewhere so the toggles feel like a single control set. */
+.pf-fixes {
+  gap: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 2px 10px;
+}
+
+.pf-fix {
+  gap: 10px;
+  align-items: center;
+  padding: 9px 0;
+  border-top: 1px solid var(--border);
+}
+
+.pf-fix:first-child {
+  border-top: 0;
+}
+
+.pf-fix__text {
+  flex: 1;
+  min-width: 0;
+}
+
+.pf-count {
+  flex: none;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.pf-protected {
+  margin-top: 2px;
+}
+
+.pf-foot {
+  margin: 0;
+}

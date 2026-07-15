@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Badge, Button, Field, Spinner } from "@/ui/primitives";
 import { Avatar } from "@/ui/Avatar";
+import { ViewHeader } from "@/ui/ViewHeader";
 import { Combobox } from "@/ui/Combobox";
 import { TONE_COLOR, type StatusTone } from "@/ui/status";
 import { clearSession, getUser } from "@/auth/session";
@@ -120,7 +121,12 @@ function UsageMeter({ current, limit }: { current: number; limit: number }) {
   );
 }
 
-export function SettingsView() {
+export function SettingsView({
+  onReplayWalkthrough,
+}: {
+  /** Closes Settings, resets tour progress, and starts the walkthrough. */
+  onReplayWalkthrough?: () => void;
+} = {}) {
   const user = getUser();
   const email = user?.email ?? "";
   const meta = user?.user_metadata ?? {};
@@ -176,7 +182,7 @@ export function SettingsView() {
 
   return (
     <div className="stack settings">
-      <h1 className="view-title">Account</h1>
+      <ViewHeader title="Account" />
 
       <div className="card settings-card">
         <div className="settings-account__top">
@@ -233,6 +239,24 @@ export function SettingsView() {
           </Field>
         </div>
       </div>
+
+      {onReplayWalkthrough && (
+        <div className="card settings-card">
+          <h2 className="settings-heading">Help &amp; guides</h2>
+          <p className="small muted settings-heading__hint">
+            New here, or want a refresher? Replay the walkthrough, or open a guide for any tab from
+            the Guides button in the top bar.
+          </p>
+          <Button
+            variant="default"
+            size="sm"
+            onClick={onReplayWalkthrough}
+            style={{ alignSelf: "flex-start" }}
+          >
+            Replay walkthrough
+          </Button>
+        </div>
+      )}
 
       <div className="settings-footer">
         <a className="settings-footer__link" href={SUPPORT_URL} target="_blank" rel="noreferrer">

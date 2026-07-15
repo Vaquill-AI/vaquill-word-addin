@@ -35,7 +35,7 @@
 }
 .authority__cite {
   font-family: "SFMono-Regular", ui-monospace, Menlo, Consolas, monospace;
-  font-size: 12.5px;
+  font-size: var(--fs-small);
   font-weight: 600;
   color: var(--text);
   /* Let a long citation wrap and shrink instead of pushing the badge off the
@@ -48,7 +48,7 @@
 }
 .authority__name {
   font-weight: 600;
-  font-size: 13px;
+  font-size: var(--fs-control);
 }
 .authority__count {
   align-self: center;
@@ -63,7 +63,7 @@
   border: none;
   background: none;
   color: var(--brand);
-  font-size: 12px;
+  font-size: var(--fs-caption);
   font-weight: 600;
   cursor: pointer;
   padding: 2px 0;
@@ -79,7 +79,7 @@
 .authority__context-hit {
   background: var(--brand-tint);
   color: var(--brand);
-  border-radius: 3px;
+  border-radius: var(--radius-xs);
   padding: 0 2px;
   font-weight: 600;
 }

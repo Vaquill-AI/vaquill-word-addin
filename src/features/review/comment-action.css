@@ -42,8 +42,8 @@
 /* Internal notes get a distinct caution surface so they are never mistaken for
    something that was written into the document. */
 .cmt__draft--internal {
-  border-color: var(--warn-border, #d9a300);
-  background: var(--warn-surface, rgba(217, 163, 0, 0.08));
+  border-color: var(--warning-border);
+  background: var(--warning-tint);
 }
 
 .cmt__draft-head {
@@ -56,7 +56,7 @@
   gap: 5px;
   padding: 3px 8px;
   border-radius: 999px;
-  font-size: 11px;
+  font-size: var(--fs-micro);
   font-weight: 700;
   letter-spacing: 0.02em;
   text-transform: uppercase;
@@ -64,19 +64,19 @@
 
 .cmt__tag--sendable {
   color: var(--brand-fg);
-  background: var(--brand-soft, rgba(37, 99, 235, 0.1));
+  background: var(--brand-tint);
 }
 
 .cmt__tag--internal {
-  color: var(--warn-fg, #8a6400);
-  background: var(--warn-soft, rgba(217, 163, 0, 0.18));
+  color: var(--warning);
+  background: var(--warning-tint);
 }
 
 .cmt__draft-body {
   margin: 0;
   white-space: pre-wrap;
   line-height: 1.5;
-  font-size: 13px;
+  font-size: var(--fs-control);
   color: var(--text);
 }
 

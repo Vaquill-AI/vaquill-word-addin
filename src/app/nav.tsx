@@ -21,7 +21,11 @@ export type ToolKey =
   | "terms"
   | "xref"
   | "sendready"
-  | "redact";
+  | "redact"
+  | "properFormat"
+  | "termnav"
+  | "cockpit"
+  | "figures";
 
 export type AppIntent =
   // Review hub
@@ -65,7 +69,9 @@ export function useAppNav(): AppNav {
 }
 
 export function AppNavProvider({ children }: { children: ReactNode }) {
-  const [tab, setTab] = useState<AppTab>("review");
+  // Assistant is the default landing tab: the most flexible entry point (ask, or
+  // switch to Edit for redlines) and where a new user should start.
+  const [tab, setTab] = useState<AppTab>("assistant");
   const [reviewSub, setReviewSub] = useState<ReviewSub>("redlines");
   const [intent, setIntent] = useState<AppIntent | null>(null);
 

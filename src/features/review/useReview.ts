@@ -9,6 +9,7 @@ import { readSelectionText, readStructuredDocumentText } from "@/office/document
 import { errorMessage } from "@/api/errors";
 import { sha256Hex } from "@/lib/hash";
 import { splitIntoSections, mergeReviews } from "@/lib/sections";
+import { resolveClientRulesContext } from "@/lib/activeClient";
 import type { ReviewScope } from "./constants";
 
 export type ReviewStatus = "idle" | "reading" | "streaming" | "done" | "error";
@@ -114,6 +115,11 @@ export function useReview() {
       }
 
       const docHash = await sha256Hex(documentText);
+      // Fold the active client's standing rules into the review instructions, so
+      // the client's positions are enforced on the first pass, not just triage.
+      const clientRules = await resolveClientRulesContext(params.matterId);
+      const reviewInstructions =
+        [params.reviewInstructions, clientRules].filter(Boolean).join("\n\n") || undefined;
       const base = {
         contractType: params.contractType,
         userSide: params.userSide,
@@ -123,7 +129,7 @@ export function useReview() {
         jurisdiction: "US",
         dealContext: params.jurisdiction ? { governingLaw: params.jurisdiction } : undefined,
         playbookId: params.playbookId,
-        reviewInstructions: params.reviewInstructions || undefined,
+        reviewInstructions,
         matterId: params.matterId || undefined,
         markupLevel: params.markupLevel || undefined,
         paperSide: params.paperSide || undefined,

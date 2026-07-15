@@ -29,6 +29,84 @@ export function CheckIcon({ size = 15 }: P) {
   );
 }
 
+export function FormatIcon({ size = 15 }: P) {
+  return (
+    <svg {...base(size)} aria-hidden>
+      <path d="M4 6h16M4 12h10M4 18h13" />
+    </svg>
+  );
+}
+
+export function BookIcon({ size = 15 }: P) {
+  return (
+    <svg {...base(size)} aria-hidden>
+      <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+      <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+    </svg>
+  );
+}
+
+export function GaugeIcon({ size = 15 }: P) {
+  return (
+    <svg {...base(size)} aria-hidden>
+      <path d="M12 14l3.5-3.5" />
+      <path d="M3.34 19a10 10 0 1 1 17.32 0" />
+    </svg>
+  );
+}
+
+export function HashIcon({ size = 15 }: P) {
+  return (
+    <svg {...base(size)} aria-hidden>
+      <path d="M4 9h16M4 15h16M10 3 8 21M16 3l-2 18" />
+    </svg>
+  );
+}
+
+export function ScaleIcon({ size = 15 }: P) {
+  return (
+    <svg {...base(size)} aria-hidden>
+      <path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z" />
+      <path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z" />
+      <path d="M7 21h10M12 3v18M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2" />
+    </svg>
+  );
+}
+
+export function FolderIcon({ size = 15 }: P) {
+  return (
+    <svg {...base(size)} aria-hidden>
+      <path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z" />
+    </svg>
+  );
+}
+
+export function GlobeIcon({ size = 15 }: P) {
+  return (
+    <svg {...base(size)} aria-hidden>
+      <circle cx="12" cy="12" r="10" />
+      <path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+    </svg>
+  );
+}
+
+export function UploadIcon({ size = 15 }: P) {
+  return (
+    <svg {...base(size)} aria-hidden>
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12" />
+    </svg>
+  );
+}
+
+export function HelpIcon({ size = 15 }: P) {
+  return (
+    <svg {...base(size)} aria-hidden>
+      <circle cx="12" cy="12" r="10" />
+      <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3M12 17h.01" />
+    </svg>
+  );
+}
+
 export function XIcon({ size = 15 }: P) {
   return (
     <svg {...base(size)} aria-hidden>

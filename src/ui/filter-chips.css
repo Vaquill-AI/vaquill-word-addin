@@ -13,7 +13,7 @@
   border: 1px solid var(--border-strong);
   background: var(--surface);
   color: var(--text-muted);
-  font-size: 12px;
+  font-size: var(--fs-caption);
   font-weight: 600;
   cursor: pointer;
   transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease;

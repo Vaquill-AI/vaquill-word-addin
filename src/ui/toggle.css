@@ -21,7 +21,7 @@
   width: 16px;
   height: 16px;
   border-radius: 50%;
-  background: #fff;
+  background: var(--surface);
   box-shadow: var(--shadow-2);
   transition: transform 0.15s ease;
 }

@@ -23,6 +23,8 @@ import { CommentCard } from "./CommentCard";
 import { triageChanges, positionsSummary, type Verdict, type VerdictMap } from "./triage";
 import { draftCounterReply } from "./counter";
 import { usePlaybookDetails } from "@/features/playbook/usePlaybookDetails";
+import { clauseKey } from "@/api/playbooks";
+import { ClientRulesCard } from "@/features/integration/ClientRulesCard";
 import { errorMessage } from "@/api/errors";
 
 type LoadStatus = "loading" | "ready" | "error";
@@ -76,6 +78,9 @@ export function ChangesView() {
 
   const pb = usePlaybookDetails();
   const [pbId, setPbId] = useState("");
+  // Standing rules for the active client, folded into triage + draft context so
+  // the client's positions are enforced on top of the chosen playbook.
+  const [clientRulesText, setClientRulesText] = useState("");
 
   const [verdicts, setVerdicts] = useState<VerdictMap>({});
   const [triage, setTriage] = useState<TriageStatus>("idle");
@@ -169,11 +174,15 @@ export function ChangesView() {
     };
   }, [reload]);
 
-  // Compact playbook context for the drafter (same source triage uses).
+  // Compact review context for the drafter and triage: the chosen playbook's
+  // positions plus the active client's standing rules.
   const currentPositions = useCallback(() => {
     const selected = pb.playbooks.find((p) => p.id === pbId);
-    return selected ? positionsSummary(selected.positions) : null;
-  }, [pb.playbooks, pbId]);
+    const parts = [selected ? positionsSummary(selected.positions) : "", clientRulesText].filter(
+      Boolean,
+    );
+    return parts.length ? parts.join("\n\n") : null;
+  }, [pb.playbooks, pbId, clientRulesText]);
 
   async function startDraft(index: number, changeText: string) {
     draftAbortRef.current?.abort();
@@ -259,9 +268,7 @@ export function ChangesView() {
     setTriage("running");
     setTriageError(null);
     try {
-      const selected = pb.playbooks.find((p) => p.id === pbId);
-      const positions = selected ? positionsSummary(selected.positions) : null;
-      const map = await triageChanges(tcs.map((c) => c.text), positions, controller.signal);
+      const map = await triageChanges(tcs.map((c) => c.text), currentPositions(), controller.signal);
       setVerdicts(map);
       setTriage("done");
     } catch (e) {
@@ -316,9 +323,9 @@ export function ChangesView() {
 
   async function acceptSuggested() {
     const wanted = new Set(
-      tcs.filter((c) => verdicts[c.text]?.verdict === "accept" && c.text.trim()).map((c) => c.text),
+      tcs.filter((c, i) => verdicts[i]?.verdict === "accept" && c.text.trim()).map((c) => c.text),
     );
-    const expected = tcs.filter((c) => wanted.has(c.text)).length;
+    const expected = wanted.size;
     if (!expected) return;
     setBulk("accept-suggested");
     setActionError(null);
@@ -340,14 +347,17 @@ export function ChangesView() {
     }
   }
 
-  const suggested = tcs.filter((c) => verdicts[c.text]?.verdict === "accept" && c.text.trim()).length;
+  const suggested = tcs.filter((c, i) => verdicts[i]?.verdict === "accept" && c.text.trim()).length;
   // Formatting-only tracked changes (no reviewable text) are hidden from the list.
   const formattingOnly = tcs.filter((c) => c.text.trim().length === 0).length;
   const counts = { accept: 0, review: 0, reject: 0 };
-  for (const c of tcs) {
-    const v = verdicts[c.text]?.verdict;
+  tcs.forEach((_, i) => {
+    const v = verdicts[i]?.verdict;
     if (v) counts[v] += 1;
-  }
+  });
+  // Positions for the selected playbook, so a flagged change can surface the
+  // matching clause's fallback ladder inline (respond-with-your-position).
+  const selectedPositions = pb.playbooks.find((p) => p.id === pbId)?.positions;
 
   if (load === "loading") {
     return (
@@ -389,12 +399,13 @@ export function ChangesView() {
 
       {tcs.length > 0 && (
         <>
+          <ClientRulesCard onRulesText={setClientRulesText} />
           {(() => {
             const hasPlaybooks = pb.status === "ready" && pb.playbooks.length > 0;
             return (
               <div className="row" style={{ gap: 8, alignItems: "flex-end", flexWrap: "wrap" }}>
                 {hasPlaybooks && (
-                  <div style={{ flex: "1 1 100%", minWidth: 0 }}>
+                  <div style={{ flex: "1 1 100%", minWidth: 0 }} data-tour="ch-playbook">
                     <Field label="Playbook to triage against">
                       <select
                         value={pbId}
@@ -422,6 +433,7 @@ export function ChangesView() {
                   loading={triage === "running"}
                   disabled={anyBusy}
                   style={{ marginLeft: "auto" }}
+                  data-tour="ch-triage"
                 >
                   {triage === "done" ? "Re-run AI triage" : "AI triage the changes"}
                 </Button>
@@ -435,7 +447,7 @@ export function ChangesView() {
                 AI: {counts.accept} accept - {counts.review} review - {counts.reject} reject
               </span>
               {suggested > 0 && (
-                <Button variant="default" size="sm" onClick={acceptSuggested} loading={bulk === "accept-suggested"} disabled={anyBusy}>
+                <Button variant="default" size="sm" onClick={acceptSuggested} loading={bulk === "accept-suggested"} disabled={anyBusy} data-tour="ch-accept">
                   <CheckIcon size={13} /> Accept the {suggested} approved
                 </Button>
               )}
@@ -457,12 +469,23 @@ export function ChangesView() {
               // the list. Skip them, but keep the original index `i` intact so
               // accept/reject still target the right change in the document.
               if (c.text.trim().length === 0) return null;
-              const v = verdicts[c.text];
+              const v = verdicts[i];
               const canResolve = c.text.trim().length > 0;
+              // For a flagged change tagged with a clause, show that clause's
+              // fallback ladder from the selected playbook, so the reviewer can
+              // counter with their standing position without leaving the card.
+              const pos =
+                v && v.clause && v.verdict !== "accept" && selectedPositions
+                  ? selectedPositions[clauseKey(v.clause)]
+                  : undefined;
               const author = c.author || "Unknown";
               const tcTime = formatRelativeTime(c.createdAt);
               return (
-                <div key={`${i}-${c.text.slice(0, 24)}`} className="card change-item">
+                <div
+                  key={`${i}-${c.text.slice(0, 24)}`}
+                  className="card change-item"
+                  data-tour={i === 0 ? "ch-change" : undefined}
+                >
                   <div className="change-item__head">
                     <div
                       className="row"
@@ -481,6 +504,7 @@ export function ChangesView() {
                     <div className="row" style={{ gap: 4, alignItems: "center", flexWrap: "wrap" }}>
                       {changeTypeBadge(c.type)}
                       {v && verdictBadge(v.verdict)}
+                      {v?.clause && <Badge tone="neutral">{v.clause}</Badge>}
                       {canResolve && (
                         <IconButton label="Find in document" onClick={() => void locate(c.text)}>
                           <LocateIcon size={13} />
@@ -492,6 +516,23 @@ export function ChangesView() {
                     {c.text.trim() || "(formatting change)"}
                   </p>
                   {v?.reason && <p className="small muted" style={{ margin: 0 }}>{v.reason}</p>}
+                  {pos && (
+                    <details className="change-item__ladder">
+                      <summary className="small" style={{ cursor: "pointer", fontWeight: 600 }}>
+                        Your position on {v?.clause}
+                      </summary>
+                      <p className="small muted" style={{ margin: "4px 0 0" }}>
+                        {pos.standardPosition}
+                      </p>
+                      {pos.fallbackLadder && pos.fallbackLadder.length > 0 && (
+                        <ol className="small muted" style={{ margin: "4px 0 0", paddingLeft: 18 }}>
+                          {pos.fallbackLadder.map((rung, ri) => (
+                            <li key={ri}>{rung}</li>
+                          ))}
+                        </ol>
+                      )}
+                    </details>
+                  )}
                   {canResolve && (
                     <div className="row" style={{ gap: 8 }}>
                       <Button

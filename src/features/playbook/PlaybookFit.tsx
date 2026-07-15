@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Banner, Button, Spinner, LiveRegion } from "@/ui/primitives";
+import { ViewHeader } from "@/ui/ViewHeader";
 import { ElapsedSeconds } from "@/ui/ElapsedSeconds";
 import { ArrowLeftIcon } from "@/ui/icons";
 import { DistributionBar, type DistributionSegment } from "@/ui/DistributionBar";
@@ -186,14 +187,16 @@ function FitResults({
     <div className="stack playbook-view">
       <BackRow onBack={onBack} name={playbook.name} />
 
-      <div className="stack" style={{ gap: 2 }}>
-        <h1 className="view-title">Playbook fit</h1>
-        <p className="small muted" style={{ margin: 0 }}>
-          {results.length} clause{results.length === 1 ? "" : "s"} checked against {playbook.name}.
-          Each card shows where the contract sits on that clause's fallback ladder. Guidance, not
-          legal advice.
-        </p>
-      </div>
+      <ViewHeader
+        title="Playbook fit"
+        subtitle={
+          <>
+            {results.length} clause{results.length === 1 ? "" : "s"} checked against {playbook.name}.
+            Each card shows where the contract sits on that clause's fallback ladder. Guidance, not
+            legal advice.
+          </>
+        }
+      />
 
       <div className="row" style={{ justifyContent: "flex-end" }}>
         <Button variant="ghost" size="sm" onClick={onRerun}>

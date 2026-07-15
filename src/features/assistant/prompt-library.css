@@ -26,7 +26,7 @@
   background: var(--surface);
   border: 1px solid var(--border-strong);
   border-radius: var(--radius-md, 10px);
-  box-shadow: var(--shadow-8, 0 8px 24px rgba(0, 0, 0, 0.16));
+  box-shadow: var(--shadow-8);
   overflow: hidden;
 }
 

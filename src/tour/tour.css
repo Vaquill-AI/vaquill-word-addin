@@ -1,0 +1,166 @@
+/* ---- Tour overlay (spotlight + tooltip) ---- */
+.tour-root {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+}
+
+/* Transparent full-screen layer that blocks clicks on the app while the tour
+   drives it; the spotlight hole sits on top and the tooltip above that. */
+.tour-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+}
+
+/* No target (intro / outro / whole-surface step): dim the whole pane. */
+.tour-backdrop--dim {
+  background: rgba(15, 23, 42, 0.5);
+}
+
+.tour-hole {
+  position: fixed;
+  z-index: 1001;
+  border-radius: var(--radius-md);
+  box-shadow: 0 0 0 9999px rgba(15, 23, 42, 0.5);
+  pointer-events: none;
+  transition: top 0.18s ease, left 0.18s ease, width 0.18s ease, height 0.18s ease;
+}
+
+.tour-tip {
+  position: fixed;
+  left: 10px;
+  right: 10px;
+  z-index: 1002;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-raised);
+  box-shadow: var(--shadow-16, 0 8px 24px rgba(0, 0, 0, 0.18));
+}
+
+.tour-tip--center {
+  top: 42%;
+}
+
+.tour-tip__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.tour-tip__count {
+  font-variant-numeric: tabular-nums;
+}
+
+.tour-tip__skip {
+  border: none;
+  background: none;
+  cursor: pointer;
+  padding: 2px 4px;
+}
+
+.tour-tip__skip:hover {
+  text-decoration: underline;
+}
+
+.tour-tip__title {
+  margin: 6px 0 4px;
+  font-size: var(--fs-body-lg);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+
+.tour-tip__body {
+  margin: 0 0 12px;
+  font-size: var(--fs-control);
+  line-height: 1.5;
+  color: #3f4654;
+}
+
+.tour-tip__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ---- Guides menu (dropdown from the top bar) ---- */
+.guides__backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  border: none;
+  background: transparent;
+  cursor: default;
+}
+
+.guides {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  z-index: 51;
+  margin-top: 6px;
+  min-width: 220px;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 6px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-raised);
+  box-shadow: var(--shadow-16, 0 8px 24px rgba(0, 0, 0, 0.18));
+}
+
+.guides__head {
+  padding: 3px 8px 5px;
+  font-weight: 600;
+}
+
+.guides__item {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  text-align: left;
+  border: none;
+  background: none;
+  cursor: pointer;
+  padding: 7px 8px;
+  border-radius: var(--radius-sm);
+}
+
+.guides__item:hover {
+  background: var(--surface-muted);
+}
+
+.guides__title {
+  font-size: var(--fs-control);
+  font-weight: 600;
+}
+
+/* Keep the grouped list scannable and bounded on a short pane. */
+.guides {
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+.guides__group + .guides__group {
+  margin-top: 4px;
+  padding-top: 4px;
+  border-top: 1px solid var(--border);
+}
+
+/* Reusable in-view "Take a tour" launcher (TourButton). */
+.tour-launch {
+  border: none;
+  background: none;
+  cursor: pointer;
+  padding: 0;
+  font-size: var(--fs-control);
+  color: var(--brand);
+}
+
+.tour-launch:hover {
+  text-decoration: underline;
+}
