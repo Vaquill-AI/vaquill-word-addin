@@ -18,18 +18,40 @@ interface SpeechEvent {
   readonly resultIndex: number;
   readonly results: SpeechResList;
 }
+interface SpeechErrorEvent {
+  readonly error?: string;
+}
 interface Recognition {
   lang: string;
   continuous: boolean;
   interimResults: boolean;
   onresult: ((e: SpeechEvent) => void) | null;
-  onerror: (() => void) | null;
+  onerror: ((e: SpeechErrorEvent) => void) | null;
   onend: (() => void) | null;
   start(): void;
   stop(): void;
   abort(): void;
 }
 type RecognitionCtor = new () => Recognition;
+
+/** Turn a Web Speech error code into a short, human message. The common one in
+ *  the Word desktop task pane is a blocked mic (`not-allowed`/`service-not-
+ *  allowed`): the webview exposes the API but denies audio capture. */
+function messageForError(code: string | undefined): string {
+  switch (code) {
+    case "not-allowed":
+    case "service-not-allowed":
+      return "Microphone access is blocked here, so dictation can't start. It works in Word on the web.";
+    case "audio-capture":
+      return "No microphone was found.";
+    case "no-speech":
+      return "Didn't catch any speech. Try again.";
+    case "network":
+      return "Dictation needs a network connection and could not reach the service.";
+    default:
+      return "Dictation could not start in this window.";
+  }
+}
 
 function getCtor(): RecognitionCtor | undefined {
   const w = window as unknown as {
@@ -49,32 +71,45 @@ function getCtor(): RecognitionCtor | undefined {
 export function useVoiceInput(onTranscript: (text: string) => void) {
   const [supported] = useState(() => !!getCtor());
   const [listening, setListening] = useState(false);
+  // Set when an attempt fails (most often a blocked mic in the desktop webview).
+  // Surfaced by the caller so the button is never a silent dead end.
+  const [error, setError] = useState<string | null>(null);
   const recRef = useRef<Recognition | null>(null);
   const cbRef = useRef(onTranscript);
   cbRef.current = onTranscript;
 
-  useEffect(
-    () => () => {
+  // Hard teardown that always leaves us in a clean, restartable state. onerror /
+  // onend in some webviews are unreliable, so we never depend on them to reset:
+  // any failed run must not jam the next click by leaving a stale recRef.
+  function teardown() {
+    const rec = recRef.current;
+    recRef.current = null;
+    if (rec) {
+      rec.onresult = null;
+      rec.onerror = null;
+      rec.onend = null;
       try {
-        recRef.current?.abort();
+        rec.abort();
       } catch {
-        // best-effort teardown
+        // already stopped
       }
-    },
-    [],
-  );
+    }
+    setListening(false);
+  }
+
+  useEffect(() => teardown, []);
 
   function stop() {
-    try {
-      recRef.current?.stop();
-    } catch {
-      // already stopped
-    }
+    teardown();
   }
 
   function start() {
     const Ctor = getCtor();
-    if (!Ctor || recRef.current) return;
+    if (!Ctor) return;
+    // Clear any stale instance a prior failed run may have left behind, so the
+    // guard below can never permanently block restarts.
+    teardown();
+    setError(null);
     const rec = new Ctor();
     rec.lang = "en-US";
     rec.continuous = true;
@@ -89,19 +124,20 @@ export function useVoiceInput(onTranscript: (text: string) => void) {
       }
       cbRef.current(`${finalText}${interim}`.trim());
     };
-    rec.onerror = () => stop();
-    rec.onend = () => {
-      recRef.current = null;
-      setListening(false);
+    rec.onerror = (e) => {
+      setError(messageForError(e?.error));
+      teardown();
     };
+    rec.onend = () => teardown();
     recRef.current = rec;
     try {
       rec.start();
       setListening(true);
     } catch {
-      recRef.current = null;
+      teardown();
+      setError("Dictation could not start in this window.");
     }
   }
 
-  return { supported, listening, start, stop };
+  return { supported, listening, error, start, stop };
 }

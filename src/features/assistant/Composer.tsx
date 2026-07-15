@@ -179,6 +179,7 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
       )}
       <div className="composer__box" data-tour="composer">
         {improve.note && <span className="composer__improve-note small muted">{improve.note}</span>}
+        {voice.error && <span className="composer__improve-note small muted">{voice.error}</span>}
         {attachments.length > 0 && (
           <AttachmentChips
             files={attachments}
@@ -205,17 +206,6 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
           }}
         />
         <div className="composer__actions">
-          <span data-tour="composer-modes" style={{ display: "inline-flex" }}>
-            <SegmentedControl<ComposerMode>
-              label="Assistant mode"
-              options={[
-                { value: "ask", label: "Ask" },
-                { value: "edit", label: "Edit" },
-              ]}
-              value={mode}
-              onChange={onMode}
-            />
-          </span>
           <span className="composer__ctx-trigger" data-tour="add-context">
             <IconButton
               label={`Add context${ctxCount > 0 ? ` (${ctxCount} on)` : ""}`}
@@ -240,6 +230,18 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
           >
             <WandIcon size={14} /> Prompts
           </button>
+          {/* Ask / Edit sits third, after Add-context and Prompts. */}
+          <span data-tour="composer-modes" style={{ display: "inline-flex" }}>
+            <SegmentedControl<ComposerMode>
+              label="Assistant mode"
+              options={[
+                { value: "ask", label: "Ask" },
+                { value: "edit", label: "Edit" },
+              ]}
+              value={mode}
+              onChange={onMode}
+            />
+          </span>
           {improve.canImprove && !disabled && (
             <button
               type="button"
@@ -266,6 +268,9 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
               <MicGlyph />
             </button>
           )}
+          {/* Streaming: a Stop control. Otherwise the Send button appears only
+              once there is text to send, so an empty composer stays uncluttered
+              (Enter still submits). */}
           {disabled && onStop ? (
             <button
               type="button"
@@ -276,18 +281,18 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
             >
               <StopIcon size={16} />
             </button>
-          ) : (
+          ) : value.trim() ? (
             <button
               type="button"
               className="composer__send"
               onClick={submit}
-              disabled={disabled || !value.trim()}
+              disabled={disabled}
               aria-label="Send"
               title="Send"
             >
               <ArrowUpGlyph />
             </button>
-          )}
+          ) : null}
         </div>
       </div>
     </div>

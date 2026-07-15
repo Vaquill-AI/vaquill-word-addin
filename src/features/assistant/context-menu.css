@@ -10,8 +10,14 @@
 .ctx-menu {
   position: absolute;
   bottom: 100%;
+  /* Left-anchored and sized to its content rather than stretched edge-to-edge,
+     so the short source labels don't leave a wide empty gutter before the
+     on/off check. Caps to the composer width on a narrow pane. */
   left: 8px;
-  right: 8px;
+  right: auto;
+  width: max-content;
+  min-width: 232px;
+  max-width: min(300px, calc(100% - 16px));
   z-index: 41;
   margin-bottom: 6px;
   display: flex;
