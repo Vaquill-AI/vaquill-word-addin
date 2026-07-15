@@ -18,6 +18,7 @@ import { readDocumentBase64 } from "@/office/file";
 import { textToTiptap } from "@/lib/tiptap";
 import { config } from "@/config";
 import { isCommunity } from "@/community/edition";
+import { UpgradeLink } from "@/ui/UpgradeGate";
 import type { RedlineSuggestion } from "@/api/types";
 import type { DraftResult } from "@/api/drafting";
 
@@ -57,9 +58,9 @@ function mapRedlines(redlines: RedlineSuggestion[]): ImportRedline[] {
  * or as a reusable template. Optionally scoped to a matter.
  */
 export function SaveToVaquill(props: Props) {
-  // Saving back into the hosted Vaquill product has no meaning in the community
-  // edition (there is no hosted account), so the affordance is hidden entirely.
-  if (isCommunity()) return null;
+  // Saving back into the hosted Vaquill product is a hosted-plan feature. In the
+  // community edition, show a locked upsell instead of hiding it.
+  if (isCommunity()) return <UpgradeLink label="Save to Vaquill (hosted)" />;
   // Matter is the user's standing context, set once in Settings (no per-save
   // picker). An explicit defaultMatterId prop still wins when a caller passes one.
   const matterId = props.defaultMatterId ?? getReviewPrefs().matterId ?? "";

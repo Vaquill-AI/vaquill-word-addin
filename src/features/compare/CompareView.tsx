@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { ViewHeader } from "@/ui/ViewHeader";
+import { isCommunity } from "@/community/edition";
+import { UpgradeGate } from "@/ui/UpgradeGate";
 import { Badge, Banner, Button, Spinner } from "@/ui/primitives";
 import { Dropzone } from "@/ui/Dropzone";
 import { CheckIcon, DownloadIcon, CompareIcon, AlertTriangleIcon } from "@/ui/icons";
@@ -21,6 +23,22 @@ const ACCEPT = ".docx,.doc,.pdf";
  * sides, and offers the produced redline to download or apply.
  */
 export function CompareView() {
+  // Document compare runs on the hosted service. In the community edition, show
+  // a locked upsell instead of the tool.
+  if (isCommunity()) {
+    return (
+      <div className="stack">
+        <ViewHeader
+          title="Compare"
+          info="Compare the open document against a reference version and get a native tracked-changes redline."
+        />
+        <UpgradeGate title="Document compare is on the hosted plan">
+          Compare the open document against a reference version and get a native tracked-changes
+          redline. This runs on Vaquill's hosted service.
+        </UpgradeGate>
+      </div>
+    );
+  }
   const { navigate } = useAppNav();
   const { state, start, cancel, reset, fetchRedline } = useCompare();
   const [direction, setDirection] = useState<CompareDirection>("docIsRevised");
