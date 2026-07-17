@@ -75,6 +75,18 @@
   align-items: center;
   gap: 6px;
 }
+/* Account control: the avatar + chevron sit in one pill, padded tight to the
+   avatar so it reads as a control rather than a stray photo in the bar. */
+.appbar__account {
+  padding: 3px 6px 3px 3px;
+  gap: 3px;
+  border-radius: 999px;
+}
+.appbar__account[aria-pressed="true"] {
+  background: var(--brand-tint);
+  border-color: var(--brand-border);
+  color: var(--brand);
+}
 .tabnav__tab {
   position: relative;
   flex: 0 0 auto;
@@ -82,8 +94,13 @@
   align-items: center;
   gap: 6px;
   white-space: nowrap;
-  padding: 9px 11px;
+  /* Roomier than the original 9px/11px: at that size the tabs read as thin text
+     links rather than a nav bar, and the hit target was smaller than the 40px
+     Office panes want for touch. */
+  padding: 11px 13px;
+  min-height: 40px;
   border: none;
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
   background: none;
   color: var(--text-muted);
   font-size: var(--fs-control);
@@ -103,9 +120,11 @@
   opacity: 1;
 }
 /* Active tab: a branded accent (text + icon + underline) reads more modern and
-   on-brand than the previous flat black. */
+   on-brand than the previous flat black. A soft tint behind it gives the strip
+   some weight, so the bar reads as tabs rather than a row of thin links. */
 .tabnav__tab--on {
   color: var(--brand);
+  background: var(--brand-tint);
 }
 .tabnav__tab--on svg {
   opacity: 1;

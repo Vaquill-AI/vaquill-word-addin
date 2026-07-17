@@ -11,6 +11,7 @@ import {
   ArrowLeftIcon,
   ToolsIcon,
   HelpIcon,
+  ChevronIcon,
 } from "@/ui/icons";
 import { subscribe, clearSession } from "@/auth/session";
 import { getMe } from "@/api/account";
@@ -217,9 +218,14 @@ function AppShell() {
               </IconButton>
               {showGuides && <GuidesMenu onClose={() => setShowGuides(false)} />}
             </div>
+            {/* A bare ghost avatar read as decoration, so people did not know the
+                account/settings menu was behind it. Give it the affordances of a
+                control: an outline, and a chevron that says it opens something
+                (the same signal Combobox uses). */}
             <Button
-              variant="ghost"
+              variant="default"
               size="sm"
+              className="appbar__account"
               onClick={() => setShowSettings((v) => !v)}
               aria-pressed={showSettings}
               title="Account and settings"
@@ -237,8 +243,9 @@ function AppShell() {
                   (user.user_metadata?.picture as string) ||
                   null
                 }
-                size={22}
+                size={20}
               />
+              <ChevronIcon size={12} />
             </Button>
           </div>
         </header>
