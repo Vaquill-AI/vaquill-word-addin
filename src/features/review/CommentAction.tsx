@@ -5,6 +5,7 @@ import { CheckIcon, CopyIcon, XIcon } from "@/ui/icons";
 import { insertCommentOnSelection } from "@/office/selection";
 import { selectClauseInDocument } from "@/office/navigate";
 import { goToBookmark } from "@/office/bookmarks";
+import { countTrackedChanges } from "@/office/changes";
 import { rewriteClause } from "@/api/clause-tools";
 import { errorMessage } from "@/api/errors";
 import type { RedlineSuggestion } from "@/api/types";
@@ -152,7 +153,16 @@ export function CommentAction({
         (await goToBookmark(`Vaquill_clause_${index + 1}`)) ||
         (await selectClauseInDocument(redline.currentLanguage));
       if (!located) {
-        setError("Could not locate this clause in the document to attach the comment.");
+        // Same root cause as applyVerifiedRedline: a clause whose own edits are
+        // still pending is stored as the deletion and the insertion interleaved,
+        // so no verbatim search can match it. Say that instead of a bare "not
+        // found", since the fix is one click in Word.
+        const pending = await countTrackedChanges().catch(() => 0);
+        setError(
+          pending > 0
+            ? "Could not locate this clause to attach the comment. The document still has unaccepted tracked changes, and a clause cannot be matched while its edits are pending. Accept or reject them (Word: Review > Accept), then try again."
+            : "Could not locate this clause in the document to attach the comment.",
+        );
         return;
       }
       await insertCommentOnSelection(draft.text);

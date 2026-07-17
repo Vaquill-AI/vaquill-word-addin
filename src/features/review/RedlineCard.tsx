@@ -197,6 +197,7 @@ export function RedlineCard({
   applyBusy,
   setApplyBusy,
   fixContext,
+  onApplied,
 }: {
   redline: RedlineSuggestion;
   index: number;
@@ -208,6 +209,10 @@ export function RedlineCard({
   setApplyBusy?: (b: boolean) => void;
   /** Present on the Review surface: enables "Draft a stronger fix". */
   fixContext?: RedlineFixContext;
+  /** Fired after this card actually writes to the document. The caller cannot
+   *  infer this from its own state (applying mutates the DOCUMENT, not the
+   *  redline list), so anything tracking document state needs telling. */
+  onApplied?: () => void;
 }) {
   const { navigate } = useAppNav();
   const [busy, setBusy] = useState(false);
@@ -300,6 +305,7 @@ export function RedlineCard({
       if (isInsertion) await insertClauseFormatted(active.clauseName, proposed, { tracked });
       else await applyVerifiedRedline({ ...active, proposedLanguage: proposed }, { tracked });
       decide("accepted");
+      onApplied?.();
     } catch (e) {
       setNote(
         e instanceof AnchorNotFoundError

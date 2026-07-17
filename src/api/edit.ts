@@ -1,4 +1,6 @@
 import { request } from "./http";
+import { postStream } from "./sse";
+import { ApiError } from "./errors";
 import type { ApprovalLevel, Grounding, RedlineSuggestion } from "./types";
 
 /**
@@ -73,6 +75,80 @@ export async function editDocument(
     signal,
   });
   return { overview: res.overview ?? "", edits: res.edits ?? [], summary: res.summary ?? "" };
+}
+
+/** Incremental handlers for the streaming edit. `onMeta` fires once with the
+ *  section count (0 = single pass); `onEdit` fires per grounded edit as it lands;
+ *  `onDone` fires with the closing prose + surviving count. */
+export interface EditStreamHandlers {
+  onMeta?: (sections: number) => void;
+  onEdit: (edit: EditItem) => void;
+  onDone?: (result: { overview: string; summary: string; count: number }) => void;
+  signal?: AbortSignal;
+}
+
+function safeParse<T>(data: string): T | null {
+  try {
+    return JSON.parse(data) as T;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Stream instruction-driven edits: cards arrive as sections are drafted, instead
+ * of one blocking response after up to two minutes. Same engine and gates as
+ * `editDocument`; a streamed edit is identical to a batched one.
+ *
+ * Events (event name recovered from the payload's `type`, like the review stream):
+ *   meta {sections} -> edit {edit} per grounded edit -> summary {overview,summary,count} -> done.
+ * Resolves when `done` arrives. Throws ApiError on an `error` event or transport
+ * failure, so the caller can surface it exactly like the non-streaming path.
+ */
+export async function streamEditDocument(
+  documentText: string,
+  instruction: string,
+  contractType: string | undefined,
+  prior: EditPriorContext | undefined,
+  handlers: EditStreamHandlers,
+): Promise<void> {
+  const body: Record<string, unknown> = { documentText, instruction };
+  if (contractType) body.contractType = contractType;
+  if (prior?.priorInstructions?.length) body.priorInstructions = prior.priorInstructions;
+  if (prior?.priorEdits?.length) body.priorEdits = prior.priorEdits;
+
+  await postStream("/api/v1/drafting/edit-document/stream", body, {
+    signal: handlers.signal,
+    onEvent: ({ event, data }) => {
+      switch (event) {
+        case "meta": {
+          const p = safeParse<{ sections?: number }>(data);
+          handlers.onMeta?.(p?.sections ?? 0);
+          break;
+        }
+        case "edit": {
+          const p = safeParse<{ edit?: EditItem }>(data);
+          if (p?.edit) handlers.onEdit(p.edit);
+          break;
+        }
+        case "summary": {
+          const p = safeParse<{ overview?: string; summary?: string; count?: number }>(data);
+          handlers.onDone?.({
+            overview: p?.overview ?? "",
+            summary: p?.summary ?? "",
+            count: p?.count ?? 0,
+          });
+          break;
+        }
+        case "error": {
+          const e = safeParse<{ message?: string }>(data);
+          throw new ApiError("server", 0, e?.message ?? "The edit failed.");
+        }
+        default:
+          break; // done, heartbeats
+      }
+    },
+  });
 }
 
 /**

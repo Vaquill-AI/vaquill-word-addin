@@ -165,32 +165,46 @@ async function handleLlm(path: string, body: Record<string, unknown>): Promise<u
       const p = playbookFitPrompt(str(body.documentText), positions);
       return runJson(p.system, p.user);
     }
-    case "/api/v1/drafting/edit-document": {
+    case "/api/v1/drafting/edit-document":
       // Whole-document instruction edits run on the user's own model. Not
       // proprietary (like contract review, it is a grounded-redline task), so it
-      // works in BYOK with a client-side grounding gate below.
-      const documentText = str(body.documentText);
-      const priorEdits = (Array.isArray(body.priorEdits) ? body.priorEdits : []).map((e) => {
-        const o = bodyObj(e);
-        return {
-          label: str(o.label),
-          currentLanguage: str(o.currentLanguage),
-          proposedLanguage: str(o.proposedLanguage),
-        };
-      });
-      const p = editDocumentPrompt(
-        documentText,
-        str(body.instruction),
-        str(body.contractType) || undefined,
-        strArray(body.priorInstructions),
-        priorEdits,
-      );
-      const raw = (await runJson(p.system, p.user)) as Record<string, unknown>;
-      return groundEdits(documentText, raw);
-    }
+      // works in BYOK with a client-side grounding gate.
+      return communityEditDocument(body);
     default:
       return null;
   }
+}
+
+/** Grounded edit-document result, camelCase like the cloud EditResponse. */
+export interface CommunityEditResult {
+  overview: string;
+  edits: Record<string, unknown>[];
+  summary: string;
+}
+
+/**
+ * Run the whole-document edit on the user's own model and ground the result.
+ * Shared by the JSON route and the community stream shim so both gate identically.
+ */
+export async function communityEditDocument(body: Record<string, unknown>): Promise<CommunityEditResult> {
+  const documentText = str(body.documentText);
+  const priorEdits = (Array.isArray(body.priorEdits) ? body.priorEdits : []).map((e) => {
+    const o = bodyObj(e);
+    return {
+      label: str(o.label),
+      currentLanguage: str(o.currentLanguage),
+      proposedLanguage: str(o.proposedLanguage),
+    };
+  });
+  const p = editDocumentPrompt(
+    documentText,
+    str(body.instruction),
+    str(body.contractType) || undefined,
+    strArray(body.priorInstructions),
+    priorEdits,
+  );
+  const raw = (await runJson(p.system, p.user)) as Record<string, unknown>;
+  return groundEdits(documentText, raw);
 }
 
 /**
@@ -199,7 +213,7 @@ async function handleLlm(path: string, body: Record<string, unknown>): Promise<u
  * located and applied), plus explicit insertions. A non-verbatim edit is dropped
  * rather than applied against text that is not there.
  */
-function groundEdits(documentText: string, raw: Record<string, unknown>): unknown {
+function groundEdits(documentText: string, raw: Record<string, unknown>): CommunityEditResult {
   const list = Array.isArray(raw.edits) ? raw.edits : [];
   const edits = list
     .map((item) => bodyObj(item))

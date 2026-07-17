@@ -99,6 +99,20 @@ export async function readDocumentChanges(): Promise<DocChanges> {
 }
 
 /**
+ * How many tracked changes are still unresolved. Cheap next to
+ * readDocumentChanges (no text, no comments, no replies): callers use it to warn
+ * BEFORE doing work that pending revisions would invalidate. WordApi 1.6.
+ */
+export async function countTrackedChanges(): Promise<number> {
+  return runWord(async (context) => {
+    const changes = context.document.body.getTrackedChanges();
+    changes.load("items/type");
+    await context.sync();
+    return changes.items.length;
+  });
+}
+
+/**
  * Accept or reject the tracked change at the given position in document order.
  * Resolving by index (not by text) is what makes this correct when two changes
  * share identical text (e.g. the counterparty deleted the same word twice):
