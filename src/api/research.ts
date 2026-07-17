@@ -166,12 +166,25 @@ function inlineMarkdown(escaped: string): string {
   return escaped.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
 }
 
+/** How a markdown heading should land in the document. */
+export interface MarkdownHtmlOptions {
+  /**
+   * "heading" emits real <h2>..<h4>, which Word maps to its Heading styles.
+   * "bold" emits a bold paragraph instead. Use "bold" when dropping text into
+   * SOMEONE ELSE'S document (an assistant answer inserted into a contract):
+   * Word Heading styles get a collapse caret, join the Navigation pane, and
+   * show up in a table of contents, which silently restructures their file.
+   */
+  headings?: "heading" | "bold";
+}
+
 /**
  * Convert the brief's IRAC markdown to safe HTML for a Word insert: headings,
  * bold, bullet/numbered lists, and paragraphs. All text content is escaped
  * first, so only the structural tags we emit are markup (no injection).
  */
-export function markdownToSafeHtml(md: string): string {
+export function markdownToSafeHtml(md: string, opts: MarkdownHtmlOptions = {}): string {
+  const headingMode = opts.headings ?? "heading";
   const lines = md.replace(/\r\n/g, "\n").split("\n");
   const out: string[] = [];
   let listType: "ul" | "ol" | null = null;
@@ -199,8 +212,13 @@ export function markdownToSafeHtml(md: string): string {
     if (heading) {
       flushPara();
       closeList();
-      const level = Math.min(heading[1].length + 1, 4);
-      out.push(`<h${level}>${inlineMarkdown(escapeHtml(heading[2]))}</h${level}>`);
+      const text = inlineMarkdown(escapeHtml(heading[2]));
+      if (headingMode === "bold") {
+        out.push(`<p><strong>${text}</strong></p>`);
+      } else {
+        const level = Math.min(heading[1].length + 1, 4);
+        out.push(`<h${level}>${text}</h${level}>`);
+      }
       continue;
     }
     const bullet = line.match(/^[-*]\s+(.*)$/);

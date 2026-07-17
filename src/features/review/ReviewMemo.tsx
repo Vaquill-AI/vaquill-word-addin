@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { Banner, Button } from "@/ui/primitives";
 import { DownloadDocxButton } from "./DownloadDocxButton";
+import { copyPlain } from "@/lib/clipboard";
 import { severityOf } from "@/lib/severity";
 import { goToBookmark } from "@/office/bookmarks";
 import { selectClauseInDocument } from "@/office/navigate";
@@ -184,30 +185,6 @@ function toMarkdown(groups: MemoGroup[]): string {
   return lines.join("\n").trim();
 }
 
-async function copyText(text: string): Promise<boolean> {
-  try {
-    if (navigator.clipboard?.writeText) {
-      await navigator.clipboard.writeText(text);
-      return true;
-    }
-  } catch {
-    // fall through to the legacy path below
-  }
-  try {
-    const ta = document.createElement("textarea");
-    ta.value = text;
-    ta.style.position = "fixed";
-    ta.style.opacity = "0";
-    document.body.appendChild(ta);
-    ta.select();
-    const ok = document.execCommand("copy");
-    document.body.removeChild(ta);
-    return ok;
-  } catch {
-    return false;
-  }
-}
-
 export function ReviewMemo({
   result,
   redlines,
@@ -233,7 +210,7 @@ export function ReviewMemo({
   if (total === 0) return null;
 
   async function onCopy() {
-    const ok = await copyText(toMarkdown(groups));
+    const ok = await copyPlain(toMarkdown(groups));
     if (!ok) return;
     setCopied(true);
     window.setTimeout(() => setCopied(false), 2000);

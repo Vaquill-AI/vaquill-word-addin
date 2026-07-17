@@ -238,6 +238,16 @@
   gap: 6px;
   max-width: 90%;
 }
+/* Bubble + its hover actions as one column, so the actions sit under the
+   question rather than inside it. */
+.msg__ustack {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  min-width: 0;
+  max-width: 100%;
+}
 .msg--user {
   max-width: 100%;
   background: var(--fill-subtle);
@@ -441,19 +451,30 @@
   background: var(--border);
 }
 
-/* Copy / Edit actions inside a user bubble. Hidden until the bubble is hovered
+/* Copy / Edit actions UNDER a user bubble. Hidden until the question is hovered
    or focused, so the transcript stays calm. */
 .msg__actions--user {
   display: flex;
-  gap: 4px;
+  gap: 2px;
   justify-content: flex-end;
-  margin-top: 6px;
+  margin-top: 0;
   opacity: 0;
   transition: opacity 0.12s ease;
 }
-.msg--user:hover .msg__actions--user,
+.msg__ustack:hover .msg__actions--user,
 .msg__actions--user:focus-within {
   opacity: 1;
+}
+/* Quiet, borderless glyphs: they are secondary to the question itself. */
+.msg__actions--user .iconbtn {
+  border-color: transparent;
+  background: transparent;
+  color: var(--text-muted);
+}
+.msg__actions--user .iconbtn:hover {
+  border-color: var(--border);
+  background: var(--surface);
+  color: var(--text);
 }
 .assistant__thinking {
   display: flex;

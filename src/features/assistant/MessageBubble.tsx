@@ -4,6 +4,7 @@ import { IconButton } from "@/ui/primitives";
 import { CopyIcon, EditIcon, CheckIcon } from "@/ui/icons";
 import { insertHtmlAtCursor } from "@/office/richInsert";
 import { markdownToSafeHtml } from "@/api/research";
+import { copyPlain, copyRich } from "@/lib/clipboard";
 import { stripMarkdown } from "@/lib/strings";
 import { config } from "@/config";
 import { Avatar } from "@/ui/Avatar";
@@ -52,40 +53,28 @@ function AssistantActions({ message }: { message: AssistantMessage }) {
     // Put BOTH a formatted HTML flavor and a clean plain-text flavor on the
     // clipboard: pasting into Word keeps the formatting (consistent with Insert),
     // while plain targets get readable text instead of literal "##" / "**".
-    // Falls back to plain text if the rich clipboard API is unavailable.
+    // copyRich walks the fallback chain (the async Clipboard API is often
+    // blocked in the Office WebView) and reports whether it actually landed, so
+    // the tick only shows on a real copy and a blocked copy says so.
     const plain = stripMarkdown(message.content);
-    try {
-      if (typeof ClipboardItem !== "undefined" && navigator.clipboard?.write) {
-        const html = markdownToSafeHtml(message.content);
-        await navigator.clipboard.write([
-          new ClipboardItem({
-            "text/html": new Blob([html], { type: "text/html" }),
-            "text/plain": new Blob([plain], { type: "text/plain" }),
-          }),
-        ]);
-      } else {
-        await navigator.clipboard.writeText(plain);
-      }
+    const html = markdownToSafeHtml(message.content, { headings: "bold" });
+    if (await copyRich(html, plain)) {
       setCopied(true);
-      setTimeout(() => setCopied(false), 1200);
-    } catch {
-      // Rich copy blocked/unsupported: fall back to plain text, ignore if that
-      // also fails (non-destructive).
-      try {
-        await navigator.clipboard.writeText(plain);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 1200);
-      } catch {
-        // Clipboard fully blocked; nothing to do.
-      }
+      setTimeout(() => setCopied(false), 1400);
+    } else {
+      setNote("Copy was blocked. Select the text and use Ctrl+C.");
+      setTimeout(() => setNote(null), 2600);
     }
   }
 
   async function insert() {
     try {
-      // The answer is markdown; convert it to Word HTML so headings, bold, and
-      // lists insert as real formatting instead of literal "##" / "**" text.
-      await insertHtmlAtCursor(markdownToSafeHtml(message.content));
+      // The answer is markdown; convert it to Word HTML so bold and lists insert
+      // as real formatting instead of literal "##" / "**" text. Headings become
+      // BOLD PARAGRAPHS, not Word Heading styles: a heading would get a collapse
+      // caret, join the Navigation pane, and appear in a table of contents,
+      // restructuring the lawyer's document just to paste an answer into it.
+      await insertHtmlAtCursor(markdownToSafeHtml(message.content, { headings: "bold" }));
       setNote("Inserted as tracked change");
       setTimeout(() => setNote(null), 1800);
     } catch {
@@ -230,12 +219,11 @@ function UserActions({
 }) {
   const [copied, setCopied] = useState(false);
   async function copy() {
-    try {
-      await navigator.clipboard.writeText(message.content);
+    // Same fallback chain as the answer copy: the plain Clipboard API alone is
+    // silently blocked in some Office hosts.
+    if (await copyPlain(message.content)) {
       setCopied(true);
-      setTimeout(() => setCopied(false), 1200);
-    } catch {
-      // Clipboard blocked; ignore (non-destructive).
+      setTimeout(() => setCopied(false), 1400);
     }
   }
   return (
@@ -267,8 +255,13 @@ export function MessageBubble({
     const me = currentUser();
     return (
       <div className="msg__urow">
-        <div className="msg msg--user">
-          <p>{message.content}</p>
+        {/* The bubble holds only the question; Copy/Edit sit UNDER it and appear
+            on hover, so the question reads as one clean quote instead of a box
+            with controls crowded inside it. */}
+        <div className="msg__ustack">
+          <div className="msg msg--user">
+            <p>{message.content}</p>
+          </div>
           {onEdit && <UserActions message={message} onEdit={onEdit} />}
         </div>
         <Avatar name={me.name} src={me.avatarUrl} size={24} />
