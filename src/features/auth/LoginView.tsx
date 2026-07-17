@@ -5,6 +5,7 @@ import { config } from "@/config";
 import { Banner, Button, Field, SegmentedControl } from "@/ui/primitives";
 import { ProviderKeyForm } from "@/features/onboarding/ProviderKeyForm";
 import { setByokMode } from "@/community/edition";
+import { notifyCommunityAuth } from "@/auth/session";
 
 /** Open the web sign-up in the system browser. There is no sign-up inside Word:
  *  a new user registers on the web app, then comes back here to sign in. Prefer
@@ -169,8 +170,12 @@ export function LoginView({ notice }: { notice?: string | null } = {}) {
           </p>
           <ProviderKeyForm
             onSaved={() => {
-              setByokMode(true);
-              window.location.reload();
+              // Reload only when the flag actually persisted. If storage is
+              // blocked the flag lives in memory, and reloading would wipe it
+              // and drop the user right back on this screen; switch in place
+              // instead so BYOK still works for the session.
+              if (setByokMode(true)) window.location.reload();
+              else notifyCommunityAuth();
             }}
           />
         </div>

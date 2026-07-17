@@ -133,7 +133,9 @@ export function ReviewActionBar({
         contractType,
         trackedChanges: true,
       });
-      downloadDocx(base64, filename);
+      if (!downloadDocx(base64, filename)) {
+        setError("Could not start the download in this version of Word.");
+      }
     } catch (e) {
       setError(errorMessage(e));
     } finally {

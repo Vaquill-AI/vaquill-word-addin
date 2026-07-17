@@ -157,7 +157,11 @@ export async function insertPassageAtCursor(heading: string, text: string): Prom
         doc.changeTrackingMode = Word.ChangeTrackingMode.trackAll;
         await context.sync();
         const head = anchor.insertParagraph(heading, Word.InsertLocation.after);
-        head.styleBuiltIn = Word.BuiltInStyleName.heading3;
+        // Bold, NOT Word's Heading 3 style: a real heading gets a collapse
+        // caret, joins the Navigation pane, and lands in any table of contents,
+        // so dropping in a statute passage or a library clause would restructure
+        // the lawyer's document's outline as a side effect.
+        head.font.bold = true;
         let cursor: Word.Paragraph = head;
         for (const block of body.length ? body : [text]) {
           cursor = cursor.insertParagraph(block, Word.InsertLocation.after);
@@ -212,10 +216,21 @@ export async function insertHtmlAtCursor(html: string): Promise<void> {
 }
 
 /**
- * Insert a missing clause as a tracked change: a heading plus body paragraph
- * appended to the end of the document. Change-tracking mode is saved and
- * restored around the insert (mirroring redline.ts) so we never leave the
- * document stuck in track-all.
+ * Insert a missing clause (a name plus its body) as a tracked change, on its own
+ * paragraphs immediately after the paragraph the cursor sits in. Change-tracking
+ * mode is saved and restored around the insert (mirroring redline.ts) so we
+ * never leave the document stuck in track-all.
+ *
+ * Two things this deliberately does NOT do, both of which it used to:
+ *  - It does not append at the BODY END. A missing clause accepted from a review
+ *    belongs where the reviewer is working, not after the signature block and
+ *    exhibits, outside the operative agreement.
+ *  - It does not emit an <h2>. A real Word Heading style gets a collapse caret,
+ *    joins the Navigation pane, and lands in any table of contents, so accepting
+ *    one redline silently restructured the contract's outline. The clause name is
+ *    bold text instead.
+ *
+ * Mirrors insertClauseTracked, which already had this right.
  */
 export async function insertClauseFormatted(
   clauseName: string,
@@ -225,24 +240,35 @@ export async function insertClauseFormatted(
   // `tracked` (default) inserts the clause as a reviewable tracked change; pass
   // tracked:false for a clean insert (change tracking forced off for the edit).
   const tracked = opts.tracked ?? true;
-  const html = `<h2>${escapeHtml(clauseName)}</h2><p>${escapeHtml(text)}</p>`;
+  const blocks = clauseBlocks(text);
   return serializeTrackChanges(() => runWord(async (context) => {
     const doc = context.document;
     doc.load("changeTrackingMode");
     await context.sync();
 
-    // Sample the document's base font before inserting so the appended clause
-    // matches it rather than the HTML default.
-    const font = await sampleInsertionFont(context);
+    // Table-aware anchor (never inserts inside a table cell). Resolved BEFORE the
+    // mode flip since it is read-only.
+    const anchor = await resolveAfterAnchor(context);
+
     const priorMode = doc.changeTrackingMode;
     try {
       // Commit the mode flip before inserting so the insert is tracked (or the
       // clean insert is genuinely untracked) rather than racing in one batch.
       doc.changeTrackingMode = tracked ? Word.ChangeTrackingMode.trackAll : Word.ChangeTrackingMode.off;
       await context.sync();
-      const range = doc.body.insertHtml(html, Word.InsertLocation.end);
+
+      const head = anchor.insertParagraph(clauseName, Word.InsertLocation.after);
+      head.font.bold = true;
+      let cursor: Word.Paragraph = head;
+      for (const block of blocks) {
+        cursor = cursor.insertParagraph(block, Word.InsertLocation.after);
+      }
+      head.select();
       await context.sync();
-      await matchInsertedFont(context, range, font);
+      // Only the clause NAME joins the anchor's numbering, so the clause takes
+      // the next number and the contract renumbers natively. The body must stay
+      // out of the list or each body paragraph would take a clause number too.
+      await inheritListNumbering(context, anchor, [head]);
     } finally {
       try {
         doc.changeTrackingMode = priorMode;

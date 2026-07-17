@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { copyPlain } from "@/lib/clipboard";
 import { Button } from "@/ui/primitives";
 import { DownloadIcon, CopyIcon, CheckIcon } from "@/ui/icons";
 import { severityOf, SEVERITY_META } from "@/lib/severity";
@@ -100,23 +101,33 @@ export function IssuesListExport({
   decisionOf: (i: number) => Decision;
 }) {
   const [copied, setCopied] = useState(false);
+  const [note, setNote] = useState<string | null>(null);
   if (redlines.length === 0 && flags.length === 0) return null;
 
   const rows = buildRows(redlines, flags, decisionOf);
 
   function download() {
-    // Prepend a BOM so Excel reads the UTF-8 correctly.
-    const blob = new Blob(["﻿" + toCsv(rows)], { type: "text/csv;charset=utf-8" });
-    downloadBlob(blob, "issues-list.csv");
+    setNote(null);
+    try {
+      // Prepend a BOM so Excel reads the UTF-8 correctly.
+      const blob = new Blob(["﻿" + toCsv(rows)], { type: "text/csv;charset=utf-8" });
+      if (!downloadBlob(blob, "issues-list.csv")) {
+        setNote("Could not start the download in this version of Word. Try Copy as table instead.");
+      }
+    } catch {
+      setNote("Could not build the CSV.");
+    }
   }
 
   async function copyTable() {
-    try {
-      await navigator.clipboard.writeText(toTsv(rows));
+    setNote(null);
+    // copyPlain falls back to execCommand: the async clipboard API is blocked in
+    // some Office hosts, which left this button silently dead.
+    if (await copyPlain(toTsv(rows))) {
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
-    } catch {
-      // Clipboard blocked; the CSV download still works.
+    } else {
+      setNote("Copy was blocked. Use Export CSV instead.");
     }
   }
 
@@ -145,6 +156,11 @@ export function IssuesListExport({
           )}
         </Button>
       </div>
+      {note && (
+        <span className="small" style={{ color: "var(--danger)" }}>
+          {note}
+        </span>
+      )}
     </div>
   );
 }

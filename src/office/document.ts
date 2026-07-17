@@ -1,16 +1,32 @@
 import { OfficeError, runWord } from "./run";
 import { sha256Hex } from "@/lib/hash";
 
-/** Read the whole document body as plain text. Every whole-document read builds
- *  on this, so an extremely large document (Office's single-sync data cap can
- *  make `body.text` fail) surfaces a size-aware hint with a next step. */
+/**
+ * Read the whole document body as plain text, with tracked changes RESOLVED.
+ *
+ * `body.text` returns the document's stored text, which still contains every
+ * pending tracked DELETION alongside its insertion. On a redlined contract that
+ * reads back as the two smeared together mid-word ("cap" + "exculpa" +
+ * "liability" + "te conduct," ...), so every model that reads the document was
+ * being handed unreadable prose, and its quotes/anchors carried the same
+ * garbage. A contract under negotiation is full of tracked changes, so this hit
+ * the normal case, and compounded with each redline applied and not accepted.
+ *
+ * `getReviewedText(current)` returns the text as it would read with all changes
+ * accepted, which is what the user sees and what analysis should reason about.
+ * (`original` would be the all-rejected view.) WordApi 1.4; our manifest floor
+ * is 1.6, so it is always available.
+ *
+ * Every whole-document read builds on this, so an extremely large document
+ * (Office's single-sync data cap) surfaces a size-aware hint with a next step.
+ */
 export async function readDocumentText(): Promise<string> {
   try {
     return await runWord(async (context) => {
       const body = context.document.body;
-      body.load("text");
+      const reviewed = body.getReviewedText(Word.ChangeTrackingVersion.current);
       await context.sync();
-      return body.text;
+      return reviewed.value ?? "";
     });
   } catch (e) {
     const message = (e as Error).message || "Could not read the document.";
@@ -30,13 +46,15 @@ export async function readDocumentFingerprint(): Promise<string> {
   return sha256Hex(await readDocumentText());
 }
 
-/** Read the current selection as plain text, or "" when nothing is selected. */
+/** Read the current selection as plain text, or "" when nothing is selected.
+ *  Revision-resolved for the same reason as readDocumentText: a selection over a
+ *  redlined clause would otherwise carry the struck-out text too. */
 export async function readSelectionText(): Promise<string> {
   return runWord(async (context) => {
     const sel = context.document.getSelection();
-    sel.load("text");
+    const reviewed = sel.getReviewedText(Word.ChangeTrackingVersion.current);
     await context.sync();
-    return sel.text ?? "";
+    return reviewed.value ?? "";
   });
 }
 
@@ -62,11 +80,13 @@ async function readFootnoteText(): Promise<string[]> {
       const notes = context.document.body.footnotes;
       notes.load("items");
       await context.sync();
-      notes.items.forEach((n) => n.body.load("text"));
+      // Revision-resolved, like the body: a redlined footnote would otherwise
+      // read back with its struck-out text interleaved.
+      const reviewed = notes.items.map((n) =>
+        n.body.getReviewedText(Word.ChangeTrackingVersion.current),
+      );
       await context.sync();
-      return notes.items
-        .map((n) => (n.body.text ?? "").trim())
-        .filter((t) => t.length > 0);
+      return reviewed.map((r) => (r.value ?? "").trim()).filter((t) => t.length > 0);
     });
   } catch {
     return [];
@@ -88,9 +108,12 @@ async function readHeaderFooterText(): Promise<string[]> {
         s.getHeader(Word.HeaderFooterType.primary),
         s.getFooter(Word.HeaderFooterType.primary),
       ]);
-      bodies.forEach((b) => b.load("text"));
+      // Revision-resolved, like the body (see readDocumentText).
+      const reviewed = bodies.map((b) =>
+        b.getReviewedText(Word.ChangeTrackingVersion.current),
+      );
       await context.sync();
-      const texts = bodies.map((b) => (b.text ?? "").trim()).filter((t) => t.length > 0);
+      const texts = reviewed.map((r) => (r.value ?? "").trim()).filter((t) => t.length > 0);
       return [...new Set(texts)];
     });
   } catch {
@@ -156,14 +179,32 @@ export async function readStructuredDocumentText(opts: { extras?: boolean } = {}
     );
     const tables = context.document.body.tables;
     tables.load("values");
+    // Cheap probe so a clean document pays nothing for the revision handling
+    // below: only a document that HAS tracked changes needs re-reading.
+    const tracked = context.document.body.getTrackedChanges();
+    tracked.load("items/type");
     await context.sync();
+
+    // `p.text` still contains pending tracked DELETIONS, so on a redlined
+    // document the model reads deleted and inserted words smeared together (see
+    // readDocumentText). Re-read each paragraph revision-resolved when there is
+    // anything to resolve. Indexes line up with paras.items, so in-cell
+    // paragraphs are queued too (skipped below) rather than shifting the map.
+    let reviewed: OfficeExtension.ClientResult<string>[] | null = null;
+    if (tracked.items.length > 0) {
+      reviewed = paras.items.map((p) =>
+        p.getReviewedText(Word.ChangeTrackingVersion.current),
+      );
+      await context.sync();
+    }
 
     const grids = tables.items.map((t) => renderTableGrid(t.values));
     const out: string[] = [];
     let tableIndex = 0;
     let inTable = false;
 
-    for (const p of paras.items) {
+    for (let i = 0; i < paras.items.length; i++) {
+      const p = paras.items[i];
       // `body.paragraphs` (WordApi 1.3+) includes in-cell paragraphs; skip them
       // and render each table once, as a grid, at the point we enter it.
       if (!p.parentTableOrNullObject.isNullObject) {
@@ -176,7 +217,7 @@ export async function readStructuredDocumentText(opts: { extras?: boolean } = {}
         continue;
       }
       inTable = false;
-      const text = (p.text ?? "").trim();
+      const text = (reviewed ? (reviewed[i]?.value ?? "") : (p.text ?? "")).trim();
       if (!text) continue;
       const num = p.listItemOrNullObject.isNullObject
         ? ""

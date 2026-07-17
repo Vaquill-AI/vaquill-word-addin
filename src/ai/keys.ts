@@ -57,20 +57,40 @@ function keyName(suffix: string): string {
   return `${partition()}${PREFIX}.${suffix}`;
 }
 
+/**
+ * Session fallback for when localStorage is unavailable (Office storage
+ * partitioning, an InPrivate / third-party pane, or an enterprise cookie
+ * policy). Without it a swallowed write meant `read` returned null immediately
+ * after `setKey` "succeeded", so the key never took: Save looked like a dead
+ * button and the user could never get past the BYOK screen. Mirrors the
+ * in-memory fallback in lib/prefs.ts and lib/org.ts. Keys still never leave
+ * this device.
+ */
+const memory = new Map<string, string>();
+
 function read(suffix: string): string | null {
+  const k = keyName(suffix);
   try {
-    return localStorage.getItem(keyName(suffix));
+    const v = localStorage.getItem(k);
+    if (v !== null) return v;
   } catch {
-    return null;
+    // storage blocked; fall through to the session fallback
   }
+  return memory.get(k) ?? null;
 }
 
-function write(suffix: string, value: string | null): void {
+/** Returns whether the value was PERSISTED (false = held in memory only, so it
+ *  works for this session but will not survive a reload). */
+function write(suffix: string, value: string | null): boolean {
+  const k = keyName(suffix);
+  if (value === null) memory.delete(k);
+  else memory.set(k, value);
   try {
-    if (value === null) localStorage.removeItem(keyName(suffix));
-    else localStorage.setItem(keyName(suffix), value);
+    if (value === null) localStorage.removeItem(k);
+    else localStorage.setItem(k, value);
+    return true;
   } catch {
-    // localStorage unavailable (private mode / policy); keys just do not persist.
+    return false;
   }
 }
 
@@ -87,8 +107,9 @@ export function getKey(p: ProviderId): string | null {
   return v && v.trim() ? v : null;
 }
 
-export function setKey(p: ProviderId, key: string): void {
-  write(`${p}.key`, key.trim() || null);
+/** Returns whether the key was PERSISTED (false = kept for this session only). */
+export function setKey(p: ProviderId, key: string): boolean {
+  return write(`${p}.key`, key.trim() || null);
 }
 
 export function removeKey(p: ProviderId): void {

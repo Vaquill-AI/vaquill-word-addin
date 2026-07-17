@@ -60,18 +60,34 @@ export function AuthorityView() {
   // itself (Word's writing-assistance surface), not just in this pane.
   const [flagged, setFlagged] = useState(false);
   const [flagBusy, setFlagBusy] = useState(false);
+  const [flagNote, setFlagNote] = useState<string | null>(null);
   const unresolvedCritiques: CritiqueItem[] = state.results
     .filter((r) => r.verdict === "no_match" || r.verdict === "unrecognized")
     .map((r) => ({ text: r.raw, color: "Red" }));
 
   async function toggleFlag() {
     setFlagBusy(true);
+    setFlagNote(null);
     try {
       if (flagged) {
         await clearCritiques();
         setFlagged(false);
       } else {
-        await paintCritiques(unresolvedCritiques);
+        // paintCritiques is best-effort and can NEVER throw (it swallows per-item
+        // failures and ends in .catch(() => 0)), so its count is the only signal
+        // that anything was actually painted. Flipping to "flagged" blind claimed
+        // N flags were in the document when there could be zero: annotations need
+        // WordApi 1.7+, and a clause edited since the scan will not be found.
+        const painted = await paintCritiques(unresolvedCritiques);
+        if (painted === 0) {
+          setFlagNote("Could not flag these in this version of Word.");
+          return;
+        }
+        if (painted < unresolvedCritiques.length) {
+          setFlagNote(
+            `Flagged ${painted} of ${unresolvedCritiques.length}. The rest could not be located in the document.`,
+          );
+        }
         setFlagged(true);
       }
     } finally {
@@ -238,6 +254,7 @@ export function AuthorityView() {
               </Button>
             )}
           </div>
+          {flagNote && <Banner tone="warn">{flagNote}</Banner>}
           {verifiedWithNames.length > 0 && !toaNote && (
             <span className="small muted">
               Inserts at your cursor. Place the cursor where you want the table (e.g. front matter)

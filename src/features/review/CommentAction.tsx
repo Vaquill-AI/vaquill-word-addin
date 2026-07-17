@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { copyPlain } from "@/lib/clipboard";
 import { Banner, Button, IconButton } from "@/ui/primitives";
 import { CheckIcon, CopyIcon, XIcon } from "@/ui/icons";
 import { insertCommentOnSelection } from "@/office/selection";
@@ -166,12 +167,11 @@ export function CommentAction({
 
   async function copyDraft() {
     if (!draft) return;
-    try {
-      await navigator.clipboard.writeText(draft.text);
+    if (await copyPlain(draft.text)) {
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
-    } catch {
-      setError("Could not copy to the clipboard.");
+    } else {
+      setError("Copy was blocked. Select the text and use Ctrl+C.");
     }
   }
 

@@ -34,14 +34,35 @@ interface Recognition {
 }
 type RecognitionCtor = new () => Recognition;
 
-/** Turn a Web Speech error code into a short, human message. The common one in
- *  the Word desktop task pane is a blocked mic (`not-allowed`/`service-not-
- *  allowed`): the webview exposes the API but denies audio capture. */
+/** True when the pane is running in Word on the web. */
+function isOfficeWeb(): boolean {
+  try {
+    return Office?.context?.platform === Office.PlatformType.OfficeOnline;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Turn a Web Speech error code into a short, human message.
+ *
+ * `not-allowed` / `service-not-allowed` is NOT (usually) the user denying a
+ * prompt. Office embeds the task pane in an iframe whose permissions policy does
+ * not grant the add-in microphone access, so the API is blocked at the policy
+ * level, with no prompt and often nothing the user can do. Word on the web is
+ * explicit about it in the console ("Permissions policy violation"), and it does
+ * the same to the Clipboard and Geolocation APIs.
+ *
+ * So this must never advise "it works in Word on the web": that was hardcoded,
+ * and it told people already IN Word on the web to go to Word on the web.
+ */
 function messageForError(code: string | undefined): string {
   switch (code) {
     case "not-allowed":
     case "service-not-allowed":
-      return "Microphone access is blocked here, so dictation can't start. It works in Word on the web.";
+      return isOfficeWeb()
+        ? "Word is not granting the microphone to add-ins in this pane. If your browser shows a blocked-microphone icon in the address bar, allow it and reload; otherwise dictation cannot run here."
+        : "Microphone access is blocked in this pane, so dictation can't start.";
     case "audio-capture":
       return "No microphone was found.";
     case "no-speech":

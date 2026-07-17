@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { copyPlain } from "@/lib/clipboard";
 import { AutoTextarea } from "@/ui/AutoTextarea";
 import { ViewHeader } from "@/ui/ViewHeader";
 import { Button, Banner, Spinner, Badge, IconButton, Field, LiveRegion } from "@/ui/primitives";
@@ -234,12 +235,8 @@ export function ChangesView() {
   }
 
   async function copyReply() {
-    try {
-      await navigator.clipboard.writeText(draftText);
-      setActionNote("Reply copied.");
-    } catch {
-      setDraftError("Could not copy.");
-    }
+    if (await copyPlain(draftText)) setActionNote("Reply copied.");
+    else setDraftError("Copy was blocked. Select the text and use Ctrl+C.");
   }
 
   // After a resolve reloads the list, land focus on the next actionable change.
@@ -278,12 +275,18 @@ export function ChangesView() {
     }
   }
 
-  async function resolveAt(index: number, action: "accept" | "reject") {
+  async function resolveAt(
+    index: number,
+    action: "accept" | "reject",
+    expected: { text: string; author?: string },
+  ) {
     setBusy({ index, action });
     setActionError(null);
     setActionNote(null);
     try {
-      const ok = await resolveTrackedChangeAt(index, action);
+      // Pass the clicked row's identity: the index can have shifted since the
+      // list was read, and resolving the wrong change is worse than refusing.
+      const ok = await resolveTrackedChangeAt(index, action, expected);
       if (!ok) setActionError("Could not locate that change (it may have already been resolved).");
       focusIdxRef.current = index;
       await reload();
@@ -539,7 +542,7 @@ export function ChangesView() {
                         variant="primary"
                         size="sm"
                         data-tc-accept={i}
-                        onClick={() => resolveAt(i, "accept")}
+                        onClick={() => resolveAt(i, "accept", { text: c.text, author: c.author })}
                         loading={busy?.index === i && busy.action === "accept"}
                         disabled={anyBusy && busy?.index !== i}
                       >
@@ -548,7 +551,7 @@ export function ChangesView() {
                       <Button
                         variant="default"
                         size="sm"
-                        onClick={() => resolveAt(i, "reject")}
+                        onClick={() => resolveAt(i, "reject", { text: c.text, author: c.author })}
                         loading={busy?.index === i && busy.action === "reject"}
                         disabled={anyBusy && busy?.index !== i}
                         aria-label="Reject"

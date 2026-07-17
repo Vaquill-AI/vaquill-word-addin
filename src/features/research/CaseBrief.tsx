@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { copyPlain } from "@/lib/clipboard";
 import { Banner, Button, Field, IconButton } from "@/ui/primitives";
 import { CheckIcon, CopyIcon } from "@/ui/icons";
 import { Markdown } from "@/features/assistant/markdown";
@@ -93,8 +94,13 @@ export function CaseBrief() {
     setInserting(true);
     setNote(null);
     try {
-      const heading = `<h3>${escapeForHeading(caseTitle(match))} — Case Brief</h3>`;
-      await insertHtmlAtCursor(heading + markdownToSafeHtml(brief));
+      // Bold paragraphs, not Word Heading styles: a brief is reference matter
+      // dropped into the lawyer's own document, so it must not join that
+      // document's outline (collapse caret, Navigation pane, table of contents).
+      const heading = `<p><strong>${escapeForHeading(caseTitle(match))} — Case Brief</strong></p>`;
+      await insertHtmlAtCursor(
+        heading + markdownToSafeHtml(brief, { headings: "bold", lists: "plain" }),
+      );
       setInserted(true);
     } catch (e) {
       setNote(errorMessage(e));
@@ -105,12 +111,11 @@ export function CaseBrief() {
 
   async function copy(match: CaseMatch, brief: string) {
     setNote(null);
-    try {
-      await navigator.clipboard.writeText(`${caseTitle(match)} — Case Brief\n\n${brief}`);
+    if (await copyPlain(`${caseTitle(match)} — Case Brief\n\n${brief}`)) {
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
-    } catch {
-      setNote("Could not copy to the clipboard.");
+    } else {
+      setNote("Copy was blocked. Select the text and use Ctrl+C.");
     }
   }
 

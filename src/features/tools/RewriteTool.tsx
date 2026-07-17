@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { copyPlain } from "@/lib/clipboard";
 import { AutoTextarea } from "@/ui/AutoTextarea";
 import { Button, Banner, Badge, SegmentedControl, IconButton } from "@/ui/primitives";
 import { CheckIcon, CopyIcon } from "@/ui/icons";
@@ -57,12 +58,11 @@ export function RewriteTool({ clauseText }: { clauseText: string }) {
 
   async function copy() {
     setCopyNote(null);
-    try {
-      await navigator.clipboard.writeText(result?.rewritten ?? "");
+    if (await copyPlain(result?.rewritten ?? "")) {
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
-    } catch {
-      setCopyNote("Could not copy to the clipboard.");
+    } else {
+      setCopyNote("Copy was blocked. Select the text and use Ctrl+C.");
     }
   }
 

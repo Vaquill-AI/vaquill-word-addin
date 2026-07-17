@@ -62,6 +62,12 @@ export function SendReadyView() {
   const [state, setState] = useState<State>({ status: "scanning" });
   const [busy, setBusy] = useState<null | "changes" | "comments">(null);
   const [note, setNote] = useState<string | null>(null);
+  // Accept-all and Remove-all destroy work irreversibly from one click (every
+  // tracked change flattened, every comment thread deleted, including the
+  // counterparty's). Clean copy gates the same two operations behind a confirm;
+  // this one did not. `confirmKey` is the pending destructive action.
+  const [confirmKey, setConfirmKey] = useState<"changes" | "comments" | null>(null);
+  const [done, setDone] = useState<string | null>(null);
   // Sign-off is the final send step, so it lives here rather than as its own
   // sub-tab: the row opens the governance view inline.
   const [showSignoff, setShowSignoff] = useState(false);
@@ -102,8 +108,12 @@ export function SendReadyView() {
   async function acceptChanges() {
     setBusy("changes");
     setNote(null);
+    setDone(null);
     try {
-      await acceptAllTrackedChanges();
+      const n = await acceptAllTrackedChanges();
+      setConfirmKey(null);
+      // Say what happened and that it is reversible, like Clean copy does.
+      setDone(`Accepted ${n} tracked change${n === 1 ? "" : "s"}. Word's Undo (Ctrl+Z) reverses it.`);
       await scan();
     } catch (e) {
       setNote(errorMessage(e));
@@ -115,8 +125,11 @@ export function SendReadyView() {
   async function removeComments() {
     setBusy("comments");
     setNote(null);
+    setDone(null);
     try {
-      await deleteAllComments();
+      const n = await deleteAllComments();
+      setConfirmKey(null);
+      setDone(`Removed ${n} comment${n === 1 ? "" : "s"}. Word's Undo (Ctrl+Z) reverses it.`);
       await scan();
     } catch (e) {
       setNote(errorMessage(e));
@@ -210,6 +223,19 @@ export function SendReadyView() {
       )}
 
       {note && <Banner tone="danger">{note}</Banner>}
+      {done && <Banner tone="info">{done}</Banner>}
+      {confirmKey === "changes" && (
+        <Banner tone="warn">
+          This flattens every tracked change in the document, including the counterparty's. Word's
+          Undo (Ctrl+Z) reverses it.
+        </Banner>
+      )}
+      {confirmKey === "comments" && (
+        <Banner tone="warn">
+          This deletes every comment thread in the document, including the counterparty's and any
+          internal notes you have not actioned. Word's Undo (Ctrl+Z) reverses it.
+        </Banner>
+      )}
 
       <div className="stack sendready-list" data-tour="sr-checklist">
         <Row
@@ -223,9 +249,20 @@ export function SendReadyView() {
           }
           action={
             s.trackedChanges > 0 ? (
-              <Button size="sm" variant="default" loading={busy === "changes"} disabled={!!busy} onClick={() => void acceptChanges()}>
-                Accept all
-              </Button>
+              confirmKey === "changes" ? (
+                <div className="row" style={{ gap: 6 }}>
+                  <Button size="sm" variant="danger" loading={busy === "changes"} disabled={!!busy} onClick={() => void acceptChanges()}>
+                    Confirm
+                  </Button>
+                  <Button size="sm" variant="ghost" disabled={!!busy} onClick={() => setConfirmKey(null)}>
+                    Cancel
+                  </Button>
+                </div>
+              ) : (
+                <Button size="sm" variant="default" disabled={!!busy} onClick={() => setConfirmKey("changes")}>
+                  Accept all
+                </Button>
+              )
             ) : null
           }
         />
@@ -240,9 +277,20 @@ export function SendReadyView() {
           }
           action={
             s.comments > 0 ? (
-              <Button size="sm" variant="default" loading={busy === "comments"} disabled={!!busy} onClick={() => void removeComments()}>
-                Remove all
-              </Button>
+              confirmKey === "comments" ? (
+                <div className="row" style={{ gap: 6 }}>
+                  <Button size="sm" variant="danger" loading={busy === "comments"} disabled={!!busy} onClick={() => void removeComments()}>
+                    Confirm
+                  </Button>
+                  <Button size="sm" variant="ghost" disabled={!!busy} onClick={() => setConfirmKey(null)}>
+                    Cancel
+                  </Button>
+                </div>
+              ) : (
+                <Button size="sm" variant="default" disabled={!!busy} onClick={() => setConfirmKey("comments")}>
+                  Remove all
+                </Button>
+              )
             ) : null
           }
         />

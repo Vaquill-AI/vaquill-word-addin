@@ -14,12 +14,21 @@
  */
 const BYOK_FLAG = "vaquill.byokMode";
 
+/**
+ * Session fallback for a pane whose localStorage is blocked (Office storage
+ * partitioning, InPrivate, enterprise cookie policy). Without it, choosing BYOK
+ * silently failed to stick and the user bounced straight back to the login
+ * screen with no way through.
+ */
+let byokMemory = false;
+
 function byokFlag(): boolean {
   try {
-    return localStorage.getItem(BYOK_FLAG) === "1";
+    if (localStorage.getItem(BYOK_FLAG) === "1") return true;
   } catch {
-    return false;
+    // storage blocked; fall through to the session fallback
   }
+  return byokMemory;
 }
 
 /** True only for the open-source community build (which has no hosted login). */
@@ -33,14 +42,22 @@ export function isCommunity(): boolean {
   return isBuildCommunity() || byokFlag();
 }
 
-/** Turn runtime BYOK mode on or off in the hosted build. The community build is
- *  always community regardless. Callers reload the pane after changing this so
- *  the app re-boots cleanly into the chosen mode. */
-export function setByokMode(on: boolean): void {
+/**
+ * Turn runtime BYOK mode on or off in the hosted build. The community build is
+ * always community regardless.
+ *
+ * Returns whether the flag was PERSISTED. Callers normally reload the pane so
+ * the app re-boots cleanly into the chosen mode, but they MUST NOT reload when
+ * this returns false: the flag is then only in memory, and a reload would wipe
+ * it and bounce the user back to where they started.
+ */
+export function setByokMode(on: boolean): boolean {
+  byokMemory = on;
   try {
     if (on) localStorage.setItem(BYOK_FLAG, "1");
     else localStorage.removeItem(BYOK_FLAG);
+    return true;
   } catch {
-    // localStorage unavailable; BYOK mode just will not persist.
+    return false;
   }
 }

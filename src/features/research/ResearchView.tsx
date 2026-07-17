@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { copyPlain } from "@/lib/clipboard";
 import { ViewHeader } from "@/ui/ViewHeader";
 import type { ReactNode } from "react";
 import { Badge, Banner, Button, Field, SegmentedControl, Spinner, IconButton } from "@/ui/primitives";
@@ -301,12 +302,11 @@ function StatuteReader({ result, onBack }: { result: StatuteResult; onBack: () =
   async function copy() {
     if (!text) return;
     setNote(null);
-    try {
-      await navigator.clipboard.writeText(`${label}\n\n${text}`);
+    if (await copyPlain(`${label}\n\n${text}`)) {
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
-    } catch {
-      setNote("Could not copy to the clipboard.");
+    } else {
+      setNote("Copy was blocked. Select the text and use Ctrl+C.");
     }
   }
 

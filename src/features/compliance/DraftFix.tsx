@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { copyPlain } from "@/lib/clipboard";
 import { Banner, Button, IconButton, LiveRegion, Spinner } from "@/ui/primitives";
 import { CheckIcon, CopyIcon } from "@/ui/icons";
 import type { ComplianceRequirement } from "@/api/clause-tools";
@@ -21,13 +22,12 @@ export function DraftFix({ req }: { req: ComplianceRequirement }) {
   const [copied, setCopied] = useState(false);
 
   async function copy(text: string) {
-    try {
-      await navigator.clipboard.writeText(text);
+    // copyPlain falls back to execCommand when the async clipboard API is
+    // blocked, so this succeeds in hosts where the bare call did nothing. Only
+    // show the tick on a real copy: the text stays on screen for a manual copy.
+    if (await copyPlain(text)) {
       setCopied(true);
       window.setTimeout(() => setCopied(false), 2000);
-    } catch {
-      // Clipboard can be blocked by the host; the visible text is still there
-      // for a manual copy, so fail silently rather than alarm the user.
     }
   }
 

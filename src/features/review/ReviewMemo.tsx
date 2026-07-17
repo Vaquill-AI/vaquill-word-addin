@@ -112,20 +112,27 @@ function natureOf(r: RedlineSuggestion): "substantive" | "housekeeping" {
   return r.isDealBreaker || severityOf(r) === "high" ? "substantive" : "housekeeping";
 }
 
-/** Jump to the item's clause: bookmark anchor first, verbatim search fallback. */
-async function jumpToItem(item: MemoItem): Promise<void> {
+/**
+ * Jump to the item's clause: bookmark anchor first, verbatim search fallback.
+ * Returns whether it actually landed, so the caller can say so rather than the
+ * footnote reading as a dead click (routine once the clause has been edited
+ * since the review ran: the bookmark is gone and the verbatim search misses).
+ */
+async function jumpToItem(item: MemoItem): Promise<boolean> {
   const loc = item.locate;
-  if (!loc) return;
+  if (!loc) return false;
   try {
     if (
       loc.bookmarkIndex !== undefined &&
       (await goToBookmark(`Vaquill_clause_${loc.bookmarkIndex + 1}`))
     ) {
-      return;
+      return true;
     }
-    if (loc.text) await selectClauseInDocument(loc.text);
+    if (loc.text) return await selectClauseInDocument(loc.text);
+    return false;
   } catch {
     // Best-effort navigation: a failure to locate must not disrupt the memo.
+    return false;
   }
 }
 
@@ -242,7 +249,9 @@ export function ReviewMemo({
         contractType: result.contractType ?? "other",
         trackedChanges: true,
       });
-      downloadDocx(base64, filename);
+      if (!downloadDocx(base64, filename)) {
+        setNote("Could not start the download in this version of Word.");
+      }
     } catch (e) {
       setNote(errorMessage(e));
     } finally {
@@ -307,7 +316,15 @@ export function ReviewMemo({
                           type="button"
                           className="review-memo__footnote"
                           aria-label="Jump to clause in document"
-                          onClick={() => void jumpToItem(item)}
+                          onClick={() => {
+                            void jumpToItem(item).then((found) => {
+                              if (!found) {
+                                setNote(
+                                  "Could not find that clause in the document (it may have been edited since the review ran).",
+                                );
+                              }
+                            });
+                          }}
                         >
                           {item.footnote}
                         </button>

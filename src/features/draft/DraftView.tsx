@@ -1,4 +1,5 @@
 import { useCallback, useRef, useState } from "react";
+import { copyPlain } from "@/lib/clipboard";
 import { AutoTextarea } from "@/ui/AutoTextarea";
 import { ViewHeader } from "@/ui/ViewHeader";
 import { Button, Banner, Badge, Field, Spinner, SegmentedControl, IconButton } from "@/ui/primitives";
@@ -194,12 +195,11 @@ export function DraftView() {
   async function copy() {
     if (!result) return;
     setCopyNote(null);
-    try {
-      await navigator.clipboard.writeText(result.fullText);
+    if (await copyPlain(result.fullText)) {
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
-    } catch {
-      setCopyNote("Could not copy to the clipboard.");
+    } else {
+      setCopyNote("Copy was blocked. Select the text and use Ctrl+C.");
     }
   }
 

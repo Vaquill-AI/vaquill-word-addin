@@ -56,32 +56,45 @@ export async function insertDocxAtCursorOrDownload(
  * the DOM for the click to register in some hosts, and in Edge WebView2 a
  * synchronous revokeObjectURL after click can abort the download stream, so
  * cleanup is deferred to the next tick.
+ *
+ * Returns whether the download could be STARTED. Note the honest limit: a host
+ * that simply ignores a programmatic `<a download>` click (WKWebView on macOS,
+ * or WebView2 with no DownloadStarting handler wired) is indistinguishable from
+ * success, so `true` means "we asked", not "the file landed". Callers must at
+ * least surface `false` rather than leaving a dead button.
  */
-export function downloadBlob(blob: Blob, filename: string): void {
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  setTimeout(() => {
-    try {
-      URL.revokeObjectURL(url);
-    } catch {
-      // Nothing to recover: revoking is best-effort cleanup.
-    }
-    try {
-      a.remove();
-    } catch {
-      // Anchor may already be detached; ignore.
-    }
-  }, 0);
+export function downloadBlob(blob: Blob, filename: string): boolean {
+  try {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => {
+      try {
+        URL.revokeObjectURL(url);
+      } catch {
+        // Nothing to recover: revoking is best-effort cleanup.
+      }
+      try {
+        a.remove();
+      } catch {
+        // Anchor may already be detached; ignore.
+      }
+    }, 0);
+    return true;
+  } catch {
+    // Blob / object-URL / DOM access refused by the host.
+    return false;
+  }
 }
 
 /** Trigger a browser download of the returned .docx as a fallback to inserting it. */
-export function downloadDocx(base64: string, filename: string): void {
+/** Returns whether the download could be started (see downloadBlob). */
+export function downloadDocx(base64: string, filename: string): boolean {
   const bytes = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
-  downloadBlob(
+  return downloadBlob(
     new Blob([bytes], {
       type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
     }),

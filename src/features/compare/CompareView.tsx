@@ -71,7 +71,9 @@ export function CompareView() {
     setNote(null);
     try {
       const { base64, filename } = await fetchRedline();
-      downloadDocx(base64, filename);
+      if (!downloadDocx(base64, filename)) {
+        setNote("Could not start the download in this version of Word.");
+      }
     } catch (e) {
       setNote(errorMessage(e));
     } finally {

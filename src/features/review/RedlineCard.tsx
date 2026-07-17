@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { copyPlain } from "@/lib/clipboard";
 import { AutoTextarea } from "@/ui/AutoTextarea";
 import { Badge, Button, IconButton } from "@/ui/primitives";
 import { OverflowMenu, type OverflowMenuItem } from "@/ui/OverflowMenu";
@@ -313,12 +314,11 @@ export function RedlineCard({
   const accept = () => applyWith(true);
 
   async function copyProposed() {
-    try {
-      await navigator.clipboard.writeText(proposed);
+    if (await copyPlain(proposed)) {
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
-    } catch {
-      setNote("Could not copy.");
+    } else {
+      setNote("Copy was blocked. Select the text and use Ctrl+C.");
     }
   }
 

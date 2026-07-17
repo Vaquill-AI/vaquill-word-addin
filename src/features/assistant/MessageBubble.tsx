@@ -57,7 +57,7 @@ function AssistantActions({ message }: { message: AssistantMessage }) {
     // blocked in the Office WebView) and reports whether it actually landed, so
     // the tick only shows on a real copy and a blocked copy says so.
     const plain = stripMarkdown(message.content);
-    const html = markdownToSafeHtml(message.content, { headings: "bold" });
+    const html = markdownToSafeHtml(message.content, { headings: "bold", lists: "plain" });
     if (await copyRich(html, plain)) {
       setCopied(true);
       setTimeout(() => setCopied(false), 1400);
@@ -74,7 +74,7 @@ function AssistantActions({ message }: { message: AssistantMessage }) {
       // BOLD PARAGRAPHS, not Word Heading styles: a heading would get a collapse
       // caret, join the Navigation pane, and appear in a table of contents,
       // restructuring the lawyer's document just to paste an answer into it.
-      await insertHtmlAtCursor(markdownToSafeHtml(message.content, { headings: "bold" }));
+      await insertHtmlAtCursor(markdownToSafeHtml(message.content, { headings: "bold", lists: "plain" }));
       setNote("Inserted as tracked change");
       setTimeout(() => setNote(null), 1800);
     } catch {

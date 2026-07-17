@@ -55,27 +55,36 @@ export async function readDocumentChanges(): Promise<DocChanges> {
     await context.sync();
 
     return {
-      trackedChanges: changes.items.map((c) => ({
+      trackedChanges: (changes.items ?? []).map((c) => ({
         author: c.author,
         type: c.type,
         text: c.text,
         createdAt: toIso((c as unknown as { date?: unknown }).date),
       })),
-      comments: comments.items.map((c) => {
+      comments: (comments.items ?? []).map((c) => {
         const author = c.authorName;
         const content = c.content;
-        const replies = c.replies.items
-          .map((r) => ({
-            author: r.authorName,
-            text: r.content,
-            createdAt: toIso((r as unknown as { creationDate?: unknown }).creationDate),
-          }))
-          // Word surfaces a programmatically-inserted comment's OWN text back as
-          // a phantom self-reply (there is no such reply in the document), which
-          // showed the comment body duplicated under itself. Drop any reply that
-          // exactly duplicates the parent comment (same author + same text); a
-          // genuine reply repeating the full comment verbatim does not happen.
-          .filter((r) => !(r.author === author && (r.text ?? "").trim() === (content ?? "").trim()));
+        // Reading the reply collection is fragile: on some hosts a comment whose
+        // `replies` navigation was not materialized dereferences an internal null
+        // inside Office.js and throws, which previously blanked the entire Changes
+        // tab. Read it best-effort and fall back to no replies.
+        let replies: DocCommentReply[] = [];
+        try {
+          replies = (c.replies?.items ?? [])
+            .map((r) => ({
+              author: r.authorName,
+              text: r.content,
+              createdAt: toIso((r as unknown as { creationDate?: unknown }).creationDate),
+            }))
+            // Word surfaces a programmatically-inserted comment's OWN text back as
+            // a phantom self-reply (there is no such reply in the document), which
+            // showed the comment body duplicated under itself. Drop any reply that
+            // exactly duplicates the parent comment (same author + same text); a
+            // genuine reply repeating the full comment verbatim does not happen.
+            .filter((r) => !(r.author === author && (r.text ?? "").trim() === (content ?? "").trim()));
+        } catch {
+          replies = [];
+        }
         return {
           id: c.id,
           author,
@@ -95,19 +104,36 @@ export async function readDocumentChanges(): Promise<DocChanges> {
  * share identical text (e.g. the counterparty deleted the same word twice):
  * a text match would always hit the FIRST occurrence and resolve the wrong one.
  * The index is the change's position in the list read by readDocumentChanges,
- * which enumerates getTrackedChanges() in the same document order. Returns false
- * when the index is out of range (the list changed under us). WordApi 1.6.
+ * which enumerates getTrackedChanges() in the same document order. WordApi 1.6.
+ *
+ * `expected` is the identity of the row the user actually clicked, and the index
+ * alone is NOT safe without it: if anything resolved a change since the list was
+ * read (the user accepted one from Word's own Review ribbon, a co-author edit
+ * synced), every later index shifts by one and this would accept/reject a
+ * DIFFERENT change while reporting success. An out-of-range check cannot catch
+ * that, because a shifted index is still in range. So confirm the change sitting
+ * at `index` is still the one that was clicked, and bail out otherwise: the
+ * caller already reports that it could not locate the change and reloads, which
+ * re-syncs the list.
+ *
+ * Returns false when the index is out of range OR the change there is not the
+ * expected one.
  */
 export async function resolveTrackedChangeAt(
   index: number,
   action: "accept" | "reject",
+  expected?: { text: string; author?: string },
 ): Promise<boolean> {
   return runWord(async (context) => {
     const changes = context.document.body.getTrackedChanges();
-    changes.load("text");
+    changes.load("text,author");
     await context.sync();
     const match = changes.items[index];
     if (!match) return false;
+    if (expected) {
+      if (match.text !== expected.text) return false;
+      if (expected.author !== undefined && match.author !== expected.author) return false;
+    }
     if (action === "accept") match.accept();
     else match.reject();
     await context.sync();

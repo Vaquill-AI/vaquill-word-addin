@@ -78,7 +78,24 @@ export async function applyVerifiedRedline(
     // choose the occurrence to redline, so refuse rather than silently editing
     // the first match. This guard runs before we touch changeTrackingMode, so
     // there is no mode to restore on this path.
-    if (items.length === 0) throw new AnchorNotFoundError(r.clauseName);
+    if (items.length === 0) {
+      // We now read the document revision-resolved (see office/document.ts), so
+      // an anchor is the CLEAN text of the clause. Word's search matches the
+      // marked-up text, so a clause still carrying unaccepted tracked changes
+      // will not match its own clean anchor. That is the common way this fires
+      // right after applying a redline, and the fix is one click in Word, so say
+      // that rather than a bare "not found".
+      const pending = doc.body.getTrackedChanges();
+      pending.load("items/type");
+      await context.sync();
+      if (pending.items.length > 0) {
+        throw new OfficeError(
+          `Could not locate "${r.clauseName}" to redline. The document still has unaccepted tracked changes, and a clause cannot be matched while its edits are pending. Accept or reject them (Word: Review > Accept), then run this again.`,
+          "anchor_not_found_tracked",
+        );
+      }
+      throw new AnchorNotFoundError(r.clauseName);
+    }
     if (items.length > 1) {
       throw new OfficeError(
         "The clause text appears multiple times; apply this change manually to the correct spot.",

@@ -176,6 +176,14 @@ export interface MarkdownHtmlOptions {
    * show up in a table of contents, which silently restructures their file.
    */
   headings?: "heading" | "bold";
+  /**
+   * "native" emits <ul>/<ol>, which Word turns into real list items (List
+   * Paragraph style, folded into the surrounding numbering scheme). "plain"
+   * emits paragraphs with a literal marker. Same reasoning as `headings`: use
+   * "plain" for reference text dropped into someone else's document, where a
+   * native list can disturb the document's own numbering.
+   */
+  lists?: "native" | "plain";
 }
 
 /**
@@ -185,6 +193,7 @@ export interface MarkdownHtmlOptions {
  */
 export function markdownToSafeHtml(md: string, opts: MarkdownHtmlOptions = {}): string {
   const headingMode = opts.headings ?? "heading";
+  const listMode = opts.lists ?? "native";
   const lines = md.replace(/\r\n/g, "\n").split("\n");
   const out: string[] = [];
   let listType: "ul" | "ol" | null = null;
@@ -222,16 +231,22 @@ export function markdownToSafeHtml(md: string, opts: MarkdownHtmlOptions = {}): 
       continue;
     }
     const bullet = line.match(/^[-*]\s+(.*)$/);
-    const numbered = line.match(/^\d+\.\s+(.*)$/);
+    const numbered = line.match(/^(\d+)\.\s+(.*)$/);
     if (bullet || numbered) {
       flushPara();
+      const itemText = inlineMarkdown(escapeHtml(bullet ? bullet[1] : numbered![2]));
+      if (listMode === "plain") {
+        closeList();
+        out.push(`<p>${bullet ? "&#8226; " : `${numbered![1]}. `}${itemText}</p>`);
+        continue;
+      }
       const t = bullet ? "ul" : "ol";
       if (listType !== t) {
         closeList();
         out.push(`<${t}>`);
         listType = t;
       }
-      out.push(`<li>${inlineMarkdown(escapeHtml((bullet ?? numbered)![1]))}</li>`);
+      out.push(`<li>${itemText}</li>`);
       continue;
     }
     para.push(line);

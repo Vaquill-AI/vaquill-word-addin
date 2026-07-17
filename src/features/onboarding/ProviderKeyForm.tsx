@@ -6,6 +6,7 @@ import {
   getActiveProvider,
   getKey,
   getModel,
+  isConfigured,
   setActiveProvider,
   setKey,
   setModel,
@@ -99,6 +100,16 @@ export function ProviderKeyForm({ onSaved }: { onSaved?: () => void }) {
     setKey(provider, key.trim());
     setModel(provider, model.trim());
     setActiveProvider(provider);
+    // Never report success blind: if the key did not actually take (storage
+    // blocked AND the session fallback somehow empty), advancing would drop the
+    // user on a screen that immediately bounces back with no explanation.
+    if (!isConfigured()) {
+      setStatus({
+        kind: "error",
+        message: "Could not save the key on this device. Check that browser storage is not blocked.",
+      });
+      return;
+    }
     onSaved?.();
   }
 
