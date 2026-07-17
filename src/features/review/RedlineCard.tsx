@@ -460,6 +460,18 @@ export function RedlineCard({
         <span className="small muted">
           {isEdited ? "Applied (edited)" : improved ? "Applied (stronger fix)" : "Applied"}
         </span>
+        {/* There is no in-pane Undo for an applied redline, and there must not be
+            a fake one: Office.js exposes no undo API, so "undoing" could only mean
+            writing ANOTHER edit over the first, leaving two stacked tracked
+            changes instead of a clean reversal. The real reversals are native, so
+            point at them (a dismissed card keeps its Restore, because that is
+            pane-only state that never touched the document). */}
+        <span
+          className="small muted"
+          title="Word's Undo (Ctrl+Z) reverses it, or reject the tracked change from Word's Review tab."
+        >
+          Ctrl+Z to undo
+        </span>
         {!isInsertion && (
           <IconButton label="Find in document" onClick={locate}>
             <LocateIcon size={14} />
