@@ -155,7 +155,7 @@ export function CleanCopyView() {
         <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
           <h1 className="view-title">Clean copy</h1>
           <Button variant="ghost" size="sm" onClick={() => void scan()}>
-            Rescan
+            <RefreshIcon size={13} /> Rescan
           </Button>
         </div>
         <Banner tone="success">

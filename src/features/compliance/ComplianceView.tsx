@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { PlusIcon, RefreshIcon } from "@/ui/icons";
 import { ViewHeader } from "@/ui/ViewHeader";
 import { Badge, Banner, Button, Field, Spinner, LiveRegion, SegmentedControl } from "@/ui/primitives";
 import { ElapsedSeconds } from "@/ui/ElapsedSeconds";
@@ -201,7 +202,7 @@ function RegulationMode() {
       <div className="stack">
         <Banner tone="danger">{state.error}</Banner>
         <Button variant="default" size="sm" onClick={reset}>
-          Try again
+          <RefreshIcon size={13} /> Try again
         </Button>
       </div>
     );
@@ -253,7 +254,7 @@ function ComplianceResults({
       <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
         <span className="small muted">{regulationLabel(regulation)}</span>
         <Button variant="ghost" size="sm" onClick={onReset}>
-          New check
+          <PlusIcon size={13} /> New check
         </Button>
       </div>
 

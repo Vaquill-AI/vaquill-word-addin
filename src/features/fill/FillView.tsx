@@ -3,7 +3,7 @@ import { errorMessage } from "@/api/errors";
 import { ViewHeader } from "@/ui/ViewHeader";
 import { Badge, Banner, Button, Spinner } from "@/ui/primitives";
 import { Dropzone } from "@/ui/Dropzone";
-import { CheckIcon } from "@/ui/icons";
+import { CheckIcon, PlusIcon, RefreshIcon } from "@/ui/icons";
 import { applyFills } from "@/office/fill";
 import type { FillItem } from "@/api/fill";
 import { useFill, type FillState } from "./useFill";
@@ -32,7 +32,7 @@ export function FillView() {
         <h1 className="view-title">Fill</h1>
         <Banner tone="danger">{state.error}</Banner>
         <Button variant="default" size="sm" onClick={reset}>
-          Try again
+          <RefreshIcon size={13} /> Try again
         </Button>
       </div>
     );
@@ -138,7 +138,7 @@ function FillReview({
       <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
         <h1 className="view-title">Fill</h1>
         <Button variant="ghost" size="sm" onClick={onReset}>
-          New fill
+          <PlusIcon size={13} /> New fill
         </Button>
       </div>
 

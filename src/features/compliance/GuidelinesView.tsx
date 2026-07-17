@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { PlusIcon } from "@/ui/icons";
 import { AutoTextarea } from "@/ui/AutoTextarea";
 import { Banner, Button, Field, Spinner, LiveRegion } from "@/ui/primitives";
 import { ElapsedSeconds } from "@/ui/ElapsedSeconds";
@@ -130,7 +131,7 @@ function GuidelineResults({
           {results.length} guideline{results.length === 1 ? "" : "s"} checked
         </span>
         <Button variant="ghost" size="sm" onClick={onReset}>
-          New check
+          <PlusIcon size={13} /> New check
         </Button>
       </div>
 

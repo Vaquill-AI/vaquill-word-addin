@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { RefreshIcon } from "@/ui/icons";
 import { Button } from "@/ui/primitives";
 import { listClients, createClientNote, type Client } from "@/api/platform";
 import { errorMessage } from "@/api/errors";
@@ -97,7 +98,7 @@ export function SaveAnswerToNotes({
           Could not load clients. {loadError}
         </span>
         <Button variant="ghost" size="sm" onClick={() => void loadClients()}>
-          Retry
+          <RefreshIcon size={13} /> Retry
         </Button>
         <Button variant="ghost" size="sm" onClick={cancel}>
           Cancel

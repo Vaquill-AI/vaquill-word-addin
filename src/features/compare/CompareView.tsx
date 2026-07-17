@@ -4,7 +4,14 @@ import { isCommunity } from "@/community/edition";
 import { UpgradeGate } from "@/ui/UpgradeGate";
 import { Badge, Banner, Button, Spinner } from "@/ui/primitives";
 import { Dropzone } from "@/ui/Dropzone";
-import { CheckIcon, DownloadIcon, CompareIcon, AlertTriangleIcon } from "@/ui/icons";
+import {
+  CheckIcon,
+  DownloadIcon,
+  CompareIcon,
+  AlertTriangleIcon,
+  PlusIcon,
+  RefreshIcon,
+} from "@/ui/icons";
 import { errorMessage } from "@/api/errors";
 import { downloadDocx, replaceDocumentWithDocx } from "@/office/export";
 import { useAppNav } from "@/app/nav";
@@ -111,7 +118,7 @@ export function CompareView() {
         <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
           <h1 className="view-title">Compare</h1>
           <Button variant="ghost" size="sm" onClick={reset}>
-            New comparison
+            <PlusIcon size={13} /> New comparison
           </Button>
         </div>
 
@@ -290,7 +297,7 @@ export function CompareView() {
         <div className="stack" style={{ gap: 8 }}>
           <Banner tone="danger">{state.error}</Banner>
           <Button variant="ghost" size="sm" onClick={reset} style={{ alignSelf: "flex-start" }}>
-            Try again
+            <RefreshIcon size={13} /> Try again
           </Button>
         </div>
       )}

@@ -4,7 +4,7 @@ import { ViewHeader } from "@/ui/ViewHeader";
 import { Button, Banner, Spinner, LiveRegion } from "@/ui/primitives";
 import { FilterChips, type FilterChipOption } from "@/ui/FilterChips";
 import { DistributionBar, type DistributionSegment } from "@/ui/DistributionBar";
-import { CheckIcon } from "@/ui/icons";
+import { CheckIcon, PlusIcon } from "@/ui/icons";
 import { useAuthorityScan } from "./useAuthorityScan";
 import { getExtractCoverage } from "./extract";
 import { AuthorityItem } from "./AuthorityItem";
@@ -147,7 +147,7 @@ export function AuthorityView() {
         <h1 className="view-title">Authority check</h1>
         {state.status === "done" && (
           <Button variant="ghost" size="sm" onClick={reset}>
-            New check
+            <PlusIcon size={13} /> New check
           </Button>
         )}
       </div>

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { copyPlain } from "@/lib/clipboard";
 import { Banner, Button, IconButton, LiveRegion, Spinner } from "@/ui/primitives";
-import { CheckIcon, CopyIcon } from "@/ui/icons";
+import { CheckIcon, CopyIcon, RefreshIcon } from "@/ui/icons";
 import type { ComplianceRequirement } from "@/api/clause-tools";
 import { useAppNav } from "@/app/nav";
 import { useDraftFix } from "./useDraftFix";
@@ -54,7 +54,7 @@ export function DraftFix({ req }: { req: ComplianceRequirement }) {
         <Banner tone="danger">{state.error}</Banner>
         <div className="row" style={{ gap: 6 }}>
           <Button size="sm" onClick={() => void draft()}>
-            Try again
+            <RefreshIcon size={13} /> Try again
           </Button>
           <Button variant="ghost" size="sm" onClick={reset}>
             Dismiss

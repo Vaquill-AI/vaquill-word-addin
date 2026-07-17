@@ -4,7 +4,7 @@ import { AutoTextarea } from "@/ui/AutoTextarea";
 import { ViewHeader } from "@/ui/ViewHeader";
 import { Button, Banner, Badge, Field, Spinner, SegmentedControl, IconButton } from "@/ui/primitives";
 import { Combobox } from "@/ui/Combobox";
-import { CheckIcon, CopyIcon, FillIcon, ArrowLeftIcon, TermsIcon } from "@/ui/icons";
+import { CheckIcon, CopyIcon, FillIcon, ArrowLeftIcon, TermsIcon, PlusIcon } from "@/ui/icons";
 import { ImproveButton } from "@/ui/ImproveButton";
 import { improveDraftingPrompt } from "@/api/improve-prompt";
 import {
@@ -244,7 +244,7 @@ export function DraftView() {
         <div className="row" style={{ justifyContent: "space-between" }}>
           <h1 className="view-title">Draft</h1>
           <Button variant="ghost" size="sm" onClick={reset}>
-            New draft
+            <PlusIcon size={13} /> New draft
           </Button>
         </div>
 

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { RefreshIcon } from "@/ui/icons";
 import { ViewHeader } from "@/ui/ViewHeader";
 import { Badge, Banner, Button, Spinner } from "@/ui/primitives";
 import { readReviewSnapshot } from "@/office/reviewState";
@@ -146,7 +147,7 @@ export function DealCockpitView() {
       <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
         <h1 className="view-title">Deal cockpit</h1>
         <Button variant="ghost" size="sm" onClick={() => void load()}>
-          Refresh
+          <RefreshIcon size={13} /> Refresh
         </Button>
       </div>
       <p className="small muted" style={{ margin: 0 }} data-tour="cockpit-summary">
