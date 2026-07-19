@@ -20,9 +20,15 @@ const apiBase = import.meta.env.PROD ? "https://api.vaquill.ai" : "http://localh
 // The Vaquill AI web app, for deep-linking back to saved drafts, matters, etc.
 const appBase = import.meta.env.PROD ? "https://app.vaquill.ai" : "http://localhost:3000";
 
+// Build version, injected by Vite (see vite.config.ts `define`). Reported in the
+// anonymous BYOK usage ping so we can see which build is in use.
+declare const __APP_VERSION__: string;
+const appVersion = typeof __APP_VERSION__ === "string" ? __APP_VERSION__ : "0.0.0";
+
 export const config = {
   apiBase,
   appBase,
+  appVersion,
   // Where a new user registers. There is no sign-up inside Word (by design): the
   // login screen sends people here to create an account, then they sign in.
   signupUrl: `${appBase}/auth/signup`,

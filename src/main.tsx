@@ -4,6 +4,7 @@ import { App } from "./App";
 import { isAuthCallback, relayAuthCallback } from "./auth/relay";
 import { initActiveOrg } from "./lib/org";
 import { initReviewPrefs } from "./lib/prefs";
+import { maybePingUsage } from "./lib/usageTelemetry";
 import { assertConfigured } from "./config";
 import { isWordHost } from "./office/run";
 import "./styles/global.css";
@@ -51,6 +52,11 @@ Office.onReady(() => {
     );
     return;
   }
+
+  // Anonymous, once-a-day install ping so we can count unique BYOK users (who
+  // never authenticate). No-op outside the hosted build's BYOK mode, and honors
+  // the user's opt-out. Fire-and-forget; never blocks or affects render.
+  maybePingUsage();
 
   root.render(
     <StrictMode>

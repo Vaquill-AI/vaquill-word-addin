@@ -4,6 +4,12 @@ import { existsSync, readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { resolve } from "node:path";
 
+// App version, injected as __APP_VERSION__ so telemetry/support can report which
+// build is running without importing package.json into the client bundle.
+const pkgVersion = (
+  JSON.parse(readFileSync(resolve(__dirname, "package.json"), "utf8")) as { version?: string }
+).version ?? "0.0.0";
+
 // Local HTTPS for the dev server (Office requires HTTPS, even on localhost).
 // Order: explicit cert paths from env (office-addin-debugging sets these), then
 // the certificate created by `npx office-addin-dev-certs install` (the community
@@ -28,6 +34,9 @@ function devHttps() {
 // Office requires HTTPS in production; local dev uses the office-addin dev certs.
 export default defineConfig({
   plugins: [react()],
+  define: {
+    __APP_VERSION__: JSON.stringify(pkgVersion),
+  },
   resolve: {
     alias: { "@": resolve(__dirname, "src") },
   },

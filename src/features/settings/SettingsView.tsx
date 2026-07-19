@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Badge, Button, Field, Spinner } from "@/ui/primitives";
+import { Badge, Button, Field, Spinner, Toggle } from "@/ui/primitives";
 import { Avatar } from "@/ui/Avatar";
 import { ViewHeader } from "@/ui/ViewHeader";
 import { Combobox } from "@/ui/Combobox";
@@ -19,6 +19,7 @@ import {
 } from "@/lib/prefs";
 import { JURISDICTIONS } from "@/features/review/constants";
 import { isCommunity } from "@/community/edition";
+import { isUsagePingActive, isUsageOptedOut, setUsageOptOut } from "@/lib/usageTelemetry";
 import { UpgradeLink } from "@/ui/UpgradeGate";
 import { AiProvidersCard } from "./AiProvidersCard";
 import { CourtListenerCard } from "./CourtListenerCard";
@@ -29,8 +30,6 @@ import "./settings.css";
 const SUPPORT_URL = "https://www.vaquill.ai/support";
 const PRIVACY_URL = "https://www.vaquill.ai/privacy";
 const TERMS_URL = "https://www.vaquill.ai/terms";
-// Shown for support/debugging. Keep in sync with package.json "version".
-const APP_VERSION = "0.1.0";
 
 /**
  * Account / settings panel. Read-only account context (signed-in user, active
@@ -143,6 +142,8 @@ export function SettingsView({
   const [orgCount, setOrgCount] = useState(0);
   const [usage, setUsage] = useState<UsageState>({ status: "loading" });
   const [prefs, setPrefs] = useState<ReviewPrefs>(getReviewPrefs());
+  // Anonymous BYOK usage-ping opt-out (only relevant in the hosted BYOK build).
+  const [usageOptedOut, setUsageOptedOutState] = useState(() => isUsageOptedOut());
 
   // Keep the form in sync if the prefs store changes elsewhere.
   useEffect(() => subscribeReviewPrefs(setPrefs), []);
@@ -221,6 +222,33 @@ export function SettingsView({
 
       {isCommunity() && <CourtListenerCard />}
 
+      {/* Anonymous usage: shown only when the ping is actually active (the hosted
+          BYOK build). Since BYOK users have no account, an anonymous once-a-day
+          install ping is the only way to count unique users; it is fully
+          disclosed and opt-out here. No documents, keys, or prompts are sent. */}
+      {isUsagePingActive() && (
+        <div className="card settings-card">
+          <h2 className="settings-heading">Privacy</h2>
+          <div className="row" style={{ justifyContent: "space-between", gap: 12, alignItems: "flex-start" }}>
+            <div className="stack" style={{ gap: 2, minWidth: 0 }}>
+              <span className="small">Share anonymous usage</span>
+              <span className="small muted">
+                A once-a-day anonymous ping so we can count how many people use the
+                add-in. No documents, prompts, API keys, or account details, ever.
+              </span>
+            </div>
+            <Toggle
+              checked={!usageOptedOut}
+              onChange={(on) => {
+                setUsageOptOut(!on);
+                setUsageOptedOutState(!on);
+              }}
+              label="Share anonymous usage"
+            />
+          </div>
+        </div>
+      )}
+
       {!isCommunity() && (
         <div className="card settings-card">
           <h2 className="settings-heading">Plan &amp; usage</h2>
@@ -296,7 +324,7 @@ export function SettingsView({
         <a className="settings-footer__link" href={TERMS_URL} target="_blank" rel="noreferrer">
           Terms
         </a>
-        <span className="settings-footer__ver">v{APP_VERSION}</span>
+        <span className="settings-footer__ver">v{config.appVersion}</span>
       </div>
     </div>
   );
