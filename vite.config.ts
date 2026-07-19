@@ -21,9 +21,10 @@ function devHttps() {
   return undefined;
 }
 
-// The add-in ships two HTML entry points served from the same origin:
-//   index.html    the task pane SPA
-//   auth.html     the Supabase PKCE redirect page opened inside the Office dialog
+// The add-in ships three HTML entry points served from the same origin:
+//   index.html      the task pane SPA
+//   auth.html       the Supabase PKCE redirect page opened inside the Office dialog
+//   dictation.html  the microphone dialog (the pane iframe cannot get the mic)
 // Office requires HTTPS in production; local dev uses the office-addin dev certs.
 export default defineConfig({
   plugins: [react()],
@@ -44,6 +45,7 @@ export default defineConfig({
       input: {
         taskpane: resolve(__dirname, "index.html"),
         auth: resolve(__dirname, "auth.html"),
+        dictation: resolve(__dirname, "dictation.html"),
         // preview.html is a local UI harness served by `npm run dev`; it is
         // intentionally excluded from the production build.
       },

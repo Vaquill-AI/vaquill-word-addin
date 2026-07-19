@@ -7,6 +7,7 @@ import { markdownToSafeHtml } from "@/api/research";
 import { copyPlain, copyRich } from "@/lib/clipboard";
 import { stripMarkdown } from "@/lib/strings";
 import { config } from "@/config";
+import { FileTypeIcon } from "@/ui/fileIcons";
 import { Avatar } from "@/ui/Avatar";
 import { getUser } from "@/auth/session";
 import { SaveAnswerToNotes } from "@/features/integration/SaveAnswerToNotes";
@@ -253,6 +254,7 @@ export function MessageBubble({
 
   if (message.role === "user") {
     const me = currentUser();
+    const attachments = message.attachments ?? [];
     return (
       <div className="msg__urow">
         {/* The bubble holds only the question; Copy/Edit sit UNDER it and appear
@@ -260,6 +262,20 @@ export function MessageBubble({
             with controls crowded inside it. */}
         <div className="msg__ustack">
           <div className="msg msg--user">
+            {/* Read-only chips echoing the files this turn was asked with, so the
+                bubble reflects the attachment the composer showed at send time. */}
+            {attachments.length > 0 && (
+              <ul className="msg__attach">
+                {attachments.map((a, i) => (
+                  <li key={i} className="msg__attach-chip">
+                    <FileTypeIcon name={a.name} size={12} />
+                    <span className="msg__attach-name" title={a.name}>
+                      {a.name}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
             <p>{message.content}</p>
           </div>
           {onEdit && <UserActions message={message} onEdit={onEdit} />}

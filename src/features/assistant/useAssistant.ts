@@ -17,6 +17,13 @@ export interface ContextAttachment {
   text: string;
 }
 
+/** Lightweight record of a file attached to a user turn, kept on the message so
+ *  its bubble can show what it was asked with. Only the display name is needed;
+ *  the extracted text is not persisted into the transcript. */
+export interface MessageAttachment {
+  name: string;
+}
+
 // When files are attached they share the request budget with the open document,
 // so a huge attachment can't starve the doc (or vice versa). The doc keeps the
 // larger share since the assistant is primarily answering about it.
@@ -50,6 +57,9 @@ export interface AssistantMessage {
    * token before this is emitted), so persisting + displaying them is safe.
    */
   steps?: string[];
+  /** Files attached to THIS turn (user messages only), so the bubble can show
+   *  the icon + name of what the question was asked with. */
+  attachments?: MessageAttachment[];
 }
 
 export interface AssistantState {
@@ -127,7 +137,16 @@ export function useAssistant() {
       const controller = new AbortController();
       abortRef.current = controller;
 
-      const userMsg: AssistantMessage = { id: uuid(), role: "user", content: trimmed };
+      const userMsg: AssistantMessage = {
+        id: uuid(),
+        role: "user",
+        content: trimmed,
+        // Record the attached files' names so this turn's bubble shows what it
+        // was asked with (chips), mirroring the composer.
+        ...(attachments && attachments.length
+          ? { attachments: attachments.map((a) => ({ name: a.name })) }
+          : {}),
+      };
       const assistantId = uuid();
 
       // History sent to the backend (prior turns + this question). Read from the

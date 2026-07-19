@@ -91,13 +91,20 @@
   margin-bottom: 6px;
 }
 .attach__list--compact .attach__chip {
-  padding: 3px 6px;
+  padding: 2px 6px;
   max-width: 100%;
+  /* Borderless: the chip reads as a light tag on the composer, not a boxed
+     control competing with the input's own border. */
+  border: none;
+}
+.attach__list--compact .attach__icon {
+  width: 13px;
+  height: 13px;
 }
 .attach__list--compact .attach__name {
   font-weight: 500;
-  font-size: var(--fs-caption);
-  max-width: 160px;
+  font-size: var(--fs-micro);
+  max-width: 150px;
 }
 
 /* Attach trigger: a label wrapping a visually-hidden file input. */

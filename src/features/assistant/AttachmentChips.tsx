@@ -31,7 +31,7 @@ export function AttachmentChips({
             {f.status === "reading" || f.status === "ocr" ? (
               <Spinner />
             ) : f.status === "ready" ? (
-              <FileTypeIcon name={f.name} size={16} />
+              <FileTypeIcon name={f.name} size={compact ? 13 : 16} />
             ) : (
               "!"
             )}
