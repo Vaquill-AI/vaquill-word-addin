@@ -4,10 +4,9 @@
 
 A Microsoft Word add-in (task pane) that brings Vaquill AI contract review, grounded redlining, drafting, and US legal research into Word.
 
-Today it is a **thin client**.
-It reads the open document through the Office JavaScript API, calls the Vaquill AI backend, and applies the results back into the document as native Word tracked changes, comments, and content controls.
-It does not perform contract analysis, retrieval, or generation on its own.
-The legal intelligence lives in the backend, so the hosted add-in will not run standalone with only an LLM API key.
+It comes in two builds.
+The **hosted** build reads the open document through the Office JavaScript API, calls the Vaquill AI backend for the legal intelligence, and applies the results back into the document as native Word tracked changes, comments, and content controls.
+The **community** build runs standalone on your own OpenAI or Anthropic key, with no hosted backend.
 
 Everything operates on the document you already have open in Word.
 There is no separate upload step: the open document is the subject.
@@ -283,10 +282,6 @@ src/
   ui/           shared primitives and design-system components
   lib/          framework-agnostic helpers
 ```
-
-## Documentation
-
-Deeper design and reference material lives in [docs/](docs/): architecture, the feature spec, the Office.js capability map, the design system, and the competitive landscape.
 
 ## Contributing
 
