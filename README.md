@@ -80,6 +80,8 @@ npm run dev:community
 
 **3. Load it into Word** by sideloading `manifest.localhost.xml`. Do the part for your version of Word:
 
+For a step-by-step guide with screenshots, see https://www.vaquill.ai/word/sideload.
+
 - **Word on the web:** open a document, click Add-ins (or Insert, then Add-ins), click "Upload My Add-in", and choose `manifest.localhost.xml`.
 - **Word on Mac:** copy `manifest.localhost.xml` into `~/Library/Containers/com.microsoft.Word/Data/Documents/wef` (create the `wef` folder if it is missing), quit and reopen Word, then click Add-ins, My Add-ins, and pick Vaquill AI under Developer Add-ins.
 - **Word on Windows:** put `manifest.localhost.xml` in a folder and share the folder with yourself (right-click, Properties, Sharing). In Word go to File, Options, Trust Center, Trust Center Settings, Trusted Add-in Catalogs, add the folder's network path, tick "Show in Menu", reopen Word, and pick Vaquill AI from the Shared Folder tab.
