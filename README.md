@@ -85,6 +85,34 @@ npm run dev:community
 
 **4. Open it.** In Word, click "Open Vaquill AI". The first time, choose OpenAI or Anthropic, paste your key, click Test, then Save. Your key stays on your device and is sent only to that provider.
 
+#### Walkthrough (Word on the web)
+
+These screenshots show the sideload on Word for the web. The Mac and Windows steps differ only in how you point Word at the manifest.
+
+Open the Add-ins menu (Insert, then Add-ins):
+
+![Open the Add-ins menu in Word](assets/screenshots/install-1-open-addins.webp)
+
+Click "Upload My Add-in":
+
+![Upload My Add-in](assets/screenshots/install-2-upload-my-addin.webp)
+
+Browse to your manifest file in the upload dialog:
+
+![Upload add-in dialog](assets/screenshots/install-3-upload-dialog.webp)
+
+Choose `manifest.localhost.xml`:
+
+![Choose the manifest file](assets/screenshots/install-4-choose-manifest.webp)
+
+Open Vaquill AI from the ribbon:
+
+![Vaquill AI first screen](assets/screenshots/install-5-sign-in.webp)
+
+Choose OpenAI or Anthropic and paste your own key:
+
+![Choose OpenAI or Anthropic and paste your key](assets/screenshots/install-6-bring-your-own-key.webp)
+
 ### Run it on a server for your firm
 
 Use this when a team should have it without anyone keeping a terminal open.
