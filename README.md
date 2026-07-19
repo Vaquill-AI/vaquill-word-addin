@@ -1,5 +1,7 @@
 # Vaquill AI for Word
 
+![Vaquill AI running in Microsoft Word, reviewing a contract and applying a grounded redline as a tracked change](assets/word-promo.png)
+
 A Microsoft Word add-in (task pane) that brings Vaquill AI contract review, grounded redlining, drafting, and US legal research into Word.
 
 Today it is a **thin client**.
