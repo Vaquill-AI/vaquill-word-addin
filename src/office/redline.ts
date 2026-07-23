@@ -16,7 +16,10 @@ import type { RedlineSuggestion } from "@/api/types";
  * path (exportCorrectedDocx) instead.
  */
 
-// Word's body.search query is capped at 255 characters.
+// Word's body.search query is capped at 255 characters and cannot match across a
+// paragraph mark. Short single-line clauses are located with one search; longer
+// or multi-paragraph clauses are anchored by their head + tail windows (each a
+// searchable <=255 single-line slice) and the span between them.
 const WORD_SEARCH_LIMIT = 255;
 
 export class AnchorNotFoundError extends OfficeError {
@@ -31,22 +34,117 @@ export class AnchorNotFoundError extends OfficeError {
 
 /**
  * True when a redline can be applied directly in the pane: it is grounded
- * verified (backend confirmed the anchor is a literal substring), short enough
- * to search, and does not span paragraph marks. Word search cannot match across
- * a paragraph mark, so a multi-paragraph clause can never be located in-pane and
- * must route to the export/copy path. Everything else routes to the server
- * export path too.
+ * verified (the backend confirmed the anchor is a literal substring) and has
+ * anchor text to locate. Length and paragraph breaks are no longer disqualifying
+ * -- {@link applyVerifiedRedline} anchors long / multi-paragraph clauses by their
+ * head + tail windows. The apply path re-verifies the located span, so a clause
+ * that ultimately cannot be anchored (e.g. text inside a shape, or a non-unique
+ * anchor) fails gracefully with the copy/manual fallback still one click away.
  */
 export function canApplyInPane(r: RedlineSuggestion): boolean {
-  const q = r.currentLanguage.trim();
-  if (/[\r\n]/.test(q)) return false;
-  return r.grounding === "verified" && q.length > 0 && q.length <= WORD_SEARCH_LIMIT;
+  return r.grounding === "verified" && r.currentLanguage.trim().length > 0;
 }
 
 export interface ApplyResult {
   strategy: DiffResult["strategyUsed"];
   insertions: number;
   deletions: number;
+}
+
+/** True when the clause is short enough and free of paragraph marks to locate
+ *  with a single search. Otherwise we anchor by head + tail windows. */
+function isSimpleAnchor(q: string): boolean {
+  return q.length <= WORD_SEARCH_LIMIT && !/[\r\n]/.test(q);
+}
+
+/** First searchable slice: a <=255 char, word-boundary-trimmed prefix. */
+function headWindow(s: string): string {
+  const t = s.trim();
+  if (t.length <= WORD_SEARCH_LIMIT) return t;
+  const slice = t.slice(0, WORD_SEARCH_LIMIT);
+  const lastSpace = slice.lastIndexOf(" ");
+  return lastSpace > 40 ? slice.slice(0, lastSpace) : slice;
+}
+
+/** Last searchable slice: a <=255 char, word-boundary-trimmed suffix. */
+function tailWindow(s: string): string {
+  const t = s.trim();
+  if (t.length <= WORD_SEARCH_LIMIT) return t;
+  const slice = t.slice(t.length - WORD_SEARCH_LIMIT);
+  const firstSpace = slice.indexOf(" ");
+  return firstSpace >= 0 && firstSpace < slice.length - 40 ? slice.slice(firstSpace + 1) : slice;
+}
+
+/** Compare two spans ignoring incidental punctuation / whitespace / case, so a
+ *  span assembled from head + tail anchors is confirmed to BE the clause before
+ *  it is replaced (search variants can differ from the model's text by quotes,
+ *  dashes, or spacing). */
+function anchorMatches(found: string, expected: string): boolean {
+  const norm = (x: string) => x.toLowerCase().replace(/[^a-z0-9]+/g, "");
+  return norm(found) === norm(expected);
+}
+
+const AMBIGUOUS = new OfficeError(
+  "The clause text appears multiple times; apply this change manually to the correct spot.",
+  "anchor_ambiguous",
+);
+
+/** Throw the right "not found" error. A clause carrying unaccepted tracked
+ *  changes won't match its own clean anchor (search sees the marked-up text), so
+ *  detect that common case and tell the user the one-click fix. */
+async function throwAnchorNotFound(
+  context: Word.RequestContext,
+  doc: Word.Document,
+  clauseName: string,
+): Promise<never> {
+  const pending = doc.body.getTrackedChanges();
+  pending.load("items/type");
+  await context.sync();
+  if (pending.items.length > 0) {
+    throw new OfficeError(
+      `Could not locate "${clauseName}" to redline. The document still has unaccepted tracked changes, and a clause cannot be matched while its edits are pending. Accept or reject them (Word: Review > Accept), then run this again.`,
+      "anchor_not_found_tracked",
+    );
+  }
+  throw new AnchorNotFoundError(clauseName);
+}
+
+/**
+ * Resolve the single Word range covering the whole clause.
+ *
+ * Backend grounding guarantees the clause is a literal substring, not that it is
+ * unique, so a zero/multiple match refuses rather than editing the wrong spot.
+ * Short single-line clauses use one search. Longer or multi-paragraph clauses
+ * search their head and tail windows (each searchable) and take the span between
+ * them; the caller re-verifies that span before replacing anything.
+ */
+async function locateClauseRange(
+  context: Word.RequestContext,
+  doc: Word.Document,
+  query: string,
+  clauseName: string,
+): Promise<Word.Range> {
+  if (isSimpleAnchor(query)) {
+    const items = await findRanges(context, query);
+    if (items.length === 0) await throwAnchorNotFound(context, doc, clauseName);
+    if (items.length > 1) throw AMBIGUOUS;
+    return items[0]!;
+  }
+
+  const lines = query.split(/\r\n|\r|\n/).map((l) => l.trim()).filter(Boolean);
+  const head = headWindow(lines[0] ?? query);
+  const tail = tailWindow(lines[lines.length - 1] ?? query);
+
+  const heads = await findRanges(context, head);
+  if (heads.length === 0) await throwAnchorNotFound(context, doc, clauseName);
+  if (heads.length > 1) throw AMBIGUOUS;
+  const tails = await findRanges(context, tail);
+  if (tails.length === 0) throw new AnchorNotFoundError(clauseName);
+  if (tails.length > 1) throw AMBIGUOUS;
+
+  // expandTo returns the smallest range covering both anchors, i.e. head.start
+  // through tail.end -- the whole clause.
+  return heads[0]!.expandTo(tails[0]!);
 }
 
 /**
@@ -64,46 +162,12 @@ export async function applyVerifiedRedline(
   // reverses it). Prior tracking mode is always restored.
   const tracked = opts.tracked ?? true;
   const query = r.currentLanguage.trim();
-  if (!query || query.length > WORD_SEARCH_LIMIT) {
-    throw new OfficeError("This redline is too long to apply in place. Use Accept via Vaquill AI instead.");
-  }
+  if (!query) throw new OfficeError("This redline has no anchor text to locate.");
 
   return serializeTrackChanges(() => runWord(async (context) => {
     const doc = context.document;
     doc.load("changeTrackingMode");
-    const items = await findRanges(context, query);
-
-    // Backend grounding only guarantees the clause is a literal substring, not
-    // that it is unique. If it appears zero or multiple times we cannot safely
-    // choose the occurrence to redline, so refuse rather than silently editing
-    // the first match. This guard runs before we touch changeTrackingMode, so
-    // there is no mode to restore on this path.
-    if (items.length === 0) {
-      // We now read the document revision-resolved (see office/document.ts), so
-      // an anchor is the CLEAN text of the clause. Word's search matches the
-      // marked-up text, so a clause still carrying unaccepted tracked changes
-      // will not match its own clean anchor. That is the common way this fires
-      // right after applying a redline, and the fix is one click in Word, so say
-      // that rather than a bare "not found".
-      const pending = doc.body.getTrackedChanges();
-      pending.load("items/type");
-      await context.sync();
-      if (pending.items.length > 0) {
-        throw new OfficeError(
-          `Could not locate "${r.clauseName}" to redline. The document still has unaccepted tracked changes, and a clause cannot be matched while its edits are pending. Accept or reject them (Word: Review > Accept), then run this again.`,
-          "anchor_not_found_tracked",
-        );
-      }
-      throw new AnchorNotFoundError(r.clauseName);
-    }
-    if (items.length > 1) {
-      throw new OfficeError(
-        "The clause text appears multiple times; apply this change manually to the correct spot.",
-        "anchor_ambiguous",
-      );
-    }
-
-    const range = items[0];
+    const range = await locateClauseRange(context, doc, query, r.clauseName);
 
     const priorMode = doc.changeTrackingMode;
     doc.changeTrackingMode = tracked ? Word.ChangeTrackingMode.trackAll : Word.ChangeTrackingMode.off;
@@ -113,6 +177,20 @@ export async function applyVerifiedRedline(
     // text and smear the insert/delete ops into a garbled tracked change.
     range.load("text");
     await context.sync();
+
+    // Confirm the located span really is the clause before replacing it. This is
+    // the safety net for the head + tail path: if the two anchors bracketed the
+    // wrong region (e.g. a non-unique tail), the assembled text will not match
+    // and we abort cleanly instead of mangling an unrelated span.
+    if (!anchorMatches(range.text, query)) {
+      try {
+        doc.changeTrackingMode = priorMode;
+        await context.sync();
+      } catch {
+        // fall through to the throw below
+      }
+      throw new AnchorNotFoundError(r.clauseName);
+    }
 
     try {
       const diff = await applyWordDiff(context, range, range.text, r.proposedLanguage, {
