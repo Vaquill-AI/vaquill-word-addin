@@ -43,8 +43,17 @@ const FEDERAL_STATUTE_RE =
 // "Tex. Bus. & Com. Code § 17.50", "Fla. Stat. § 95.11", "A.R.S. § 3-201.01".
 // Requiring the "§" plus a capitalized cluster keeps ordinary prose and bare
 // contract-clause references ("§ 5.2") out.
+//
+// The optional leading `\d{1,3}` captures a TITLE-FIRST code, where the title
+// number precedes the abbreviation: "6 Del. C. § 2001" (Delaware), "11 Del. C.
+// § 1201". Without it the extractor dropped the title and the resolver looked up
+// a titleless "Del. C. § 2001", which cannot match (a given section exists across
+// many titles). Correctly-formatted cites for codes that do NOT use a leading
+// title (Cal./Fla./N.Y....) never have a digit here, so the group stays inert.
+// The section body allows ":" so title:section codes keep their full number
+// ("N.J.S.A. § 2C:43-6", "La. R.S. § 51:1431") instead of truncating at the colon.
 const STATE_STATUTE_RE =
-  /\b(?:(?:[A-Z][A-Za-z.'&]{0,14}|&)\.?\s+){1,6}§+\s*\d[\w.-]*(?:\s*\([\w]+\))*/g;
+  /\b(?:\d{1,3}\s+)?(?:(?:[A-Z][A-Za-z.'&]{0,14}|&)\.?\s+){1,6}§+\s*\d[\w.:-]*(?:\s*\([\w]+\))*/g;
 
 // A real state code cite carries an abbreviation-with-period ("Cal.", "N.Y.",
 // "A.R.S.", "Fla.") or a code keyword. Requiring one keeps a document's own
