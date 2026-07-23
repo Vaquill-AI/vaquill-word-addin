@@ -81,13 +81,26 @@ function wordsToNumber(phrase: string): number | null {
   return any ? total + current : null;
 }
 
+// A unit / currency word that sits BETWEEN the spelled-out number and the
+// parenthetical numeral in the standard "amount (numeral)" form. Without
+// stepping over it, the trailing number run is empty and the pair is skipped --
+// which silently dropped every "Fifty Thousand Dollars ($60,000)" /
+// "twelve percent (10%)" mismatch, the highest-stakes figures to catch.
+const TRAILING_UNIT_WORD =
+  /^(?:dollars?|usd|cents?|percent|pct|shares?|units?|days?|weeks?|months?|years?|installments?)$/;
+
 /** The trailing run of number words in a captured phrase ("for a period of
- *  thirty" -> "thirty"), or "" when it does not end in a number word. */
+ *  thirty" -> "thirty", "Fifty Thousand Dollars" -> "fifty thousand"), or ""
+ *  when it does not contain a spelled-out number. */
 function trailingNumberPhrase(words: string): string {
   const toks = words.toLowerCase().replace(/-/g, " ").split(/\s+/).filter(Boolean);
-  let i = toks.length;
+  let end = toks.length;
+  // Step over a single trailing unit word ("Dollars", "percent", "days") so the
+  // number run before it is still isolated.
+  if (end > 0 && TRAILING_UNIT_WORD.test(toks[end - 1])) end--;
+  let i = end;
   while (i > 0 && NUMBER_WORDS.has(toks[i - 1])) i--;
-  const run = toks.slice(i);
+  const run = toks.slice(i, end);
   // Drop a dangling leading "and" ("... and (30)").
   while (run.length && run[0] === "and") run.shift();
   return run.join(" ");

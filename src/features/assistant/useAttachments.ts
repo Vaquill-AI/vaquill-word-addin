@@ -11,6 +11,10 @@ import { errorMessage } from "@/api/errors";
 export interface AttachedFile {
   id: string;
   name: string;
+  /** File size in bytes. Kept so `remove` can rebuild the exact `name:size`
+   *  dedupe key; without it, re-adding a previously removed file was silently
+   *  ignored (the key was added as `name:size` but deleted as `name`). */
+  size?: number;
   /** `needs_ocr` = extraction found no text but the file can be OCR'd on demand;
    *  `ocr` = an OCR pass is running. */
   status: "reading" | "ready" | "error" | "needs_ocr" | "ocr";
@@ -73,7 +77,7 @@ export function useAttachments(upload: Uploader, onOcr?: Uploader) {
       seen.current.add(key);
 
       const id = uuid();
-      setFiles((list) => [...list, { id, name: file.name, status: "reading" }]);
+      setFiles((list) => [...list, { id, name: file.name, size: file.size, status: "reading" }]);
       try {
         const res = await upload(file);
         // Empty extraction on an OCR-able file: hold the File and let the user
@@ -115,7 +119,9 @@ export function useAttachments(upload: Uploader, onOcr?: Uploader) {
     pending.current.delete(id);
     setFiles((list) => {
       const gone = list.find((f) => f.id === id);
-      if (gone) seen.current.delete(`${gone.name}`); // best-effort; size unknown here
+      // Rebuild the SAME `name:size` key that `add` registered, so removing a
+      // file also frees it to be re-added later.
+      if (gone) seen.current.delete(`${gone.name}:${gone.size}`);
       return list.filter((f) => f.id !== id);
     });
   }, []);

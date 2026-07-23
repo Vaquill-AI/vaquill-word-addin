@@ -48,6 +48,32 @@ export interface CrossRefReport {
 const MIN_SECTIONS = 3;
 const MAX_BROKEN = 100;
 
+// A "§ N" (or "Section N") that belongs to a STATUTORY citation is an EXTERNAL
+// code section, not an internal cross-reference, so it must never be flagged as
+// a broken section. Examples: "6 Del. C. § 2001", "18 U.S.C. § 1030",
+// "17 C.F.R. § 240", "Cal. Civ. Code § 1798", "§ 2001 et seq." We detect it two
+// ways: a reporter/code token immediately BEFORE the symbol, or "et seq."
+// immediately AFTER the number (a purely statutory tail).
+const STATUTE_BEFORE =
+  /(?:U\.?\s?S\.?\s?C\.?|C\.?\s?F\.?\s?R\.?|\bStat\.?|\bAnn\.?|\bCode\b|\bLaws?\b|\bReg(?:s|ulations?)?\.?|\btit\.?|\bch\.?|\bpt\.?|[A-Z][A-Za-z]{1,5}\.\s*C\.?)\s*$/;
+const ET_SEQ_AFTER = /^\s*et\s+seq\b/i;
+// The very common US-corporate form where the statutory signal FOLLOWS the
+// number: "Section 251 of the Delaware General Corporation Law", "Section 409A
+// of the Code", "Section 16 of the Securities Exchange Act". An optional letter
+// suffix (409"A") may sit between the number and " of ". Note "Section 4 of the
+// Agreement" is NOT matched (Agreement is not Act/Code/Law/...), so genuine
+// internal references are still checked.
+const OF_STATUTE_AFTER =
+  /^[A-Za-z]{0,2}\s+of\s+(?:the\s+)?(?:[A-Z][\w.'&-]*\s+){0,6}(?:Act|Code|Law|Statute|Constitution|Regulations?)\b/;
+
+/** True when a section-symbol match sits inside a statutory citation. */
+function isStatutoryCitation(text: string, matchStart: number, matchEnd: number): boolean {
+  const before = text.slice(Math.max(0, matchStart - 48), matchStart);
+  if (STATUTE_BEFORE.test(before)) return true;
+  const after = text.slice(matchEnd, matchEnd + 80);
+  return ET_SEQ_AFTER.test(after) || OF_STATUTE_AFTER.test(after);
+}
+
 const SCHEDULE_TYPES = ["Schedule", "Exhibit", "Appendix", "Annex"] as const;
 
 // A schedule/exhibit label id is a single uppercase letter, a Roman numeral, or
@@ -130,6 +156,9 @@ export function analyzeCrossReferences(
     let m: RegExpExecArray | null;
     while ((m = secRe.exec(fullText)) !== null) {
       const id = m[1];
+      // A statutory citation ("6 Del. C. § 2001", "§ 1030 et seq.") is an
+      // external code section, not an internal reference: never flag it.
+      if (isStatutoryCitation(fullText, m.index, m.index + m[0].length)) continue;
       if (!hasSection(sections, id))
         bump(
           `section:${id}`,

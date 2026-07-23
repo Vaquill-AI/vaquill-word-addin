@@ -112,7 +112,10 @@ function modeKey<K>(tally: Map<K, number>): K | null {
   return best;
 }
 
-function isLeftish(alignment: string): boolean {
+function isLeftish(alignment: string | null | undefined): boolean {
+  // Unreadable alignment (null) is treated as NOT leftish, so the paragraph is
+  // protected rather than risking a change we cannot classify.
+  if (!alignment) return false;
   return alignment === "Left" || alignment.startsWith("Justif");
 }
 
@@ -137,9 +140,25 @@ async function analyze(
       "font/name,font/size," +
       "parentTableOrNullObject/isNullObject,parentContentControlOrNullObject/isNullObject",
   );
-  const tracked = source.getTrackedChanges();
-  tracked.load("items");
   await context.sync();
+
+  // Tracked-change detection runs in its OWN guarded sync, separate from the
+  // paragraph load above. getTrackedChanges() is host/version fragile -- on some
+  // Word builds it throws an internal null dereference ("reading 'Ocd'") from
+  // inside office.js, which previously sank the entire scan when it shared the
+  // paragraph sync. A failure here must not crash Rescan: the apply step
+  // re-checks change tracking independently before it writes anything, so at
+  // worst we skip the "resolve your redline first" banner instead of failing.
+  let hasTrackedChanges = false;
+  try {
+    const tracked = source.getTrackedChanges();
+    tracked.load("items");
+    await context.sync();
+    hasTrackedChanges = tracked.items.length > 0;
+  } catch {
+    // Degrade gracefully: treat as "cannot confirm tracked changes here".
+    hasTrackedChanges = false;
+  }
 
   const items = paras.items;
   const isSelection = scope === "selection";
@@ -222,7 +241,7 @@ async function analyze(
   });
 
   const blocked: FormatReport["blocked"] =
-    tracked.items.length > 0 ? "tracked-changes" : bodyParagraphs === 0 ? "empty" : null;
+    hasTrackedChanges ? "tracked-changes" : bodyParagraphs === 0 ? "empty" : null;
 
   const eligible = records.reduce((n, r) => n + (r.eligible ? 1 : 0), 0);
   const report: FormatReport = {
@@ -257,7 +276,7 @@ function skipReason(
   if (!p.parentTableOrNullObject.isNullObject) return "tables";
   if (!p.parentContentControlOrNullObject.isNullObject) return "controls";
   if (p.isListItem) return "lists";
-  if (HEADING_STYLE.test(p.styleBuiltIn as unknown as string)) return "headings";
+  if (HEADING_STYLE.test((p.styleBuiltIn as unknown as string) ?? "")) return "headings";
   if (!isLeftish(p.alignment as unknown as string)) return "aligned";
   if (NON_LATIN.test(text)) return "nonLatin";
   if (index >= cut || SIGNATURE_LINE.test(text) || UNDERSCORE_RUN.test(text)) return "protectedZone";

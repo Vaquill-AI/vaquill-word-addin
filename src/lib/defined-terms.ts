@@ -48,10 +48,12 @@ const VERB_DEF = new RegExp(
   "gi",
 );
 
-// Parenthetical: ( [lead-in] "X" ...  e.g. ("X"), (the "X"), (each a "X"),
-// (collectively, the "Xs"), (hereinafter referred to as the "X").
+// Parenthetical: ( [lead-in] "X" ...  e.g. ("X"), (the "X"), (this "X"),
+// (each a "X"), (collectively, the "Xs"), (hereinafter referred to as the "X").
+// "this" is the standard preamble form -- (this "Agreement"), (this "Note") --
+// and its omission made every contract's own "Agreement" read as undefined.
 const PAREN_LEADIN =
-  "(?:the\\s+|each\\s+(?:a\\s+)?|an?\\s+|collectively,?\\s+(?:the\\s+)?|individually,?\\s+(?:a\\s+)?|together,?\\s+(?:the\\s+)?|hereinafter,?\\s+(?:referred\\s+to\\s+as\\s+)?(?:the\\s+)?|referred\\s+to\\s+as\\s+(?:the\\s+)?)?";
+  "(?:the\\s+|this\\s+|each\\s+(?:a\\s+)?|an?\\s+|collectively,?\\s+(?:the\\s+)?|individually,?\\s+(?:a\\s+)?|together,?\\s+(?:the\\s+)?|hereinafter,?\\s+(?:referred\\s+to\\s+as\\s+)?(?:the\\s+)?|referred\\s+to\\s+as\\s+(?:the\\s+)?)?";
 const PAREN_DEF = new RegExp(`\\(\\s*${PAREN_LEADIN}${Q_OPEN}${TERM}${Q_CLOSE}`, "g");
 
 // Any quoted, capitalized token (candidate defined-term usages).

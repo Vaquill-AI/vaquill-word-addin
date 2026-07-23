@@ -29,8 +29,10 @@ export function OutlinePanel() {
     if (e.currentTarget.open && items === null && !loading) void load();
   }
 
-  function go(index: number) {
-    goToOutlineItem(index).catch((e) => setError(errorMessage(e)));
+  function go(item: OutlineItem) {
+    // Pass the text so navigation stays correct after the document is edited
+    // (the stored paragraph index alone goes stale).
+    goToOutlineItem(item.index, item.text).catch((e) => setError(errorMessage(e)));
   }
 
   return (
@@ -52,7 +54,7 @@ export function OutlinePanel() {
         <ul className="outline__list">
           {items.map((it) => (
             <li key={it.index} style={{ paddingLeft: (Math.min(it.level, 4) - 1) * 12 }}>
-              <button type="button" className="outline__item" onClick={() => go(it.index)}>
+              <button type="button" className="outline__item" onClick={() => go(it)}>
                 {it.text}
               </button>
             </li>

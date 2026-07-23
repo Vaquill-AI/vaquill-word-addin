@@ -65,15 +65,30 @@ export async function readOutline(): Promise<OutlineItem[]> {
 }
 
 /**
- * Scroll to and select the paragraph at the given collection index. Out-of-range
- * indices are ignored so a stale outline click cannot throw.
+ * Scroll to and select an outline heading. Prefers locating by the heading TEXT
+ * so an edit that inserted or deleted an earlier paragraph (shifting every later
+ * index) still jumps to the right clause; the paragraph index is only a hint and
+ * a fallback. Out-of-range / not-found is ignored so a stale click cannot throw.
  */
-export async function goToOutlineItem(index: number): Promise<void> {
+export async function goToOutlineItem(index: number, text?: string): Promise<void> {
   return runWord(async (context) => {
     const paragraphs = context.document.body.paragraphs;
     paragraphs.load("text");
     await context.sync();
-    const target = paragraphs.items[index];
+    const items = paragraphs.items;
+
+    let target = items[index];
+    const needle = (text ?? "").trim();
+    if (needle) {
+      // The stored outline text may be truncated (TEXT_MAX), so match by prefix.
+      // Trust the index only when the paragraph still there is the same heading;
+      // otherwise the document shifted, so find the heading by its text.
+      const atIndex = target ? (target.text ?? "").trim() : "";
+      if (!atIndex.startsWith(needle)) {
+        const found = items.find((p) => (p.text ?? "").trim().startsWith(needle));
+        if (found) target = found;
+      }
+    }
     if (!target) return;
     target.getRange().select();
     await context.sync();

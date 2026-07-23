@@ -31,10 +31,22 @@ const WORD_SEARCH_LIMIT = 255;
  * clause; that is enough to anchor a comment / bookmark / highlight / selection.
  * Callers that need the EXACT full range (e.g. redline text replacement) guard
  * the length themselves before calling and never reach this path.
+ *
+ * A multi-paragraph clause is FIRST reduced to its first non-empty line, because
+ * `Word.Range.search()` cannot match across a paragraph mark: a needle
+ * containing a newline throws or returns nothing, so a two-paragraph clause
+ * (indemnity, limitation-of-liability -- exactly the ones reviewers care about)
+ * silently failed to highlight / comment / bookmark / navigate. A single
+ * distinctive line is a sufficient anchor.
  */
 function searchWindow(query: string): string {
-  if (query.length <= WORD_SEARCH_LIMIT) return query;
-  const slice = query.slice(0, WORD_SEARCH_LIMIT);
+  const firstLine = query
+    .split(/\r\n|\r|\n/)
+    .map((s) => s.trim())
+    .find(Boolean);
+  const line = firstLine ?? query;
+  if (line.length <= WORD_SEARCH_LIMIT) return line;
+  const slice = line.slice(0, WORD_SEARCH_LIMIT);
   const lastSpace = slice.lastIndexOf(" ");
   // Trim to the last word boundary so we don't cut mid-word (an unmatchable
   // fragment); fall back to the hard 255 cut only if the window has no space.
