@@ -119,11 +119,14 @@ Choose OpenAI or Anthropic and paste your own key:
 ### Run it on a server for your firm
 
 Use this when a team should have it without anyone keeping a terminal open.
+It needs no server or database: the community build is just static files, so any static host with HTTPS works.
 
 1. Build it with `npm run build:community`. This creates a `dist` folder, which is the whole app as plain files.
 2. Serve the contents of `dist` over HTTPS on an address you control, for example `https://vaquill.yourfirm.com`. Any static hosting works, and HTTPS is required.
 3. Copy `manifest.community.xml`, replace every `YOUR-DOMAIN.example.com` with your address, and replace the `<Id>` line with a new unique id (create one at https://guidgenerator.com).
 4. Give that manifest to each person to sideload with the steps above. Each person adds their own key.
+
+For a step-by-step version with the easiest free HTTPS hosts (Cloudflare Pages, Netlify, Vercel, GitHub Pages), see [DEPLOY.md](DEPLOY.md#self-hosting-the-community-edition-bring-your-own-key).
 
 ### What it can do, and what needs a Vaquill AI account
 
@@ -244,7 +247,7 @@ npm run validate:manifest             # validate the production manifest
 
 The change gate for a contribution is a green `npm run type-check` and `npm run build`.
 
-Deployment (Docker plus a hardened nginx with security headers and CSP) is documented in [DEPLOY.md](DEPLOY.md).
+Deployment is documented in [DEPLOY.md](DEPLOY.md): self-hosting the community build on any static host (no server needed), and the hardened Docker + nginx path for the hosted build.
 
 ## Backend requirement
 

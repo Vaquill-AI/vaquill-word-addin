@@ -1,8 +1,70 @@
 # Deploying Vaquill for Word
 
-The add-in is a static task-pane web app.
-Word loads it from a public HTTPS URL, so shipping it means hosting the built `dist/` bundle at `https://word.vaquill.ai` and pointing the manifest there.
-This guide covers the Dokploy deployment, the one backend change, and how to verify it in a real Word host.
+The add-in is a static task-pane web app: Word loads it from a public HTTPS URL, so deploying it means hosting the built bundle somewhere with HTTPS and pointing a manifest at it.
+There are two very different paths, and most people only need the first:
+
+- **Community edition (your own key)** — static files only.
+No server, no database, no backend, no VPS.
+This is what almost every self-hoster wants.
+See [Self-hosting the community edition](#self-hosting-the-community-edition-bring-your-own-key).
+- **Hosted build (the Vaquill product)** — the build that talks to the Vaquill backend + Supabase, served at `word.vaquill.ai` via Docker + nginx on Dokploy.
+Only Vaquill (or someone standing up the full hosted stack) needs this.
+See [Hosting the full hosted build](#hosting-the-full-hosted-build).
+
+---
+
+## Self-hosting the community edition (bring your own key)
+
+This is the simplest path and it needs no server.
+The community build is a folder of static files: your firm runs the add-in on its own OpenAI or Anthropic key, with no Vaquill backend, no database, and nothing to keep running.
+
+**You do NOT need** a VPS, Docker, nginx, Supabase, a backend, or any of the hosted-build setup further down.
+The only hard requirement is a host that serves the files over HTTPS (Office refuses to load an add-in over plain HTTP).
+
+### 1. Build the static bundle
+
+```bash
+npm install
+npm run build:community    # outputs dist/ -- the whole app as static files
+```
+
+### 2. Put `dist/` on any static host with HTTPS
+
+Every option below gives free, automatic HTTPS.
+Pick whichever you already use; there is no server to run or patch.
+
+| Host | How |
+| --- | --- |
+| Cloudflare Pages | `npx wrangler pages deploy dist` (or connect the repo: build command `npm run build:community`, output directory `dist`) |
+| Netlify | `netlify deploy --prod --dir dist`, or drag the `dist/` folder into the dashboard |
+| Vercel | `vercel deploy --prod` with the output directory set to `dist` |
+| GitHub Pages | publish `dist/` to a `gh-pages` branch (HTTPS is on by default for `*.github.io`) |
+| S3 + CloudFront | upload `dist/` to a bucket and put CloudFront in front for HTTPS |
+
+Note the resulting URL, for example `https://vaquill.yourfirm.com` or the host's `*.pages.dev` / `*.netlify.app` domain.
+
+### 3. Point a manifest at your URL
+
+Copy `manifest.community.xml` and, in the copy:
+
+- Replace every `YOUR-DOMAIN.example.com` with your host from step 2.
+- Replace the `<Id>` GUID with a new unique one (generate at https://guidgenerator.com) so your install never collides with anyone else's.
+
+### 4. Hand the manifest to each person
+
+Each user sideloads that one manifest (see the sideload steps in the [README](README.md#run-it-yourself-community-edition)) and pastes their own API key in the pane.
+That is the whole deployment: static files on an HTTPS URL plus a manifest.
+No account, no backend, nothing to operate.
+
+To ship an update, rebuild `dist/` and re-upload.
+Users only need to re-sideload if the manifest itself changed (a new domain or id); a content-only update is picked up automatically.
+
+---
+
+## Hosting the full hosted build
+
+Everything below is for deploying **Vaquill's own hosted product**: the build that uses the Vaquill backend + Supabase, served at `word.vaquill.ai`.
+If you are self-hosting the community edition, you can stop here — none of the Docker, nginx, Supabase, Dokploy, or backend-CORS steps apply to you.
 
 ## What actually gets deployed
 
