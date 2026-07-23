@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useState } from "react";
-import { RefreshIcon } from "@/ui/icons";
 import { ViewHeader } from "@/ui/ViewHeader";
 import { Badge, Banner, Button, Spinner } from "@/ui/primitives";
 import { readReviewSnapshot } from "@/office/reviewState";
@@ -144,12 +143,7 @@ export function DealCockpitView() {
 
   return (
     <div className="stack cockpit">
-      <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
-        <h1 className="view-title">Deal cockpit</h1>
-        <Button variant="ghost" size="sm" onClick={() => void load()}>
-          <RefreshIcon size={13} /> Refresh
-        </Button>
-      </div>
+      <ViewHeader title="Deal cockpit" onRescan={() => void load()} />
       <p className="small muted" style={{ margin: 0 }} data-tour="cockpit-summary">
         {counts.agreed} of {rows.length} clause{rows.length === 1 ? "" : "s"} agreed. Status is saved
         in the document and travels with it across rounds.

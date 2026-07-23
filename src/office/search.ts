@@ -252,3 +252,30 @@ export async function findBestRange(
   }
   return best;
 }
+
+/**
+ * Find EVERY exact occurrence of a short term/reference in the body, in document
+ * order, for occurrence-cycling. Unlike {@link findRanges} (which is fuzzy on
+ * purpose -- case-insensitive fallbacks, punctuation/space tolerance -- so a
+ * model-quoted clause still anchors), this matches WHOLE WORDS, CASE-SENSITIVE,
+ * with no fuzzy fallback, so the count equals the analyzer's "N uses" / "N times"
+ * badge. Pass the term's plural form(s) in `variants` (e.g. ["Parties"]) so the
+ * set matches the badge's plural rule; each is searched and the results are
+ * concatenated (each block already in document order).
+ */
+export async function findExactOccurrences(
+  context: Word.RequestContext,
+  query: string,
+  variants: readonly string[] = [],
+): Promise<Word.Range[]> {
+  const forms = [query, ...variants]
+    .map((t) => t.trim())
+    .filter((t) => t.length > 0 && t.length <= WORD_SEARCH_LIMIT && !/[\r\n]/.test(t));
+  if (forms.length === 0) return [];
+  const collections = forms.map((t) =>
+    context.document.body.search(t, { matchCase: true, matchWholeWord: true }),
+  );
+  for (const c of collections) c.load("items");
+  await context.sync();
+  return collections.flatMap((c) => c.items);
+}

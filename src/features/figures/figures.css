@@ -22,3 +22,50 @@
 .figures-words {
   font-weight: 600;
 }
+
+/* Plain-language explainer with worked examples. */
+.figures-explainer {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-muted);
+}
+.figures-explainer__lead {
+  margin: 0;
+}
+.figures-egs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.figures-eg {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 8px;
+  border-radius: var(--radius-xs);
+  font-size: var(--fs-micro);
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+.figures-eg--bad {
+  background: var(--danger-tint);
+}
+.figures-eg--ok {
+  background: var(--success-tint);
+}
+.figures-eg__tag {
+  font-weight: 700;
+  font-size: 9px;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+.figures-eg--bad .figures-eg__tag {
+  color: var(--danger);
+}
+.figures-eg--ok .figures-eg__tag {
+  color: var(--success);
+}

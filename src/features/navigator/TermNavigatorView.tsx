@@ -6,9 +6,15 @@ import { LocateIcon } from "@/ui/icons";
 import { readSelectionText } from "@/office/document";
 import { readNumberedParagraphs, type NumberedParagraph } from "@/office/structure";
 import { locateInDocument } from "@/office/navigate";
+import { useOccurrenceCycler } from "@/lib/useOccurrenceCycler";
 import { useDocumentAutoRefresh } from "@/lib/useDocumentAutoRefresh";
 import { useSelection } from "@/features/tools/useSelection";
-import { buildGlossary, resolveSelectionTerm, type GlossaryEntry } from "@/lib/glossary";
+import {
+  buildGlossary,
+  resolveSelectionTerm,
+  termOccurrenceVariants,
+  type GlossaryEntry,
+} from "@/lib/glossary";
 import { looksLikeReference, resolveReference, type ResolvedRef } from "@/lib/xrefResolve";
 import { errorMessage } from "@/api/errors";
 import "./navigator.css";
@@ -119,6 +125,14 @@ export function TermNavigatorView() {
     }
   }
 
+  // Step through every occurrence of a term on each click. Passing the analyzer's
+  // plural variants keeps the cycle count equal to the "N uses" badge.
+  const { cycle, labelFor, countFor } = useOccurrenceCycler();
+  const cycleTerm = (term: string) =>
+    void cycle(term, { variants: termOccurrenceVariants(term) }).catch((e) =>
+      setError(errorMessage(e)),
+    );
+
   const q = query.trim().toLowerCase();
   const filtered = entries.filter(
     (e) => !q || e.term.toLowerCase().includes(q) || e.definition.toLowerCase().includes(q),
@@ -129,6 +143,7 @@ export function TermNavigatorView() {
       <ViewHeader
         tourId="tool-termnav"
         title="Reading navigator"
+        onRescan={() => void load()}
         subtitle="Look up a defined term or a cross-reference without leaving the clause you are reading."
         info="Select a defined term to see its definition, or a cross-reference like 'Section 7.2' or 'Exhibit C' to see the clause it points to, then jump to either. Read from the open document. For undefined / duplicate terms or broken references, use the Defined terms and Cross-references tools."
       />
@@ -147,7 +162,10 @@ export function TermNavigatorView() {
           <div className="card navigator-hit" data-tour="tn-result">
             <div className="row" style={{ justifyContent: "space-between", alignItems: "baseline", gap: 8 }}>
               <strong className="navigator-term">{lookup.entry.term}</strong>
-              <IconButton label={`Find ${lookup.entry.term}`} onClick={() => void find(lookup.entry.term)}>
+              <IconButton
+                label={`Find next occurrence of ${lookup.entry.term}`}
+                onClick={() => cycleTerm(lookup.entry.term)}
+              >
                 <LocateIcon size={13} />
               </IconButton>
             </div>
@@ -194,8 +212,18 @@ export function TermNavigatorView() {
               <div className="row" style={{ justifyContent: "space-between", alignItems: "baseline", gap: 8 }}>
                 <strong className="navigator-term">{e.term}</strong>
                 <div className="row" style={{ gap: 6, alignItems: "center", flex: "none" }}>
-                  <Badge tone="neutral">{e.occurrences} use{e.occurrences === 1 ? "" : "s"}</Badge>
-                  <IconButton label={`Find ${e.term}`} onClick={() => void find(e.term)}>
+                  <Badge tone="neutral">
+                    {labelFor(e.term) ??
+                      `${countFor(e.term) ?? e.occurrences} use${
+                        (countFor(e.term) ?? e.occurrences) === 1 ? "" : "s"
+                      }`}
+                  </Badge>
+                  <IconButton
+                    label={
+                      e.occurrences > 1 ? `Find next occurrence of ${e.term}` : `Find ${e.term}`
+                    }
+                    onClick={() => cycleTerm(e.term)}
+                  >
                     <LocateIcon size={13} />
                   </IconButton>
                 </div>

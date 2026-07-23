@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { errorMessage } from "@/api/errors";
 import { ViewHeader } from "@/ui/ViewHeader";
+import { RescanButton } from "@/ui/RescanButton";
 import { Badge, Banner, Button, Spinner } from "@/ui/primitives";
 import { LocateIcon } from "@/ui/icons";
 import { StatusGroup } from "@/ui/StatusGroup";
@@ -147,9 +148,9 @@ export function DefinedTermsView() {
     <div className="stack terms-view">
       <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
         <h1 className="view-title">Defined terms</h1>
-        <Button variant="ghost" size="sm" onClick={() => void scan()} data-tour="terms-rescan">
-          Rescan
-        </Button>
+        <span data-tour="terms-rescan">
+          <RescanButton onClick={() => void scan()} />
+        </span>
       </div>
 
       <div className="row" style={{ gap: 6, flexWrap: "wrap", alignItems: "center" }}>

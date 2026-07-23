@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { errorMessage } from "@/api/errors";
 import { ViewHeader } from "@/ui/ViewHeader";
+import { RescanButton } from "@/ui/RescanButton";
 import { Banner, Button, Spinner } from "@/ui/primitives";
 import {
   CheckIcon,
@@ -205,9 +206,9 @@ export function SendReadyView() {
     <div className="stack sendready-view">
       <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
         <h1 className="view-title">Send-ready</h1>
-        <Button variant="ghost" size="sm" data-tour="sr-rescan" onClick={() => void scan()}>
-          Rescan
-        </Button>
+        <span data-tour="sr-rescan">
+          <RescanButton onClick={() => void scan()} />
+        </span>
       </div>
 
       {blockers > 0 ? (

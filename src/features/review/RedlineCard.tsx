@@ -749,7 +749,18 @@ export function RedlineCard({
             <XIcon size={14} />
           </IconButton>
           {overflowItems.length > 0 && <OverflowMenu label="More actions" items={overflowItems} />}
-          {!applicable && <span className="small muted">Verify manually</span>}
+          {!applicable && (
+            <span
+              className="small muted"
+              title={
+                "Accept isn't available because this wording couldn't be matched word-for-word " +
+                "in the document (it wasn't verified against the source, or it sits in a text box " +
+                "or shape Word can't search). Use Copy proposed and paste it in, then check the placement."
+              }
+            >
+              Can't insert automatically; copy it in
+            </span>
+          )}
           {regenerating && <span className="small muted">Generating an alternative...</span>}
           {!regenerating && feedback && (
             <span className="small muted row" style={{ gap: 4 }}>

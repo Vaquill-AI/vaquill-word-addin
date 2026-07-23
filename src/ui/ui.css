@@ -233,6 +233,30 @@
   line-height: 1.5;
 }
 
+/* Bare <select> outside a .field (e.g. Client rules, matter/playbook pickers)
+   must not fall back to the raw OS dropdown. This gives every native select the
+   same bordered control look as .field select, so dropdowns are consistent
+   everywhere without each call site remembering to wrap itself in a field. */
+select {
+  max-width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--control-border);
+  border-radius: var(--radius-sm);
+  font-size: var(--fs-body);
+  font-family: inherit;
+  color: var(--text);
+  background: var(--surface);
+  transition: background 0.12s ease, border-color 0.12s ease, box-shadow 0.12s ease;
+}
+select:hover {
+  border-color: var(--neutral-fg-3);
+}
+select:focus {
+  outline: none;
+  border-color: var(--brand);
+  box-shadow: 0 0 0 2px var(--brand-tint);
+}
+
 /* Responsive field grid. In a narrow task pane it is a single column; as the
    user widens the pane it flows short controls (selects, small inputs) into 2+
    columns automatically. Wide controls (textareas, full-width rows) opt out

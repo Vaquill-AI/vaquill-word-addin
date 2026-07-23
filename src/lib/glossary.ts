@@ -56,14 +56,20 @@ function lineAround(text: string, index: number): string {
   return text.slice(start, end).trim().slice(0, DEFINITION_MAX);
 }
 
+/** The simple plural form(s) of a defined term, matching the counting rule in
+ *  {@link countTermOccurrences}: a "y" ending pluralizes to "ies", otherwise "+s".
+ *  Exported so occurrence-cycling searches the SAME set the badge counts, keeping
+ *  the "N uses" count and the "k of N" cycle count in agreement. */
+export function termOccurrenceVariants(term: string): string[] {
+  return /y$/.test(term) ? [`${term.slice(0, -1)}ies`] : [`${term}s`];
+}
+
 /** Whole-word occurrence count, tolerating a simple plural. Case-sensitive so the
  *  defined "Party" is not confused with the ordinary word "party". No lookbehind
  *  (Safari / WKWebView safe). */
 function countTermOccurrences(text: string, term: string): number {
-  const esc = escapeRe(term);
-  let variants = `${esc}s?`;
-  if (/y$/.test(term)) variants = `(?:${esc}|${escapeRe(term.slice(0, -1))}ies)`;
-  const re = new RegExp(`\\b(?:${variants})\\b`, "g");
+  const forms = [term, ...termOccurrenceVariants(term)].map(escapeRe);
+  const re = new RegExp(`\\b(?:${forms.join("|")})\\b`, "g");
   return (text.match(re) ?? []).length;
 }
 

@@ -33,16 +33,21 @@ export class AnchorNotFoundError extends OfficeError {
 }
 
 /**
- * True when a redline can be applied directly in the pane: it is grounded
- * verified (the backend confirmed the anchor is a literal substring) and has
- * anchor text to locate. Length and paragraph breaks are no longer disqualifying
- * -- {@link applyVerifiedRedline} anchors long / multi-paragraph clauses by their
- * head + tail windows. The apply path re-verifies the located span, so a clause
- * that ultimately cannot be anchored (e.g. text inside a shape, or a non-unique
- * anchor) fails gracefully with the copy/manual fallback still one click away.
+ * True when we should OFFER to apply a redline in the pane: it quotes original
+ * text to anchor on. Nothing else is disqualifying:
+ *  - length / paragraph breaks: {@link applyVerifiedRedline} anchors long and
+ *    multi-paragraph clauses by their head + tail windows, not one 255-char search;
+ *  - a backend "unverified" grounding: the backend's exact-match check is stricter
+ *    than the client's tolerant search (which reconciles smart quotes, dashes, and
+ *    spacing), so gating on it produced false "can't apply" on clauses the client
+ *    can actually locate.
+ * The apply path RE-VERIFIES the located span before replacing, so a clause that
+ * genuinely is not in the document (or lives in a text box / shape) fails
+ * gracefully with the copy/manual fallback one click away -- anti-hallucination is
+ * preserved, just enforced at apply time by the more capable check.
  */
 export function canApplyInPane(r: RedlineSuggestion): boolean {
-  return r.grounding === "verified" && r.currentLanguage.trim().length > 0;
+  return r.currentLanguage.trim().length > 0;
 }
 
 export interface ApplyResult {

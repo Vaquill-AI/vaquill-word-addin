@@ -389,6 +389,7 @@ export function ChangesView() {
         title="Counterparty changes"
         info="Shows the other side's tracked changes and comments. AI triage classifies each change against your playbook as Accept, Review, or Reject with a reason, so you can auto-accept the safe ones and focus on the rest. Every action here edits Word's real tracked changes, so review before you accept in bulk."
         subtitle="Accept, reject, or reply to the other side's tracked changes."
+        onRescan={() => void reload()}
       />
 
       {tcs.length === 0 && (
@@ -628,15 +629,15 @@ export function ChangesView() {
             {authors.map((a) => {
               const n = tcs.filter((c) => c.author === a).length;
               return (
-                <div key={a || "unknown"} className="card change-item" style={{ gap: 6 }}>
-                  <span className="small" style={{ fontWeight: 600 }}>
+                <div key={a || "unknown"} className="bulk-author">
+                  <span className="bulk-author__name" title={a || "Unknown author"}>
                     {a || "Unknown author"} <span className="muted">({n})</span>
                   </span>
-                  <div className="row" style={{ gap: 8 }}>
+                  <div className="bulk-author__actions">
                     <Button
-                      variant="default"
+                      variant="ghost"
                       size="sm"
-                      block
+                      className="bulk-accept"
                       onClick={() => resolveAuthor(a, "accept")}
                       loading={bulk === `accept:${a}`}
                       disabled={anyBusy}
@@ -644,9 +645,9 @@ export function ChangesView() {
                       <CheckIcon size={13} /> Accept all
                     </Button>
                     <Button
-                      variant="default"
+                      variant="ghost"
                       size="sm"
-                      block
+                      className="bulk-reject"
                       onClick={() => resolveAuthor(a, "reject")}
                       loading={bulk === `reject:${a}`}
                       disabled={anyBusy}

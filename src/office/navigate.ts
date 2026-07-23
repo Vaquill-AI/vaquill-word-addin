@@ -1,5 +1,5 @@
 import { runWord } from "./run";
-import { findBestRange } from "./search";
+import { findBestRange, findExactOccurrences, findRanges } from "./search";
 
 /**
  * Scroll the document to a clause and select it. This is the bidirectional link
@@ -60,11 +60,12 @@ async function clearActiveHighlight(): Promise<void> {
   }
   if (!text) return;
   await runWord(async (context) => {
-    const range = await findBestRange(context, text);
-    if (range) {
-      (range as unknown as Highlightable).unhighlight();
-      await context.sync();
-    }
+    // Unhighlight EVERY match of the tracked text, not just findBestRange's one.
+    // Occurrence-cycling can highlight a non-"best" match, so clearing all of
+    // them guarantees the live highlight is gone before the next is painted.
+    const ranges = await findRanges(context, text);
+    for (const range of ranges) (range as unknown as Highlightable).unhighlight();
+    if (ranges.length > 0) await context.sync();
   }).catch(() => {
     // Best-effort: a lingering highlight is cosmetic and the next locate clears it.
   });
@@ -103,4 +104,51 @@ export async function locateInDocument(text: string, holdMs = 2600): Promise<boo
     void clearActiveHighlight();
   }, holdMs);
   return true;
+}
+
+/**
+ * Locate the Nth occurrence of `text` (0-based; wraps), flashing a temporary
+ * highlight and scrolling it into view without leaving it selected. Unlike
+ * `locateInDocument` (which always lands on the single BEST match), this walks
+ * EVERY occurrence in document order, so a caller can advance the index on each
+ * click to step through all of them. Returns the total occurrence count and the
+ * wrapped index actually selected (`count` 0 = not found).
+ */
+export async function locateOccurrence(
+  text: string,
+  index: number,
+  opts: { variants?: readonly string[]; holdMs?: number } = {},
+): Promise<{ count: number; index: number }> {
+  const { variants = [], holdMs = 2600 } = opts;
+  const q = text.trim();
+  if (!q) return { count: 0, index: -1 };
+
+  await clearActiveHighlight();
+
+  const result = await runWord(async (context) => {
+    // Exact whole-word, case-sensitive matches so the count agrees with the
+    // "N uses" / "N times" badge (findRanges would over-count via fuzzy fallback).
+    const ranges = await findExactOccurrences(context, q, variants);
+    if (ranges.length === 0) return { count: 0, index: -1 };
+    const i = ((index % ranges.length) + ranges.length) % ranges.length;
+    const target = ranges[i];
+    if (canHighlight()) {
+      (target as unknown as Highlightable).highlight();
+      // Collapse to the start so the highlight is the cue and nothing is left
+      // selected (consistent with locateInDocument).
+      target.select(Word.SelectionMode.start);
+    } else {
+      target.select(Word.SelectionMode.select);
+    }
+    await context.sync();
+    return { count: ranges.length, index: i };
+  }).catch(() => ({ count: 0, index: -1 }));
+
+  if (result.count > 0 && canHighlight()) {
+    activeHighlight = q;
+    clearTimer = setTimeout(() => {
+      void clearActiveHighlight();
+    }, holdMs);
+  }
+  return result;
 }

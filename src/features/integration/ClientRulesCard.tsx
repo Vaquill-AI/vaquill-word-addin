@@ -89,7 +89,12 @@ export function ClientRulesCard({ onRulesText }: { onRulesText?: (text: string) 
         {clientId && <Badge tone="neutral">{rules.length}</Badge>}
       </div>
 
-      <select aria-label="Client" value={clientId} onChange={(e) => pick(e.target.value)}>
+      <select
+        aria-label="Client"
+        value={clientId}
+        onChange={(e) => pick(e.target.value)}
+        style={{ width: "100%" }}
+      >
         <option value="">Select a client...</option>
         {clients.map((c) => (
           <option key={c.id} value={c.id}>

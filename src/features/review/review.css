@@ -387,6 +387,53 @@
   flex-direction: column;
   gap: 6px;
 }
+
+/* Bulk accept/reject by author: a compact, borderless row (name on the left,
+   inline tinted actions on the right) instead of two full-width boxed buttons. */
+.bulk-author {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 4px 6px;
+  border-radius: var(--radius-sm);
+}
+.bulk-author:hover {
+  background: var(--fill-subtle);
+}
+.bulk-author__name {
+  min-width: 0;
+  font-size: var(--fs-small);
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.bulk-author__actions {
+  display: inline-flex;
+  gap: 2px;
+  flex: none;
+}
+.bulk-author__actions .btn {
+  white-space: nowrap;
+}
+/* Tint the borderless ghost actions so accept reads green and reject reads red,
+   with a matching soft hover fill. Higher specificity than .btn--ghost so the
+   color wins regardless of stylesheet order. */
+.btn--ghost.bulk-accept {
+  color: var(--success);
+}
+.btn--ghost.bulk-accept:hover:not(:disabled) {
+  background: var(--success-tint);
+  color: var(--success);
+}
+.btn--ghost.bulk-reject {
+  color: var(--danger);
+}
+.btn--ghost.bulk-reject:hover:not(:disabled) {
+  background: var(--danger-tint);
+  color: var(--danger);
+}
 .change-item__head {
   display: flex;
   align-items: flex-start;

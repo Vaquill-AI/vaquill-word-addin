@@ -1,14 +1,15 @@
 import { useCallback, useEffect, useState } from "react";
 import { errorMessage } from "@/api/errors";
 import { ViewHeader } from "@/ui/ViewHeader";
+import { RescanButton } from "@/ui/RescanButton";
 import { Badge, Banner, Button, Spinner } from "@/ui/primitives";
 import { LocateIcon } from "@/ui/icons";
 import { readNumberedParagraphs } from "@/office/structure";
-import { locateInDocument } from "@/office/navigate";
 import { insertCommentAnchored } from "@/office/comments";
 import { useAppNav } from "@/app/nav";
 import { analyzeCrossReferences, type CrossRefReport } from "@/lib/cross-references";
 import { useDocumentAutoRefresh } from "@/lib/useDocumentAutoRefresh";
+import { useOccurrenceCycler } from "@/lib/useOccurrenceCycler";
 import "./xref.css";
 
 type State =
@@ -79,11 +80,12 @@ export function CrossRefView() {
     else if (r === "unsupported_region") setNote("Word does not allow a comment in that location.");
   }
 
-  async function find(label: string) {
+  // Step through each mention of a broken reference on repeated clicks.
+  const { cycle, labelFor, countFor } = useOccurrenceCycler();
+  const cycleRef = (label: string) => {
     setNote(null);
-    const ok = await locateInDocument(label);
-    if (!ok) setNote(`Could not locate "${label}" in the document.`);
-  }
+    void cycle(label).catch((e) => setNote(errorMessage(e)));
+  };
 
   const header = (
     <ViewHeader
@@ -122,9 +124,9 @@ export function CrossRefView() {
     <div className="stack xref-view">
       <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
         <h1 className="view-title">Cross-references</h1>
-        <Button variant="ghost" size="sm" onClick={() => void scan()} data-tour="xref-rescan">
-          Rescan
-        </Button>
+        <span data-tour="xref-rescan">
+          <RescanButton onClick={() => void scan()} />
+        </span>
       </div>
 
       <div className="row" style={{ gap: 6, flexWrap: "wrap", alignItems: "center" }}>
@@ -157,8 +159,12 @@ export function CrossRefView() {
               <div className="stack" style={{ gap: 0, minWidth: 0 }}>
                 <span className="xref-label">{b.label}</span>
                 <span className="small muted">
-                  Referenced {b.count}
-                  {b.count === 1 ? " time" : " times"}, not found
+                  {labelFor(b.label)
+                    ? `Occurrence ${labelFor(b.label)}`
+                    : (() => {
+                        const c = countFor(b.label) ?? b.count;
+                        return `Referenced ${c} ${c === 1 ? "time" : "times"}, not found`;
+                      })()}
                 </span>
                 {b.context && (
                   <span className="ctx-line">
@@ -172,8 +178,12 @@ export function CrossRefView() {
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => void find(b.label)}
-                  aria-label={`Find ${b.label} in the document`}
+                  onClick={() => cycleRef(b.label)}
+                  aria-label={
+                    b.count > 1
+                      ? `Find next occurrence of ${b.label}`
+                      : `Find ${b.label} in the document`
+                  }
                   title="Find in document"
                   data-tour="xref-find"
                 >

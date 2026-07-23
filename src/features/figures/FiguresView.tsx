@@ -81,8 +81,39 @@ export function FiguresView() {
         tourId="tool-figures"
         title="Figures check"
         subtitle="Find numbers written in words that do not match the numeral beside them."
-        info="Checks every 'words (numeral)' pair, e.g. 'thirty (30) days' or 'ten thousand dollars ($10,000)', and flags the ones that disagree. It only checks pairs it can read confidently, so unusual phrasings are skipped rather than mis-flagged."
+        info="Only pairs it can read confidently are checked, so unusual phrasings are skipped rather than mis-flagged."
+        onRescan={() => void load()}
+        rescanning={report === null}
       />
+
+      {/* Plain-language explainer with examples, so what counts as a mismatch is
+          obvious without hovering the header info. */}
+      <div className="figures-explainer">
+        <p className="small muted figures-explainer__lead">
+          A number spelled out in words should match the numeral beside it. When
+          they disagree it is a costly ambiguity (courts have split on which one
+          controls), so this flags every spelled-out number whose numeral does not
+          agree.
+        </p>
+        <div className="figures-egs">
+          <span className="figures-eg figures-eg--bad">
+            <span className="figures-eg__tag">Flagged</span>
+            thirty <b>(40)</b> days
+          </span>
+          <span className="figures-eg figures-eg--bad">
+            <span className="figures-eg__tag">Flagged</span>
+            ten thousand dollars <b>($15,000)</b>
+          </span>
+          <span className="figures-eg figures-eg--bad">
+            <span className="figures-eg__tag">Flagged</span>
+            twelve percent <b>(10%)</b>
+          </span>
+          <span className="figures-eg figures-eg--ok">
+            <span className="figures-eg__tag">Fine</span>
+            three (3) years
+          </span>
+        </div>
+      </div>
 
       {error && <Banner tone="danger">{error}</Banner>}
 
