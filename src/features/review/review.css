@@ -94,6 +94,46 @@
   padding: 14px;
 }
 
+/* Results tab row (Redlines / Summary / Flags) inside the sticky header. A light
+   underline row, intentionally lighter than the boxed sub-tab bar above it so the
+   pane never reads as three heavy tab strips. */
+.review-restabs {
+  display: flex;
+  gap: 2px;
+}
+.review-restab {
+  flex: 1;
+  padding: 6px 8px;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: none;
+  color: var(--text-muted);
+  font-size: var(--fs-control);
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.review-restab:hover {
+  color: var(--text);
+}
+.review-restab--on {
+  color: var(--text);
+  border-bottom-color: var(--brand);
+}
+.review-restab__count {
+  min-width: 18px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--surface-muted);
+  color: var(--text-muted);
+  font-size: var(--fs-micro);
+  font-weight: 700;
+  text-align: center;
+}
+
 .setup-summary {
   display: flex;
   align-items: center;

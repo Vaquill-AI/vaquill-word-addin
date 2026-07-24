@@ -32,6 +32,29 @@
   word-break: break-word;
 }
 
+/* Expanded via "Read more": drop the clamp and show the whole clause. */
+.clause-card__preview--full {
+  display: block;
+  -webkit-line-clamp: none;
+  overflow: visible;
+}
+
+/* "Read more" / "Show less" toggle: a quiet inline link under the preview. */
+.clause-card__more {
+  align-self: flex-start;
+  margin: -2px 0 0;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--brand-fg);
+  font-size: var(--fs-caption);
+  font-weight: 600;
+  cursor: pointer;
+}
+.clause-card__more:hover {
+  text-decoration: underline;
+}
+
 .clause-card__actions {
   display: flex;
   justify-content: flex-end;

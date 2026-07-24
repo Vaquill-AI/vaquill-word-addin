@@ -76,6 +76,50 @@ function fmtDate(iso: string): string {
   }
 }
 
+/** Which section of a completed review is showing. Redlines is the default so the
+ *  user lands on the edits, not a wall of summary text. */
+type ResultsTab = "redlines" | "summary" | "flags";
+
+/** Lightweight underline-tab row for a finished review, so Summary, Flags, and the
+ *  redline cards are separate views instead of one long scroll. Kept visually
+ *  lighter than the boxed sub-tab bar above it to avoid three heavy tab rows. */
+function ResultsTabs({
+  value,
+  onChange,
+  redlineCount,
+  flagCount,
+}: {
+  value: ResultsTab;
+  onChange: (t: ResultsTab) => void;
+  redlineCount: number;
+  flagCount: number;
+}) {
+  const tabs: { id: ResultsTab; label: string; count?: number }[] = [
+    { id: "redlines", label: "Redlines", count: redlineCount },
+    { id: "summary", label: "Summary" },
+    { id: "flags", label: "Flags", count: flagCount },
+  ];
+  return (
+    <div className="review-restabs" role="tablist" aria-label="Review results">
+      {tabs.map((t) => (
+        <button
+          key={t.id}
+          type="button"
+          role="tab"
+          aria-selected={value === t.id}
+          className={`review-restab${value === t.id ? " review-restab--on" : ""}`}
+          onClick={() => onChange(t.id)}
+        >
+          {t.label}
+          {t.count != null && t.count > 0 && (
+            <span className="review-restab__count">{t.count}</span>
+          )}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 export function ReviewView({
   pendingPlaybook,
   pendingPreset,
@@ -95,6 +139,8 @@ export function ReviewView({
   const [params, setParams] = useState<RunParams | null>(null);
   const [formInit, setFormInit] = useState<{ contractType: string; playbookId: string } | null>(null);
   const [filter, setFilter] = useState<RedlineFilter>("all");
+  // Which section of a completed review is showing (Redlines / Summary / Flags).
+  const [resultsTab, setResultsTab] = useState<ResultsTab>("redlines");
   // Quick-check presets: an NDA screen and a compliance check are review flavors,
   // so they live here rather than as separate tools. When set, the preset view
   // takes over; the full review's state is preserved underneath.
@@ -153,6 +199,7 @@ export function ReviewView({
     if (!pendingFocus) return;
     setFocusKey(pendingFocus.clauseKey);
     setFilter("all");
+    setResultsTab("redlines"); // the focused card lives on the Redlines tab
     onPendingConsumed?.();
   }, [pendingFocus, onPendingConsumed]);
 
@@ -271,6 +318,7 @@ export function ReviewView({
   function onRun(p: RunParams) {
     setParams(p);
     setFilter("all");
+    setResultsTab("redlines"); // land on the edits when a fresh review completes
     void run(p);
   }
 
@@ -301,27 +349,22 @@ export function ReviewView({
         ]
       : [];
 
+    const flagCount = result.flags?.length ?? 0;
+
     return (
       <div className="review review--results">
         <div className="review__header">
           <SetupSummary parts={summaryParts} onNew={reset} />
-          <ReviewToolbar
-            total={redlines.length}
-            addressed={addressed}
-            filter={filter}
-            onFilter={setFilter}
-            counts={counts}
-            signoff={
-              gate?.required ? (
-                <Badge tone="red">
-                  {gate.level ? SIGNOFF_LABEL[gate.level] : "Sign-off required"}
-                </Badge>
-              ) : undefined
-            }
+          <ResultsTabs
+            value={resultsTab}
+            onChange={setResultsTab}
+            redlineCount={redlines.length}
+            flagCount={flagCount}
           />
         </div>
 
         <div className="review__body">
+          {/* Warnings apply to the whole review, so they stay above the tab body. */}
           {state.partial && params && (
             <Banner tone="warn">
               <p className="small" style={{ margin: 0 }}>
@@ -349,79 +392,124 @@ export function ReviewView({
               </div>
             </Banner>
           )}
-          {gate && (
-            <SignoffGate
-              gate={gate}
-              action={
-                <RecordGovernance
-                  gate={gate}
-                  meta={{
-                    contractType: result.contractType ?? params?.contractType,
-                    playbookId: params?.playbookId,
-                    matterId: params?.matterId,
-                    draftId: savedDraftId ?? undefined,
-                  }}
-                />
-              }
-            />
-          )}
-          <ReviewSummary result={result} />
-          <ReviewOverview redlines={redlines} />
-          <ReviewMemo result={result} redlines={redlines} />
-          <ReviewFlags flags={result.flags ?? []} />
-          <IssuesListExport redlines={redlines} flags={result.flags ?? []} decisionOf={decisionOf} />
-          <OutlinePanel />
-          {redlines.length > 0 && <DocumentTools redlines={redlines} />}
-          <SaveToVaquill
-            mode="review"
-            redlines={redlines}
-            defaultMatterId={params?.matterId}
-            contractType={result.contractType ?? params?.contractType}
-            title={params ? `${labelOf(CONTRACT_TYPES, params.contractType)} (reviewed)` : "Reviewed contract"}
-            onSaved={setSavedDraftId}
-          />
 
-          {redlines.length === 0 ? (
-            <Banner tone="info">No redlines suggested. This contract looks clean from your side.</Banner>
-          ) : visible.length === 0 ? (
-            <p className="small muted" style={{ textAlign: "center", padding: "12px 0" }}>
-              {filter === "unresolved" ? "Everything here is addressed." : "Nothing matches this filter."}
-            </p>
-          ) : (
+          {/* SUMMARY tab: the read-the-review content + review-level utilities. */}
+          {resultsTab === "summary" && (
             <div className="stack">
-              {visible.map(({ r, i }) => {
-                const focused = redlineKey(r) === focusKey;
-                return (
-                  <div
-                    key={`${r.clauseName}-${i}`}
-                    ref={focused ? focusCardRef : undefined}
-                    className={focused ? "redline-focus" : undefined}
-                  >
-                    <RedlineCard
-                      redline={r}
-                      index={i}
-                      decision={decisionOf(i)}
-                      onDecision={setDecision}
-                      applyBusy={applyBusy}
-                      setApplyBusy={setApplyBusy}
-                      fixContext={
-                        params
-                          ? {
-                              userSide: params.userSide,
-                              paperSide: params.paperSide,
-                              playbookId: params.playbookId,
-                            }
-                          : undefined
-                      }
+              {gate && (
+                <SignoffGate
+                  gate={gate}
+                  action={
+                    <RecordGovernance
+                      gate={gate}
+                      meta={{
+                        contractType: result.contractType ?? params?.contractType,
+                        playbookId: params?.playbookId,
+                        matterId: params?.matterId,
+                        draftId: savedDraftId ?? undefined,
+                      }}
                     />
-                  </div>
-                );
-              })}
+                  }
+                />
+              )}
+              <ReviewSummary result={result} />
+              <ReviewOverview redlines={redlines} />
+              <ReviewMemo result={result} redlines={redlines} />
+              <IssuesListExport
+                redlines={redlines}
+                flags={result.flags ?? []}
+                decisionOf={decisionOf}
+              />
+              <OutlinePanel />
+              {redlines.length > 0 && <DocumentTools redlines={redlines} />}
+              <SaveToVaquill
+                mode="review"
+                redlines={redlines}
+                defaultMatterId={params?.matterId}
+                contractType={result.contractType ?? params?.contractType}
+                title={
+                  params
+                    ? `${labelOf(CONTRACT_TYPES, params.contractType)} (reviewed)`
+                    : "Reviewed contract"
+                }
+                onSaved={setSavedDraftId}
+              />
+            </div>
+          )}
+
+          {/* FLAGS tab. */}
+          {resultsTab === "flags" &&
+            (flagCount > 0 ? (
+              <ReviewFlags flags={result.flags ?? []} />
+            ) : (
+              <Banner tone="info">No items flagged for discussion.</Banner>
+            ))}
+
+          {/* REDLINES tab: the filter toolbar + the edit cards. */}
+          {resultsTab === "redlines" && (
+            <div className="stack">
+              <ReviewToolbar
+                total={redlines.length}
+                addressed={addressed}
+                filter={filter}
+                onFilter={setFilter}
+                counts={counts}
+                signoff={
+                  gate?.required ? (
+                    <Badge tone="red">
+                      {gate.level ? SIGNOFF_LABEL[gate.level] : "Sign-off required"}
+                    </Badge>
+                  ) : undefined
+                }
+              />
+              {redlines.length === 0 ? (
+                <Banner tone="info">
+                  No redlines suggested. This contract looks clean from your side.
+                </Banner>
+              ) : visible.length === 0 ? (
+                <p className="small muted" style={{ textAlign: "center", padding: "12px 0" }}>
+                  {filter === "unresolved"
+                    ? "Everything here is addressed."
+                    : "Nothing matches this filter."}
+                </p>
+              ) : (
+                <div className="stack">
+                  {visible.map(({ r, i }) => {
+                    const focused = redlineKey(r) === focusKey;
+                    return (
+                      <div
+                        key={`${r.clauseName}-${i}`}
+                        ref={focused ? focusCardRef : undefined}
+                        className={focused ? "redline-focus" : undefined}
+                      >
+                        <RedlineCard
+                          redline={r}
+                          index={i}
+                          decision={decisionOf(i)}
+                          onDecision={setDecision}
+                          applyBusy={applyBusy}
+                          setApplyBusy={setApplyBusy}
+                          fixContext={
+                            params
+                              ? {
+                                  userSide: params.userSide,
+                                  paperSide: params.paperSide,
+                                  playbookId: params.playbookId,
+                                }
+                              : undefined
+                          }
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           )}
         </div>
 
-        {redlines.length > 0 && (
+        {/* Apply-all is a redlines action, so it pins to the bottom only there. */}
+        {redlines.length > 0 && resultsTab === "redlines" && (
           <ReviewActionBar
             redlines={redlines}
             contractType={result.contractType ?? params?.contractType ?? "other"}

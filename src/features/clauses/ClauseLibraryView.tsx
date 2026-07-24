@@ -186,6 +186,9 @@ function ClauseCard({
   onDelete: () => void;
 }) {
   const typeLabel = clauseTypeLabel(clause.clauseType);
+  const [expanded, setExpanded] = useState(false);
+  // Only offer "Read more" when the body is actually clipped by the preview.
+  const isLong = clause.content.length > PREVIEW_MAX;
   return (
     <div className="card clause-card" role="listitem">
       <div className="clause-card__head">
@@ -203,7 +206,23 @@ function ClauseCard({
           </IconButton>
         )}
       </div>
-      <p className="clause-card__preview small muted">{preview(clause.content)}</p>
+      <p
+        className={`clause-card__preview small muted${
+          expanded ? " clause-card__preview--full" : ""
+        }`}
+      >
+        {expanded ? clause.content : preview(clause.content)}
+      </p>
+      {isLong && (
+        <button
+          type="button"
+          className="clause-card__more"
+          onClick={() => setExpanded((v) => !v)}
+          aria-expanded={expanded}
+        >
+          {expanded ? "Show less" : "Read more"}
+        </button>
+      )}
       <div className="clause-card__actions">
         <Button variant="primary" size="sm" onClick={onInsert} loading={busy} disabled={busy}>
           Insert at cursor
