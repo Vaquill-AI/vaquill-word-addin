@@ -1,14 +1,22 @@
 import { useState } from "react";
 import { Button, Banner, LiveRegion } from "@/ui/primitives";
 import { DownloadDocxButton } from "./DownloadDocxButton";
+import { isCommunity } from "@/community/edition";
 import { exportCorrectedDocx } from "@/api/contract-review";
-import { downloadDocx } from "@/office/export";
+import { downloadBlob, downloadDocx, readDocumentAsDocxBlob } from "@/office/export";
 import { readDocumentText } from "@/office/document";
 import { applyVerifiedRedline, canApplyInPane } from "@/office/redline";
 import { insertClauseFormatted } from "@/office/richInsert";
 import { errorMessage } from "@/api/errors";
 import type { RedlineSuggestion, AcceptedRedline } from "@/api/types";
 import type { Decision } from "./decisions";
+
+interface ApplyOutcome {
+  applied: number;
+  failed: number;
+  skipped: number;
+  total: number;
+}
 
 /**
  * Sticky bottom bar. Two clearly separated actions:
@@ -46,12 +54,12 @@ export function ReviewActionBar({
     .map((r, i) => ({ r, i }))
     .filter(({ r, i }) => decisionOf(i) === "pending" && (r.grounding === "insertion" || canApplyInPane(r)));
 
-  async function applyAll() {
-    // Never run concurrently with a per-card Accept (a double insertion-redline
-    // would append the clause to the document twice).
-    if (applyBusy) return;
-    setError(null);
-    setNote(null);
+  // Apply every open, applicable redline in place as tracked changes. Returns a
+  // count breakdown, or null if an apply is already running (never run
+  // concurrently with a per-card Accept -- a double insertion-redline would
+  // append the clause to the document twice). Callers own the messaging.
+  async function runApplyAll(): Promise<ApplyOutcome | null> {
+    if (applyBusy) return null;
     const total = openApplicable.length;
     setApplyBusy(true);
     setApplying({ done: 0, total });
@@ -85,16 +93,56 @@ export function ReviewActionBar({
       setApplying(null);
       setApplyBusy(false);
     }
-    const applied = total - failed - skipped;
-    if (failed > 0) {
+    return { applied: total - failed - skipped, failed, skipped, total };
+  }
+
+  async function applyAll() {
+    setError(null);
+    setNote(null);
+    const r = await runApplyAll();
+    if (!r) return;
+    if (r.failed > 0) {
       setError(
-        `Applied ${applied} of ${total}. ${failed} could not be placed automatically (the clause text was not found or appears more than once); apply those individually.`,
+        `Applied ${r.applied} of ${r.total}. ${r.failed} could not be placed automatically (the clause text was not found or appears more than once); apply those individually.`,
       );
     } else {
       setNote(
-        `Applied ${applied} redline${applied === 1 ? "" : "s"} as tracked changes.` +
-          (skipped > 0 ? ` ${skipped} skipped (resolved while applying).` : ""),
+        `Applied ${r.applied} redline${r.applied === 1 ? "" : "s"} as tracked changes.` +
+          (r.skipped > 0 ? ` ${r.skipped} skipped (resolved while applying).` : ""),
       );
+    }
+  }
+
+  // Community/BYOK download: no backend, so build the redlined copy on-device.
+  // Apply the open redlines as tracked changes, then export the CURRENT document
+  // (which now carries them) via getFileAsync and hand it back as a .docx. The
+  // tracked changes also remain in the open document, reversible by the user.
+  async function downloadLocal() {
+    setError(null);
+    setNote(null);
+    setDownloading(true);
+    try {
+      const r = await runApplyAll();
+      if (!r) return; // an apply is already in flight
+      const blob = await readDocumentAsDocxBlob();
+      const filename = `redlined-${(contractType || "document").toLowerCase()}.docx`;
+      if (!downloadBlob(blob, filename)) {
+        setError("Could not start the download in this version of Word.");
+        return;
+      }
+      const appliedMsg =
+        r.applied > 0
+          ? `Applied ${r.applied} redline${r.applied === 1 ? "" : "s"} as tracked changes and downloaded the redlined copy.`
+          : "Downloaded a copy of the document.";
+      setNote(
+        r.failed > 0
+          ? `${appliedMsg} ${r.failed} could not be placed automatically; apply those individually.`
+          : appliedMsg,
+      );
+    } catch (e) {
+      setError(errorMessage(e));
+    } finally {
+      setDownloading(false);
     }
   }
 
@@ -165,7 +213,10 @@ export function ReviewActionBar({
               ? `Apply all open (${openApplicable.length})`
               : "All addressed"}
         </Button>
-        <DownloadDocxButton onDownload={download} downloading={downloading} />
+        <DownloadDocxButton
+          onDownload={isCommunity() ? downloadLocal : download}
+          downloading={downloading}
+        />
       </div>
     </div>
   );

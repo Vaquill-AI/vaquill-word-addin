@@ -90,6 +90,80 @@ export function downloadBlob(blob: Blob, filename: string): boolean {
   }
 }
 
+/**
+ * Read the ENTIRE open document as a .docx Blob, on-device, with no backend.
+ *
+ * Uses the Common API getFileAsync slice protocol (the CompressedFile
+ * requirement set: Word on the web, Windows, Mac, iPad). getFileAsync captures
+ * the CURRENT document state, so any tracked changes just applied are included
+ * -- this is how the community edition produces a redlined copy that the hosted
+ * build authors server-side. Slices are read one at a time (as the docs
+ * recommend) and reassembled into a single byte array.
+ */
+export function readDocumentAsDocxBlob(): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    Office.context.document.getFileAsync(
+      Office.FileType.Compressed,
+      { sliceSize: 65536 },
+      (result) => {
+        if (result.status !== Office.AsyncResultStatus.Succeeded) {
+          reject(new Error(result.error?.message || "Could not read the document."));
+          return;
+        }
+        const file = result.value;
+        const sliceCount = file.sliceCount;
+        const slices: number[][] = new Array(sliceCount);
+
+        const fail = (message: string) => {
+          try {
+            file.closeAsync(() => {});
+          } catch {
+            // Closing is best-effort cleanup.
+          }
+          reject(new Error(message || "Could not read the document."));
+        };
+
+        const finish = () => {
+          let total = 0;
+          for (const s of slices) total += s.length;
+          const bytes = new Uint8Array(total);
+          let offset = 0;
+          for (const s of slices) {
+            bytes.set(s, offset);
+            offset += s.length;
+          }
+          try {
+            file.closeAsync(() => {});
+          } catch {
+            // Closing is best-effort cleanup.
+          }
+          resolve(
+            new Blob([bytes], {
+              type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            }),
+          );
+        };
+
+        const readNext = (index: number) => {
+          if (index >= sliceCount) {
+            finish();
+            return;
+          }
+          file.getSliceAsync(index, (sliceResult) => {
+            if (sliceResult.status !== Office.AsyncResultStatus.Succeeded) {
+              fail(sliceResult.error?.message || "Could not read the document.");
+              return;
+            }
+            slices[index] = sliceResult.value.data as number[];
+            readNext(index + 1);
+          });
+        };
+        readNext(0);
+      },
+    );
+  });
+}
+
 /** Trigger a browser download of the returned .docx as a fallback to inserting it. */
 /** Returns whether the download could be started (see downloadBlob). */
 export function downloadDocx(base64: string, filename: string): boolean {
