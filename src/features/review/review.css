@@ -134,11 +134,21 @@
   text-align: center;
 }
 
-.setup-summary {
+/* Tabs (Redlines / Summary / Flags) and the "New review" action on one row: the
+   tabs fill the space, the button sits fixed at the right. Keeps the action off
+   its own otherwise-empty row above the tabs. */
+.review__restabs-row {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 8px;
+}
+.review__restabs-row .review-restabs {
+  flex: 1;
+  min-width: 0;
+}
+.review__new {
+  flex: none;
+  white-space: nowrap;
 }
 .setup-summary__parts {
   color: var(--text-muted);

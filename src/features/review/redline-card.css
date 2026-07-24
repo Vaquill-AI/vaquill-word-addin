@@ -1,42 +1,10 @@
 /* Enhancements layered on the base .redline styles in review.css:
-   the Redline/Final preview toggle, the edit-before-apply panel, and the
-   collapsible "Why this change" reasoning. */
+   the edit-before-apply panel and the collapsible "Why this change" reasoning. */
 
 /* The redline card is the primary interactive unit, so it keeps a lift: a
    whisper of shadow (no drawn 1px border) sets it off the flat canvas. */
 .card.redline {
   box-shadow: var(--shadow-2);
-}
-
-.redline__viewtoggle {
-  display: inline-flex;
-  gap: 2px;
-  padding: 2px;
-  border-radius: var(--radius-sm);
-  background: var(--surface-muted);
-  align-self: flex-start;
-}
-
-.redline__viewbtn {
-  border: none;
-  background: none;
-  padding: 3px 10px;
-  border-radius: calc(var(--radius-sm) - 1px);
-  font-size: var(--fs-caption);
-  font-weight: 600;
-  color: var(--text-muted);
-  cursor: pointer;
-}
-
-.redline__viewbtn--on {
-  background: var(--surface);
-  color: var(--text);
-  box-shadow: var(--shadow-2);
-}
-
-.redline__viewbtn:focus-visible {
-  outline: 2px solid var(--brand);
-  outline-offset: -2px;
 }
 
 .redline__text--ins {

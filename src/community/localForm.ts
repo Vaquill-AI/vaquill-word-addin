@@ -47,13 +47,27 @@ export async function communityRequestForm<T>(path: string, form: FormData): Pro
     throw new ApiError("invalid", 0, "No file was provided.");
   }
 
-  const { text, filename } = await extractTextFromFile(file);
+  const { text, filename, fileData, mediaType } = await extractTextFromFile(file);
 
   if (clean === "/api/v1/drafting/extract-text") {
-    return { text, chars: text.length, truncated: false, filename } as T;
+    // Pass through fileData/mediaType for a PDF so the chat send can attach the
+    // file directly to the provider instead of relying on (impossible) client
+    // text extraction.
+    return { text, chars: text.length, truncated: false, filename, fileData, mediaType } as T;
   }
 
   if (clean === "/api/v1/drafting/upload-reference") {
+    // A drafting reference is injected as TEXT into prompts, so a PDF (which we
+    // only carry as raw bytes for the chat provider) cannot ground drafting.
+    // Reject it clearly rather than storing an empty reference.
+    if (fileData) {
+      throw new ApiError(
+        "invalid",
+        0,
+        "PDFs are supported in chat, not as a drafting reference. Attach a .docx, .txt, or .md here.",
+        "UNSUPPORTED_FILE",
+      );
+    }
     return storeReference(text, filename) as T;
   }
 

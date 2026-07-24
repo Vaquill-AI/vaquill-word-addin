@@ -37,6 +37,18 @@ export interface FormatSkips {
   protectedZone: number;
 }
 
+/** One paragraph that a fix will change, with a preview of the exact change, so
+ *  the tool can show precisely what it will do rather than a bare count. */
+export interface FormatChange {
+  /** Paragraph index within the scanned source (stable for the same scan). */
+  index: number;
+  /** A short, single-line preview of the paragraph's text. */
+  snippet: string;
+  /** The concrete change, e.g. "Arial to Times New Roman", "12 pt to 11 pt", or
+   *  "line spacing and space after". */
+  detail: string;
+}
+
 export interface FormatReport {
   scope: FormatScope;
   /** Non-empty body paragraphs considered. */
@@ -49,6 +61,8 @@ export interface FormatReport {
   sizesFound: number;
   /** Eligible paragraphs that differ from the target, per fix. */
   counts: Record<FixKey, number>;
+  /** The exact paragraphs each fix will change, in document order, for preview. */
+  changes: Record<FixKey, FormatChange[]>;
   skips: FormatSkips;
   blocked: null | "tracked-changes" | "empty";
 }
@@ -72,6 +86,10 @@ const CHUNK = 200;
 interface ParaRec {
   p: Word.Paragraph;
   eligible: boolean;
+  /** Paragraph index within the source, and a preview of its text. Kept for
+   *  eligible paragraphs so the report can show exactly what will change. */
+  index?: number;
+  text?: string;
   font?: string;
   size?: number;
   lineSpacing?: number;
@@ -212,6 +230,8 @@ async function analyze(
     const rec: ParaRec = {
       p,
       eligible: true,
+      index: i,
+      text,
       font,
       size: numOrU(p.font.size),
       lineSpacing: numOrU(p.lineSpacing),
@@ -232,7 +252,7 @@ async function analyze(
   const targetBefore = modeKey(beforeTally);
   const targetAfter = modeKey(afterTally);
 
-  const counts = countOffenders(records, {
+  const { counts, changes } = collectChanges(records, {
     font: targetFont,
     size: targetSize,
     line: targetLine,
@@ -253,6 +273,7 @@ async function analyze(
     fontsFound: fontTally.size,
     sizesFound: sizeTally.size,
     counts,
+    changes,
     skips,
     blocked,
   };
@@ -291,21 +312,52 @@ interface Targets {
   after: number | null;
 }
 
-/** Count eligible paragraphs that differ from the target, per fix. */
-function countOffenders(records: ParaRec[], t: Targets): Record<FixKey, number> {
-  let font = 0;
-  let size = 0;
-  let spacing = 0;
+/** One-line preview of a paragraph's text, whitespace collapsed and clipped. */
+function snippetOf(text: string): string {
+  const t = text.replace(/\s+/g, " ").trim();
+  return t.length > 76 ? `${t.slice(0, 76).trimEnd()}...` : t;
+}
+
+/** Join words as "a", "a and b", "a, b and c" (for the spacing detail). */
+function joinWords(words: string[]): string {
+  if (words.length <= 1) return words[0] ?? "";
+  if (words.length === 2) return `${words[0]} and ${words[1]}`;
+  return `${words.slice(0, -1).join(", ")} and ${words[words.length - 1]}`;
+}
+
+/**
+ * For each fix, the eligible paragraphs that differ from the target, in document
+ * order, each with a human preview of the exact change. `counts[k]` is just
+ * `changes[k].length`, so the summary and the preview can never disagree.
+ */
+function collectChanges(
+  records: ParaRec[],
+  t: Targets,
+): { counts: Record<FixKey, number>; changes: Record<FixKey, FormatChange[]> } {
+  const changes: Record<FixKey, FormatChange[]> = { font: [], size: [], spacing: [] };
   for (const r of records) {
     if (!r.eligible) continue;
-    if (t.font && r.font && r.font !== t.font) font++;
-    if (t.size != null && r.size != null && round1(r.size) !== t.size) size++;
-    const lineOff = t.line != null && !near(r.lineSpacing, t.line);
-    const beforeOff = t.before != null && !near(r.spaceBefore, t.before);
-    const afterOff = t.after != null && !near(r.spaceAfter, t.after);
-    if (lineOff || beforeOff || afterOff) spacing++;
+    const index = r.index ?? 0;
+    const snippet = snippetOf(r.text ?? "");
+
+    if (t.font && r.font && r.font !== t.font) {
+      changes.font.push({ index, snippet, detail: `${r.font} to ${t.font}` });
+    }
+    if (t.size != null && r.size != null && round1(r.size) !== t.size) {
+      changes.size.push({ index, snippet, detail: `${round1(r.size)} pt to ${t.size} pt` });
+    }
+    const spacingProps: string[] = [];
+    if (t.line != null && !near(r.lineSpacing, t.line)) spacingProps.push("line spacing");
+    if (t.before != null && !near(r.spaceBefore, t.before)) spacingProps.push("space before");
+    if (t.after != null && !near(r.spaceAfter, t.after)) spacingProps.push("space after");
+    if (spacingProps.length > 0) {
+      changes.spacing.push({ index, snippet, detail: joinWords(spacingProps) });
+    }
   }
-  return { font, size, spacing };
+  return {
+    counts: { font: changes.font.length, size: changes.size.length, spacing: changes.spacing.length },
+    changes,
+  };
 }
 
 function sourceFor(context: Word.RequestContext, scope: FormatScope): Word.Body | Word.Range {

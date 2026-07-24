@@ -12,7 +12,7 @@ import { ReviewOverview } from "./ReviewOverview";
 import { ReviewMemo } from "./ReviewMemo";
 import { IssuesListExport } from "./IssuesListExport";
 import { ReviewFlags } from "./ReviewFlags";
-import { ReviewToolbar, type RedlineFilter } from "./ReviewToolbar";
+import { ReviewToolbar } from "./ReviewToolbar";
 import { ReviewActionBar } from "./ReviewActionBar";
 import { SetupSummary } from "./SetupSummary";
 import { DocumentTools } from "./DocumentTools";
@@ -21,13 +21,12 @@ import { SaveToVaquill } from "@/features/integration/SaveToVaquill";
 import { RecordGovernance } from "@/features/governance/RecordGovernance";
 import { NdaTriageView } from "@/features/nda/NdaTriageView";
 import { ComplianceView } from "@/features/compliance/ComplianceView";
-import { ArrowLeftIcon } from "@/ui/icons";
+import { ArrowLeftIcon, PlusIcon } from "@/ui/icons";
 import { useReviewContext } from "./ReviewProvider";
 import type { RunParams } from "./useReview";
 import { useReviewFreshness } from "./useReviewFreshness";
 import { useDecisions, redlineKey } from "./decisions";
 import { CONTRACT_TYPES, JURISDICTIONS, USER_SIDES, labelOf } from "./constants";
-import { severityOf } from "@/lib/severity";
 import "./review.css";
 
 const SIGNOFF_LABEL: Record<string, string> = {
@@ -138,7 +137,6 @@ export function ReviewView({
   const { state, run, reset, hydrate } = useReviewContext();
   const [params, setParams] = useState<RunParams | null>(null);
   const [formInit, setFormInit] = useState<{ contractType: string; playbookId: string } | null>(null);
-  const [filter, setFilter] = useState<RedlineFilter>("all");
   // Which section of a completed review is showing (Redlines / Summary / Flags).
   const [resultsTab, setResultsTab] = useState<ResultsTab>("redlines");
   // Quick-check presets: an NDA screen and a compliance check are review flavors,
@@ -193,12 +191,11 @@ export function ReviewView({
   }, [pendingPreset, onPendingConsumed]);
 
   // A "View in review" handoff from the cockpit: remember which clause to focus,
-  // widen the filter so the card can't be hidden, and consume the intent. The
-  // hydrate + scroll happen in the two effects below once the redlines exist.
+  // switch to the Redlines tab, and consume the intent. The hydrate + scroll
+  // happen in the two effects below once the redlines exist.
   useEffect(() => {
     if (!pendingFocus) return;
     setFocusKey(pendingFocus.clauseKey);
-    setFilter("all");
     setResultsTab("redlines"); // the focused card lives on the Redlines tab
     onPendingConsumed?.();
   }, [pendingFocus, onPendingConsumed]);
@@ -275,26 +272,7 @@ export function ReviewView({
   }, [busy]);
 
   const redlines = result?.redlines ?? [];
-  const counts = useMemo(
-    () => ({
-      all: redlines.length,
-      high: redlines.filter((r) => severityOf(r) === "high").length,
-      unresolved: redlines.filter((_, i) => decisionOf(i) === "pending").length,
-    }),
-    [redlines, decisionOf],
-  );
-
-  const visible = useMemo(
-    () =>
-      redlines
-        .map((r, i) => ({ r, i }))
-        .filter(({ r, i }) => {
-          if (filter === "high") return severityOf(r) === "high";
-          if (filter === "unresolved") return decisionOf(i) === "pending";
-          return true;
-        }),
-    [redlines, filter, decisionOf],
-  );
+  const visible = useMemo(() => redlines.map((r, i) => ({ r, i })), [redlines]);
 
   // Focus flow, step 1: if a clause was requested but no live review is showing,
   // hydrate the one stored in the document so its cards render. Without this the
@@ -317,7 +295,6 @@ export function ReviewView({
 
   function onRun(p: RunParams) {
     setParams(p);
-    setFilter("all");
     setResultsTab("redlines"); // land on the edits when a fresh review completes
     void run(p);
   }
@@ -354,13 +331,28 @@ export function ReviewView({
     return (
       <div className="review review--results">
         <div className="review__header">
-          <SetupSummary parts={summaryParts} onNew={reset} />
-          <ResultsTabs
-            value={resultsTab}
-            onChange={setResultsTab}
-            redlineCount={redlines.length}
-            flagCount={flagCount}
-          />
+          {/* "What was reviewed" caption, only when the run carried setup params
+              (a hydrated/resumed review has none, so nothing renders here). */}
+          <SetupSummary parts={summaryParts} />
+          {/* Tabs + "New review" share one row so the action never costs a whole
+              empty row of its own above the tabs. */}
+          <div className="review__restabs-row">
+            <ResultsTabs
+              value={resultsTab}
+              onChange={setResultsTab}
+              redlineCount={redlines.length}
+              flagCount={flagCount}
+            />
+            <Button
+              variant="default"
+              size="sm"
+              className="review__new"
+              onClick={reset}
+              title="Start a new review"
+            >
+              <PlusIcon size={13} /> New review
+            </Button>
+          </div>
         </div>
 
         <div className="review__body">
@@ -445,15 +437,12 @@ export function ReviewView({
               <Banner tone="info">No items flagged for discussion.</Banner>
             ))}
 
-          {/* REDLINES tab: the filter toolbar + the edit cards. */}
+          {/* REDLINES tab: the progress toolbar + the edit cards. */}
           {resultsTab === "redlines" && (
             <div className="stack">
               <ReviewToolbar
                 total={redlines.length}
                 addressed={addressed}
-                filter={filter}
-                onFilter={setFilter}
-                counts={counts}
                 signoff={
                   gate?.required ? (
                     <Badge tone="red">
@@ -466,12 +455,6 @@ export function ReviewView({
                 <Banner tone="info">
                   No redlines suggested. This contract looks clean from your side.
                 </Banner>
-              ) : visible.length === 0 ? (
-                <p className="small muted" style={{ textAlign: "center", padding: "12px 0" }}>
-                  {filter === "unresolved"
-                    ? "Everything here is addressed."
-                    : "Nothing matches this filter."}
-                </p>
               ) : (
                 <div className="stack">
                   {visible.map(({ r, i }) => {

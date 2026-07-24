@@ -26,3 +26,58 @@
   border-radius: var(--radius-md);
   background: var(--surface-muted);
 }
+
+/* ---- Community / BYOK on-device compare ---- */
+
+/* Legend for the on-device diff preview: a styled sample word for each mark,
+   in the same "your document vs the reference" language the apply uses. */
+.compare-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  font-size: var(--fs-micro);
+  color: var(--text-muted);
+}
+
+.compare-legend__key {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+/* The scrollable diff preview. Long unchanged runs are collapsed to an ellipsis
+   by the renderer, so this stays focused on what changed. */
+.compare-diff {
+  margin: 0;
+  max-height: 320px;
+  overflow-y: auto;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-muted);
+  font-size: var(--fs-small);
+  white-space: pre-wrap;
+  word-break: break-word;
+  line-height: 1.55;
+  color: var(--text);
+}
+
+.compare-diff__del {
+  color: var(--danger);
+  text-decoration: line-through;
+  text-decoration-color: rgba(164, 38, 44, 0.5);
+}
+
+.compare-diff__ins {
+  color: var(--success);
+  text-decoration: none;
+  background: var(--success-tint);
+  border-radius: var(--radius-xs);
+  padding: 0 2px;
+}
+
+/* The collapsed-context marker between changes. */
+.compare-diff__gap {
+  color: var(--text-muted);
+  opacity: 0.7;
+}

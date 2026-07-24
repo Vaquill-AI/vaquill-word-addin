@@ -5,6 +5,7 @@ import { XIcon, EditIcon, TrashIcon } from "@/ui/icons";
 import { ScopedSearchList } from "@/ui/ScopedSearchList";
 import type { SegOption } from "@/ui/primitives";
 import { getActiveOrgId } from "@/lib/org";
+import { isCommunity } from "@/community/edition";
 import { errorMessage } from "@/api/errors";
 import {
   createPrompt,
@@ -51,6 +52,9 @@ export function PromptLibrary({
   const [creating, setCreating] = useState(false);
   // The prompt being edited (its own form), or null when not editing.
   const [editing, setEditing] = useState<Prompt | null>(null);
+  // BYOK has no organization, so there is no "Shared" scope -- every prompt is a
+  // private, on-device prompt. Drop the scope tabs entirely there.
+  const community = isCommunity();
 
   useEffect(() => {
     const controller = new AbortController();
@@ -160,9 +164,9 @@ export function PromptLibrary({
             />
           ) : (
             <ScopedSearchList
-              scopes={scopes}
-              activeScope={scope}
-              onScope={setScope}
+              scopes={community ? undefined : scopes}
+              activeScope={community ? undefined : scope}
+              onScope={community ? undefined : setScope}
               scopeLabel="Prompt scope"
               query={query}
               onQuery={setQuery}
@@ -304,14 +308,23 @@ function PromptForm({
           onChange={(e) => setBody(e.target.value)}
         />
       </Field>
-      <Field label="Visibility">
-        <select value={scope} onChange={(e) => setScope(e.target.value as PromptScope)}>
-          <option value="private">Private (only me)</option>
-          <option value="org" disabled={!hasOrg}>
-            Shared with my organization{hasOrg ? "" : " (no organization)"}
-          </option>
-        </select>
-      </Field>
+      {isCommunity() ? (
+        // BYOK: no account/org, so there is no visibility choice -- the prompt is
+        // private and stored in this browser. Say so instead of offering a
+        // disabled org-sharing control that can never work.
+        <p className="small muted" style={{ margin: 0 }}>
+          Saved on this device. Your prompt library is private to this browser.
+        </p>
+      ) : (
+        <Field label="Visibility">
+          <select value={scope} onChange={(e) => setScope(e.target.value as PromptScope)}>
+            <option value="private">Private (only me)</option>
+            <option value="org" disabled={!hasOrg}>
+              Shared with my organization{hasOrg ? "" : " (no organization)"}
+            </option>
+          </select>
+        </Field>
+      )}
       {error && <Banner tone="danger">{error}</Banner>}
       <div className="row" style={{ gap: 8 }}>
         <Button

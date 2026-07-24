@@ -1,6 +1,8 @@
 import { postStream } from "./sse";
 import { uuid } from "./ids";
 import { ApiError } from "./errors";
+import { isCommunity } from "@/community/edition";
+import type { ChatAttachment } from "@/ai/providers/types";
 
 /**
  * Grounded assistant chat over the open document.
@@ -56,6 +58,10 @@ export interface AssistantGrounding {
   enableWebSearch?: boolean;
   /** US jurisdiction scope: state codes and/or 'federal' (e.g. ['ca','federal']). */
   usStates?: string[];
+  /** Community edition only: files (PDFs) to send straight to the user's LLM
+   *  provider as attachments. Ignored by the hosted backend, so only forwarded
+   *  when running the community shim. */
+  attachments?: ChatAttachment[];
 }
 
 export type AssistantOptions = { useRag?: boolean } & AssistantGrounding;
@@ -135,6 +141,12 @@ export async function streamAssistant(
   }
   if (typeof opts?.enableWebSearch === "boolean") body.enableWebSearch = opts.enableWebSearch;
   if (opts?.usStates && opts.usStates.length > 0) body.usStates = opts.usStates;
+  // Provider file attachments (PDFs) are a community-shim concept. Forward them
+  // only in the community edition so the hosted backend never receives a large
+  // unknown field.
+  if (isCommunity() && opts?.attachments && opts.attachments.length > 0) {
+    body.attachments = opts.attachments;
+  }
 
   await postStream(CHAT, body, {
     signal: handlers.signal,

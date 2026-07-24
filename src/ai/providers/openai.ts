@@ -1,6 +1,29 @@
 import { ApiError } from "@/api/errors";
 import { readSse } from "./sse";
-import type { ChatRequest, LlmProvider } from "./types";
+import type { ChatAttachment, ChatRequest, LlmProvider } from "./types";
+
+/**
+ * A single part of a multimodal Chat Completions message. Plain text messages
+ * stay bare strings; a message with files becomes an array of these parts.
+ */
+type OpenAiPart =
+  | { type: "text"; text: string }
+  | { type: "file"; file: { filename: string; file_data: string } }
+  | { type: "image_url"; image_url: { url: string } };
+
+/**
+ * Turn one attachment into its Chat Completions content part. PDFs use a `file`
+ * part with an inline base64 data URI (Chat Completions requires base64, not a
+ * detail flag); images use an `image_url` data URI. Office binaries are skipped
+ * -- OpenAI does not accept them; their text was extracted upstream.
+ */
+function partFor(a: ChatAttachment): OpenAiPart | null {
+  const dataUri = `data:${a.mediaType};base64,${a.dataBase64}`;
+  if (a.mediaType === "application/pdf")
+    return { type: "file", file: { filename: a.name || "document.pdf", file_data: dataUri } };
+  if (a.mediaType.startsWith("image/")) return { type: "image_url", image_url: { url: dataUri } };
+  return null;
+}
 
 /**
  * OpenAI adapter, browser-direct (BYOK). Uses the Chat Completions API.
@@ -28,10 +51,22 @@ function mapError(status: number, body: string): ApiError {
   return new ApiError("invalid", status, body.slice(0, 300) || "OpenAI rejected the request.");
 }
 
-function messagesFor(req: ChatRequest): { role: string; content: string }[] {
-  const out: { role: string; content: string }[] = [];
+function messagesFor(req: ChatRequest): { role: string; content: string | OpenAiPart[] }[] {
+  const out: { role: string; content: string | OpenAiPart[] }[] = [];
   if (req.system) out.push({ role: "system", content: req.system });
   for (const m of req.messages) out.push({ role: m.role, content: m.content });
+
+  // Attach files (PDF / images) to the LAST user message. The file part goes
+  // first, then the instruction text, so the model has the document in view.
+  const parts = (req.attachments ?? []).map(partFor).filter((p): p is OpenAiPart => p !== null);
+  if (parts.length > 0) {
+    for (let i = out.length - 1; i >= 0; i -= 1) {
+      if (out[i].role !== "user") continue;
+      const text = out[i].content as string;
+      out[i] = { role: "user", content: [...parts, { type: "text", text }] };
+      break;
+    }
+  }
   return out;
 }
 

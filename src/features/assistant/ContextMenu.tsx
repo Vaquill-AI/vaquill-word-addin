@@ -1,6 +1,6 @@
 import { useEffect, type ReactNode } from "react";
 import { CheckIcon, FolderIcon, GlobeIcon, ScaleIcon, UploadIcon } from "@/ui/icons";
-import { ATTACH_ACCEPT } from "@/api/context";
+import { attachAccept } from "@/api/context";
 import { isCommunity } from "@/community/edition";
 import { HOSTED_URL, LockIcon } from "@/ui/UpgradeGate";
 import { AttachmentChips } from "./AttachmentChips";
@@ -158,7 +158,7 @@ export function ContextMenu({
             <label className={`attach__add${atCap ? " attach__add--disabled" : ""}`}>
               <input
                 type="file"
-                accept={ATTACH_ACCEPT}
+                accept={attachAccept()}
                 multiple
                 disabled={atCap}
                 className="attach__input"

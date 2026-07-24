@@ -23,6 +23,11 @@ export interface AttachedFile {
   truncated?: boolean;
   /** Extracted inline text (chat context). */
   text?: string;
+  /** Community edition: a file (PDF) sent straight to the LLM provider instead
+   *  of extracted to text -- raw bytes base64-encoded plus MIME type. When set,
+   *  `text` is empty and the file rides the request as a provider attachment. */
+  fileData?: string;
+  mediaType?: string;
   /** Uploaded reference-document id (drafting grounding). */
   refId?: string;
   error?: string;
@@ -31,7 +36,10 @@ export interface AttachedFile {
 /** What an uploader resolves to once a file has been processed on the backend.
  *  `needsOcr` signals the file extracted to nothing but can be recovered with an
  *  opt-in OCR pass (the caller must supply an `onOcr` resolver). */
-export type UploadResult = Pick<AttachedFile, "text" | "chars" | "truncated" | "refId"> & {
+export type UploadResult = Pick<
+  AttachedFile,
+  "text" | "chars" | "truncated" | "refId" | "fileData" | "mediaType"
+> & {
   needsOcr?: boolean;
 };
 export type Uploader = (file: File) => Promise<UploadResult>;
@@ -132,12 +140,19 @@ export function useAttachments(upload: Uploader, onOcr?: Uploader) {
     setFiles([]);
   }, []);
 
-  /** Ready files with inline text, in attach order (chat send context). */
+  /** Ready files for the next chat turn, in attach order. Each is either inline
+   *  text (docx / txt / md, extracted) or a provider file (a PDF carried as raw
+   *  bytes). A file with neither is not ready context, so it is excluded. */
   const contextFiles = useCallback(
-    (): { name: string; text: string }[] =>
+    (): { name: string; text: string; fileData?: string; mediaType?: string }[] =>
       files
-        .filter((f) => f.status === "ready" && f.text)
-        .map((f) => ({ name: f.name, text: f.text as string })),
+        .filter((f) => f.status === "ready" && (f.text || f.fileData))
+        .map((f) => ({
+          name: f.name,
+          text: f.text ?? "",
+          fileData: f.fileData,
+          mediaType: f.mediaType,
+        })),
     [files],
   );
 

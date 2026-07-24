@@ -72,6 +72,19 @@ function strArray(v: unknown): string[] {
   return Array.isArray(v) ? v.filter((x): x is string => typeof x === "string") : [];
 }
 
+/**
+ * Read a body field by any of the given keys, first match wins. Clients are not
+ * consistent about casing (createClause sends snake_case `clause_type`,
+ * addToPlaybook sends camelCase `clauseType`), and the hosted backend accepts
+ * both via Pydantic `populate_by_name`, so the local router must too -- else a
+ * field silently falls back to its default (e.g. every saved clause becoming
+ * type "custom").
+ */
+function pick(body: Record<string, unknown>, ...keys: string[]): unknown {
+  for (const k of keys) if (body[k] !== undefined) return body[k];
+  return undefined;
+}
+
 function nowIso(): string {
   return new Date().toISOString();
 }
@@ -249,7 +262,10 @@ interface StoredPlaybook {
   organizationId: string | null;
 }
 
-/** One bundled starter so the Playbooks list is not empty on first run. */
+/** Bundled starters so the Playbooks list is useful on first run and "Add to
+ *  playbook" offers a target for the common contract types, not just NDAs. The
+ *  positions are intentionally light: a starting standard/fallback/deal-breaker
+ *  the user grows by folding in accepted redlines. */
 const SEED_PLAYBOOKS: StoredPlaybook[] = [
   {
     id: "seed-nda",
@@ -277,6 +293,58 @@ const SEED_PLAYBOOKS: StoredPlaybook[] = [
     updatedAt: "2026-01-01T00:00:00.000Z",
     organizationId: null,
   },
+  {
+    id: "seed-msa",
+    name: "MSA (starter)",
+    contractType: "msa",
+    isDefault: false,
+    positions: {
+      limitation_of_liability: {
+        standardPosition: "Liability capped at fees paid in the prior 12 months.",
+        fallbackLadder: ["Cap at 12 months' fees for each party", "2x fees for data-breach claims"],
+        dealBreaker: "Uncapped liability of any kind.",
+      },
+      indemnification: {
+        standardPosition: "Mutual indemnities limited to third-party IP and confidentiality claims.",
+        fallbackLadder: ["Add third-party bodily-injury / property-damage claims"],
+        dealBreaker: "One-sided indemnity running only against us.",
+      },
+      termination: {
+        standardPosition: "Either party may terminate for material breach uncured after 30 days.",
+        fallbackLadder: ["Termination for convenience on 60 days' notice"],
+        dealBreaker: "No right to terminate for the counterparty's breach.",
+      },
+    },
+    createdAt: "2026-01-01T00:00:00.000Z",
+    updatedAt: "2026-01-01T00:00:00.000Z",
+    organizationId: null,
+  },
+  {
+    id: "seed-saas",
+    name: "SaaS subscription (starter)",
+    contractType: "saas",
+    isDefault: false,
+    positions: {
+      data_security: {
+        standardPosition: "Provider maintains SOC 2 Type II controls and notifies of a breach within 72 hours.",
+        fallbackLadder: ["Breach notice within 5 business days"],
+        dealBreaker: "No security commitments or breach-notice obligation.",
+      },
+      service_levels: {
+        standardPosition: "99.9% monthly uptime with service credits as the remedy.",
+        fallbackLadder: ["99.5% uptime", "Credits only on repeated misses"],
+        dealBreaker: "No uptime commitment at all.",
+      },
+      price_increases: {
+        standardPosition: "Renewal increases capped at 5% per year with 60 days' notice.",
+        fallbackLadder: ["Cap at 7%", "CPI-linked increase"],
+        dealBreaker: "Uncapped renewal price increases.",
+      },
+    },
+    createdAt: "2026-01-01T00:00:00.000Z",
+    updatedAt: "2026-01-01T00:00:00.000Z",
+    organizationId: null,
+  },
 ];
 
 async function seededPlaybooks(): Promise<StoredPlaybook[]> {
@@ -298,14 +366,15 @@ async function handlePlaybooksCrud(
     }
     if (method === "POST") {
       const ts = nowIso();
+      const positions = pick(body, "positions");
       const row: StoredPlaybook = {
         id: uuid(),
         name: str(body.name, "Playbook"),
-        contractType: str(body.contractType, "custom"),
+        contractType: str(pick(body, "contractType", "contract_type"), "custom"),
         isDefault: false,
         positions:
-          body.positions && typeof body.positions === "object"
-            ? (body.positions as Record<string, unknown>)
+          positions && typeof positions === "object"
+            ? (positions as Record<string, unknown>)
             : {},
         createdAt: ts,
         updatedAt: ts,
@@ -319,7 +388,7 @@ async function handlePlaybooksCrud(
   if (applyMatch && method === "POST") {
     const existing = (await getAll<StoredPlaybook>("playbooks")).find((p) => p.id === applyMatch[1]);
     if (!existing) throw new ApiError("not_found", 404, "Playbook not found.");
-    const clauseType = str(body.clauseType);
+    const clauseType = str(pick(body, "clauseType", "clause_type"));
     const text = str(body.text);
     const positions = { ...existing.positions } as Record<
       string,
@@ -452,7 +521,7 @@ async function handleClausesCrud(
       const row: StoredClause = {
         id: uuid(),
         name: str(body.name),
-        clauseType: str(body.clause_type, "custom"),
+        clauseType: str(pick(body, "clause_type", "clauseType"), "custom"),
         content: str(body.content),
         jurisdiction: str(body.jurisdiction, "US"),
         tone: str(body.tone, "balanced"),

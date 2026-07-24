@@ -14,21 +14,31 @@ export function AddToPlaybook({ redline }: { redline: RedlineSuggestion }) {
   const [books, setBooks] = useState<PlaybookDetail[] | null>(null);
   const [pbId, setPbId] = useState("");
   const [busy, setBusy] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Distinct from `error` (an add-time failure): a failure to LOAD the list must
+  // not be shown as "No playbooks yet", which would be a lie the user acts on.
+  const [loadError, setLoadError] = useState<string | null>(null);
+
+  async function load() {
+    setLoading(true);
+    setLoadError(null);
+    try {
+      const b = await getPlaybooksWithPositions();
+      setBooks(b);
+      if (b[0]) setPbId(b[0].id);
+    } catch (e) {
+      setLoadError(errorMessage(e));
+    } finally {
+      setLoading(false);
+    }
+  }
 
   async function expand() {
     setOpen(true);
     setError(null);
-    if (books === null) {
-      try {
-        const b = await getPlaybooksWithPositions();
-        setBooks(b);
-        if (b[0]) setPbId(b[0].id);
-      } catch {
-        setBooks([]);
-      }
-    }
+    if (books === null && !loading) await load();
   }
 
   async function add() {
@@ -60,7 +70,20 @@ export function AddToPlaybook({ redline }: { redline: RedlineSuggestion }) {
       </button>
     );
   }
-  if (books && books.length === 0) {
+  if (loadError) {
+    return (
+      <span className="small" style={{ color: "var(--danger)" }}>
+        Couldn't load playbooks.{" "}
+        <button type="button" className="linkaction" onClick={() => void load()}>
+          Retry
+        </button>
+      </span>
+    );
+  }
+  if (loading || books === null) {
+    return <span className="small muted">Loading playbooks...</span>;
+  }
+  if (books.length === 0) {
     return <span className="small muted">No playbooks yet. Create one first.</span>;
   }
   return (

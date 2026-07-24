@@ -178,8 +178,6 @@ function distillIntent(rationale: string, clauseName: string): string | null {
   return phrase;
 }
 
-type ProposedView = "redline" | "final";
-
 /** The review setup a "Draft a stronger fix" needs to draft against the right
  *  playbook position. Supplied only on the Review surface; when absent the
  *  agentic-fix action is hidden (the card is being reused elsewhere). */
@@ -222,7 +220,6 @@ export function RedlineCard({
   // Proposed-language state. `edited` is null until the user changes it, so an
   // untouched card applies the original suggestion verbatim.
   const [edited, setEdited] = useState<string | null>(null);
-  const [view, setView] = useState<ProposedView>("redline");
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState("");
   const [refining, setRefining] = useState(false);
@@ -629,42 +626,11 @@ export function RedlineCard({
             </Button>
           </div>
         </div>
+      ) : isInsertion ? (
+        // A brand-new clause is an insertion in full, so green is honest here.
+        <p className="redline__text redline__text--ins">{proposed}</p>
       ) : (
-        <>
-          {!isInsertion && (
-            <div className="redline__viewtoggle" role="group" aria-label="Preview as">
-              <button
-                type="button"
-                className={`redline__viewbtn${view === "redline" ? " redline__viewbtn--on" : ""}`}
-                aria-pressed={view === "redline"}
-                onClick={() => setView("redline")}
-              >
-                Redline
-              </button>
-              <button
-                type="button"
-                className={`redline__viewbtn${view === "final" ? " redline__viewbtn--on" : ""}`}
-                aria-pressed={view === "final"}
-                onClick={() => setView("final")}
-              >
-                Final
-              </button>
-            </div>
-          )}
-
-          {isInsertion ? (
-            // A brand-new clause is an insertion in full, so green is honest here.
-            <p className="redline__text redline__text--ins">{proposed}</p>
-          ) : view === "final" ? (
-            // "Final" is the clean finished clause as it will read AFTER accepting:
-            // neutral, not tinted green. Green marks only actual insertions (in the
-            // Redline diff). Green-washing the whole paragraph made Final look
-            // barely different from Redline and implied every word was new.
-            <p className="redline__text redline__text--final">{proposed}</p>
-          ) : (
-            <InlineDiff before={active.currentLanguage} after={proposed} />
-          )}
-        </>
+        <InlineDiff before={active.currentLanguage} after={proposed} />
       )}
 
       {rationale &&

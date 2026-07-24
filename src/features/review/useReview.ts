@@ -5,9 +5,12 @@ import {
   type ReviewProgress,
 } from "@/api/contract-review";
 import type { ContractReviewResponse } from "@/api/types";
-import { readSelectionText, readStructuredDocumentText } from "@/office/document";
+import {
+  readDocumentFingerprint,
+  readSelectionText,
+  readStructuredDocumentText,
+} from "@/office/document";
 import { errorMessage } from "@/api/errors";
-import { sha256Hex } from "@/lib/hash";
 import { splitIntoSections, mergeReviews } from "@/lib/sections";
 import { resolveClientRulesContext } from "@/lib/activeClient";
 import type { ReviewScope } from "./constants";
@@ -114,7 +117,13 @@ export function useReview() {
         return;
       }
 
-      const docHash = await sha256Hex(documentText);
+      // Freshness baseline: the SAME whole-body fingerprint the freshness check
+      // (readDocumentFingerprint) recomputes later. Hashing the review's own
+      // documentText here instead would be readStructuredDocumentText (list
+      // numbers / headings / extras) or the selection text, which never equals
+      // the plain-body hash the check produces -- so every review falsely read as
+      // "document changed" the instant it finished.
+      const docHash = await readDocumentFingerprint();
       // Fold the active client's standing rules into the review instructions, so
       // the client's positions are enforced on the first pass, not just triage.
       const clientRules = await resolveClientRulesContext(params.matterId);

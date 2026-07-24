@@ -15,20 +15,92 @@
   padding: 2px 10px;
 }
 
+/* The bordered unit is the whole fix block (row + its expandable preview), so
+   the divider sits between fixes, not between a row and its own preview. */
+.pf-fix-block {
+  border-top: 1px solid var(--border);
+}
+
+.pf-fix-block:first-child {
+  border-top: 0;
+}
+
 .pf-fix {
   gap: 10px;
   align-items: center;
   padding: 9px 0;
-  border-top: 1px solid var(--border);
-}
-
-.pf-fix:first-child {
-  border-top: 0;
 }
 
 .pf-fix__text {
   flex: 1;
   min-width: 0;
+}
+
+/* Preview: the exact paragraphs a fix will change, so the tool is not a black
+   box. Collapsed behind a disclosure so the card stays compact by default. */
+.pf-preview {
+  padding: 0 0 8px 34px;
+}
+
+.pf-preview__toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 0;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.pf-preview__toggle:hover {
+  color: var(--text);
+}
+
+.pf-preview__chev {
+  display: inline-flex;
+  transition: transform 0.15s ease;
+}
+
+.pf-preview__toggle--open .pf-preview__chev {
+  transform: rotate(180deg);
+}
+
+.pf-preview__list {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 0;
+  max-height: 220px;
+  overflow-y: auto;
+  border-left: 2px solid var(--border);
+}
+
+.pf-preview__item {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 4px 0 4px 10px;
+}
+
+.pf-preview__item + .pf-preview__item {
+  border-top: 1px solid var(--border);
+}
+
+.pf-preview__snippet {
+  font-size: 12px;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pf-preview__detail {
+  font-variant-numeric: tabular-nums;
+}
+
+.pf-preview__more {
+  padding: 6px 0 2px 10px;
 }
 
 .pf-count {

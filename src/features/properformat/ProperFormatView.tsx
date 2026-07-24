@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Badge,
   Banner,
@@ -10,7 +10,7 @@ import {
   Toggle,
 } from "@/ui/primitives";
 import { ViewHeader } from "@/ui/ViewHeader";
-import { CheckIcon } from "@/ui/icons";
+import { CheckIcon, ChevronIcon } from "@/ui/icons";
 import { useAppNav } from "@/app/nav";
 import type { FixKey, FormatReport, FormatScope } from "@/office/format";
 import { FIX_KEYS, useProperFormat } from "./useProperFormat";
@@ -52,6 +52,9 @@ function humanJoin(words: string[]): string {
   return `${words.slice(0, -1).join(", ")} and ${words[words.length - 1]}`;
 }
 
+/** How many paragraph previews to list per fix before collapsing to a count. */
+const PREVIEW_CAP = 40;
+
 /**
  * Proper Format tool. One click scans the document for formatting inconsistency,
  * shows what it found, and (on confirm) unifies the base font, size, and spacing
@@ -64,6 +67,28 @@ export function ProperFormatView() {
   const { navigate } = useAppNav();
   const [scope, setScope] = useState<FormatScope>("document");
   const [confirming, setConfirming] = useState(false);
+  // Which fixes have their per-paragraph preview expanded. Keyed by fix so each
+  // opens independently; reset whenever a fresh scan replaces the report.
+  const [expanded, setExpanded] = useState<ReadonlySet<FixKey>>(new Set());
+
+  const toggleExpanded = (k: FixKey) =>
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      if (next.has(k)) next.delete(k);
+      else next.add(k);
+      return next;
+    });
+
+  // On a fresh scan (new report identity, not a fix toggle): auto-expand the
+  // preview when a single fix applies, so the exact paragraphs are visible up
+  // front. With multiple fixes, start collapsed so the card stays compact.
+  const seenReport = useRef<FormatReport | null>(null);
+  useEffect(() => {
+    if (state.status !== "review" || seenReport.current === state.report) return;
+    seenReport.current = state.report;
+    const applicable = FIX_KEYS.filter((k) => state.report.counts[k] > 0);
+    setExpanded(applicable.length === 1 ? new Set(applicable) : new Set());
+  }, [state]);
 
   useEffect(() => {
     void scan("document");
@@ -228,27 +253,69 @@ export function ProperFormatView() {
           </p>
 
           <div className="stack pf-fixes" data-tour="pf-fixes">
-            {FIX_KEYS.filter((k) => report.counts[k] > 0).map((k) => (
-              <div className="row pf-fix" key={k}>
-                <Toggle
-                  checked={fixes.has(k)}
-                  onChange={(on) => {
-                    const next = new Set(fixes);
-                    if (on) next.add(k);
-                    else next.delete(k);
-                    setFixes(next);
-                  }}
-                  label={FIX_META[k].title}
-                />
-                <div className="stack pf-fix__text" style={{ gap: 0 }}>
-                  <span className="small" style={{ fontWeight: 600 }}>
-                    {FIX_META[k].title}
-                  </span>
-                  <span className="small muted">{FIX_META[k].hint(report)}</span>
+            {FIX_KEYS.filter((k) => report.counts[k] > 0).map((k) => {
+              const changes = report.changes[k];
+              const isOpen = expanded.has(k);
+              return (
+                <div className="stack pf-fix-block" key={k} style={{ gap: 0 }}>
+                  <div className="row pf-fix">
+                    <Toggle
+                      checked={fixes.has(k)}
+                      onChange={(on) => {
+                        const next = new Set(fixes);
+                        if (on) next.add(k);
+                        else next.delete(k);
+                        setFixes(next);
+                      }}
+                      label={FIX_META[k].title}
+                    />
+                    <div className="stack pf-fix__text" style={{ gap: 0 }}>
+                      <span className="small" style={{ fontWeight: 600 }}>
+                        {FIX_META[k].title}
+                      </span>
+                      <span className="small muted">{FIX_META[k].hint(report)}</span>
+                    </div>
+                    <span className="pf-count small muted">{report.counts[k]}</span>
+                  </div>
+
+                  {changes.length > 0 && (
+                    <div className="pf-preview">
+                      <button
+                        type="button"
+                        className={`pf-preview__toggle${isOpen ? " pf-preview__toggle--open" : ""}`}
+                        onClick={() => toggleExpanded(k)}
+                        aria-expanded={isOpen}
+                      >
+                        <span className="pf-preview__chev" aria-hidden>
+                          <ChevronIcon size={13} />
+                        </span>
+                        {isOpen
+                          ? "Hide the paragraphs"
+                          : `Show the ${changes.length} paragraph${changes.length === 1 ? "" : "s"}`}
+                      </button>
+                      {isOpen && (
+                        <ul className="pf-preview__list">
+                          {changes.slice(0, PREVIEW_CAP).map((c) => (
+                            <li key={c.index} className="pf-preview__item">
+                              <span className="pf-preview__snippet" title={c.snippet}>
+                                {c.snippet || "(blank paragraph)"}
+                              </span>
+                              <span className="pf-preview__detail small muted">{c.detail}</span>
+                            </li>
+                          ))}
+                          {changes.length > PREVIEW_CAP && (
+                            <li className="pf-preview__more small muted">
+                              and {changes.length - PREVIEW_CAP} more paragraph
+                              {changes.length - PREVIEW_CAP === 1 ? "" : "s"}
+                            </li>
+                          )}
+                        </ul>
+                      )}
+                    </div>
+                  )}
                 </div>
-                <span className="pf-count small muted">{report.counts[k]}</span>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
           {protectedNote}

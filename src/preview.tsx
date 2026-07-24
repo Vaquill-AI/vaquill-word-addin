@@ -1,10 +1,10 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { AutoTextarea } from "@/ui/AutoTextarea";
 import { createRoot } from "react-dom/client";
 import { Header } from "./ui/Header";
 import { Badge, Banner, Button } from "./ui/primitives";
 import { SetupSummary } from "./features/review/SetupSummary";
-import { ReviewToolbar, type RedlineFilter } from "./features/review/ReviewToolbar";
+import { ReviewToolbar } from "./features/review/ReviewToolbar";
 import { SignoffGate } from "./features/review/SignoffGate";
 import { ReviewSummary } from "./features/review/ReviewSummary";
 import { RedlineCard } from "./features/review/RedlineCard";
@@ -14,7 +14,6 @@ import { SaveToVaquill } from "./features/integration/SaveToVaquill";
 import { useDecisions } from "./features/review/decisions";
 import { ReviewIcon, DraftIcon, AssistantIcon, PlaybookIcon } from "./ui/icons";
 import { InfoTip } from "./ui/InfoTip";
-import { severityOf } from "./lib/severity";
 import { SelectionPreview } from "./features/tools/SelectionPreview";
 import { RewriteTool } from "./features/tools/RewriteTool";
 import { ExplainTool } from "./features/tools/ExplainTool";
@@ -95,24 +94,8 @@ const RESULT: ContractReviewResponse = {
 
 function Preview() {
   const { decisionOf, setDecision, addressed } = useDecisions(RESULT.redlines, "demo");
-  const [filter, setFilter] = useState<RedlineFilter>("all");
   const redlines = RESULT.redlines;
-
-  const counts = useMemo(
-    () => ({
-      all: redlines.length,
-      high: redlines.filter((r) => severityOf(r) === "high").length,
-      unresolved: redlines.filter((_, i) => decisionOf(i) === "pending").length,
-    }),
-    [redlines, decisionOf],
-  );
-  const visible = redlines
-    .map((r, i) => ({ r, i }))
-    .filter(({ r, i }) => {
-      if (filter === "high") return severityOf(r) === "high";
-      if (filter === "unresolved") return decisionOf(i) === "pending";
-      return true;
-    });
+  const visible = redlines.map((r, i) => ({ r, i }));
 
   return (
     <div className="app">
@@ -141,17 +124,11 @@ function Preview() {
       <div className="app-body">
         <div className="review review--results">
           <div className="review__header">
-            <SetupSummary parts={["NDA", "Customer", "Delaware"]} onNew={() => {}} />
+            <SetupSummary parts={["NDA", "Customer", "Delaware"]} />
             <div className="signoff-pill">
               <Badge tone="red">Partner sign-off</Badge>
             </div>
-            <ReviewToolbar
-              total={redlines.length}
-              addressed={addressed}
-              filter={filter}
-              onFilter={setFilter}
-              counts={counts}
-            />
+            <ReviewToolbar total={redlines.length} addressed={addressed} />
           </div>
           <div className="review__body">
             <SignoffGate gate={RESULT.approvalGate!} />

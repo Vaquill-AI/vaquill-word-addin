@@ -1,6 +1,28 @@
 import { ApiError } from "@/api/errors";
 import { readSse } from "./sse";
-import type { ChatRequest, LlmProvider } from "./types";
+import type { ChatAttachment, ChatRequest, LlmProvider } from "./types";
+
+/**
+ * A single block of Anthropic message content. When a message carries files it
+ * becomes an array of these; a plain text message stays a bare string.
+ */
+type AnthropicBlock =
+  | { type: "text"; text: string }
+  | { type: "document"; source: { type: "base64"; media_type: string; data: string } }
+  | { type: "image"; source: { type: "base64"; media_type: string; data: string } };
+
+/**
+ * Turn one attachment into its Anthropic content block. PDFs use a `document`
+ * block; images use an `image` block. Anything else (an Office binary that
+ * slipped through) is skipped -- the provider does not accept it, and its text
+ * was already extracted upstream.
+ */
+function blockFor(a: ChatAttachment): AnthropicBlock | null {
+  const source = { type: "base64" as const, media_type: a.mediaType, data: a.dataBase64 };
+  if (a.mediaType === "application/pdf") return { type: "document", source };
+  if (a.mediaType.startsWith("image/")) return { type: "image", source };
+  return null;
+}
 
 /**
  * Anthropic adapter, browser-direct (BYOK).
@@ -30,9 +52,23 @@ function mapError(status: number, body: string): ApiError {
 }
 
 function bodyFor(req: ChatRequest, model: string, stream: boolean): Record<string, unknown> {
-  const messages = req.messages
+  const messages: { role: string; content: string | AnthropicBlock[] }[] = req.messages
     .filter((m) => m.role !== "system")
     .map((m) => ({ role: m.role === "assistant" ? "assistant" : "user", content: m.content }));
+
+  // Attach files (PDF / images) to the LAST user message, before its text, so
+  // the model reads the document and then the instruction. Docs must precede the
+  // prose per Anthropic's guidance for best grounding.
+  const blocks = (req.attachments ?? []).map(blockFor).filter((b): b is AnthropicBlock => b !== null);
+  if (blocks.length > 0) {
+    for (let i = messages.length - 1; i >= 0; i -= 1) {
+      if (messages[i].role !== "user") continue;
+      const text = messages[i].content as string;
+      messages[i] = { role: "user", content: [...blocks, { type: "text", text }] };
+      break;
+    }
+  }
+
   let system = req.system;
   if (req.json) {
     system = `${system ?? ""}\n\nRespond with only a single valid JSON object. No prose, no markdown code fences.`.trim();

@@ -1,27 +1,18 @@
 import type { ReactNode } from "react";
-import { SegmentedControl } from "@/ui/primitives";
-
-export type RedlineFilter = "all" | "high" | "unresolved";
 
 /**
  * Sticky review header: a progress bar showing how much of the review has been
- * addressed, plus filters to triage. Stays pinned while the redline list scrolls
- * beneath it so the reviewer always knows where they stand. An optional sign-off
- * chip sits inline with the progress count so the header stays compact.
+ * addressed. Stays pinned while the redline list scrolls beneath it so the
+ * reviewer always knows where they stand. An optional sign-off chip sits inline
+ * with the progress count so the header stays compact.
  */
 export function ReviewToolbar({
   total,
   addressed,
-  filter,
-  onFilter,
-  counts,
   signoff,
 }: {
   total: number;
   addressed: number;
-  filter: RedlineFilter;
-  onFilter: (f: RedlineFilter) => void;
-  counts: { all: number; high: number; unresolved: number };
   signoff?: ReactNode;
 }) {
   const pct = total === 0 ? 100 : Math.round((addressed / total) * 100);
@@ -49,16 +40,6 @@ export function ReviewToolbar({
           <div className="progressbar__fill" style={{ width: `${pct}%` }} />
         </div>
       </div>
-      <SegmentedControl<RedlineFilter>
-        label="Filter redlines"
-        value={filter}
-        onChange={onFilter}
-        options={[
-          { value: "all", label: "All", count: counts.all },
-          { value: "high", label: "High", count: counts.high },
-          { value: "unresolved", label: "Open", count: counts.unresolved },
-        ]}
-      />
     </div>
   );
 }

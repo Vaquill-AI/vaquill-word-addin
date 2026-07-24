@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { ViewHeader } from "@/ui/ViewHeader";
 import { isCommunity } from "@/community/edition";
-import { UpgradeGate } from "@/ui/UpgradeGate";
+import { CommunityCompareView } from "./CommunityCompareView";
 import { Badge, Banner, Button, Spinner } from "@/ui/primitives";
 import { Dropzone } from "@/ui/Dropzone";
 import {
@@ -30,21 +30,11 @@ const ACCEPT = ".docx,.doc,.pdf";
  * sides, and offers the produced redline to download or apply.
  */
 export function CompareView() {
-  // Document compare runs on the hosted service. In the community edition, show
-  // a locked upsell instead of the tool.
+  // The hosted Compare tool uploads both sides to the server diff engine. The
+  // community / BYOK edition has no backend, so it runs a text-level compare
+  // entirely on-device instead (a separate, self-contained implementation).
   if (isCommunity()) {
-    return (
-      <div className="stack">
-        <ViewHeader
-          title="Compare"
-          info="Compare the open document against a reference version and get a native tracked-changes redline."
-        />
-        <UpgradeGate title="Document compare is on the hosted plan">
-          Compare the open document against a reference version and get a native tracked-changes
-          redline. This runs on Vaquill AI's hosted service.
-        </UpgradeGate>
-      </div>
-    );
+    return <CommunityCompareView />;
   }
   const { navigate } = useAppNav();
   const { state, start, cancel, reset, fetchRedline } = useCompare();

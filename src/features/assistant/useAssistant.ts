@@ -5,16 +5,24 @@ import {
   type ChatSource,
   type AssistantOptions,
 } from "@/api/chat";
+import type { ChatAttachment } from "@/ai/providers/types";
 import { readFullDocumentText, readSelectionText } from "@/office/document";
 import { uuid } from "@/api/ids";
 import { errorMessage } from "@/api/errors";
 
 export type Scope = "document" | "selection";
 
-/** A file the user attached as extra grounding context (already extracted to text). */
+/** A file the user attached as extra grounding context. Usually already
+ *  extracted to text; in the community edition a PDF instead rides along as raw
+ *  bytes (`fileData`) to be sent to the provider as a file. */
 export interface ContextAttachment {
   name: string;
   text: string;
+  /** Community edition: a PDF sent to the provider AS A FILE. When set, `text`
+   *  is empty and the file is passed as a provider attachment, not folded into
+   *  the text context. */
+  fileData?: string;
+  mediaType?: string;
 }
 
 /** Lightweight record of a file attached to a user turn, kept on the message so
@@ -30,18 +38,29 @@ export interface MessageAttachment {
 const ATTACHMENT_BUDGET = 20_000;
 const DOC_BUDGET_WITH_ATTACHMENTS = 30_000;
 
-/** Fold attached-file text into the document context as clearly delimited blocks. */
+/** Fold attached-file text into the document context as clearly delimited blocks.
+ *  Files carried as raw bytes for the provider (PDFs, no text) are skipped here;
+ *  they are sent as provider attachments instead. */
 function mergeContext(docContext: string, attachments: ContextAttachment[]): string {
-  if (attachments.length === 0) return docContext;
+  const textual = attachments.filter((a) => a.text);
+  if (textual.length === 0) return docContext;
   let remaining = ATTACHMENT_BUDGET;
   const blocks: string[] = [];
-  for (const a of attachments) {
+  for (const a of textual) {
     if (remaining <= 0) break;
     const body = a.text.slice(0, remaining);
     remaining -= body.length;
     blocks.push(`\n\n===== Attached file: ${a.name} =====\n${body}`);
   }
   return docContext.slice(0, DOC_BUDGET_WITH_ATTACHMENTS) + blocks.join("");
+}
+
+/** The PDFs among the attachments, shaped as provider file attachments. Empty in
+ *  the hosted edition (PDFs arrive pre-extracted as text there). */
+function fileAttachments(attachments: ContextAttachment[]): ChatAttachment[] {
+  return attachments
+    .filter((a) => a.fileData && a.mediaType)
+    .map((a) => ({ name: a.name, mediaType: a.mediaType as string, dataBase64: a.fileData as string }));
 }
 
 export interface AssistantMessage {
@@ -191,6 +210,12 @@ export function useAssistant() {
           return;
         }
         const context = mergeContext(baseContext, atts);
+        // PDFs ride the request as provider file attachments (community edition);
+        // the hosted path receives none (its PDFs are already text). Merge them
+        // into the grounding options passed to the stream.
+        const fileAtts = fileAttachments(atts);
+        const streamOpts: AssistantOptions =
+          fileAtts.length > 0 ? { ...grounding, attachments: fileAtts } : (grounding ?? {});
 
         await streamAssistant(
           history,
@@ -226,7 +251,7 @@ export function useAssistant() {
               patchAssistant((m) => ({ ...m, content: corrected ?? m.content, pending: false }));
             },
           },
-          grounding,
+          streamOpts,
         );
         patchAssistant((m) => ({ ...m, pending: false }));
         setState((s) => ({ ...s, streaming: false, thinking: null }));

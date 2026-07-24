@@ -20,7 +20,7 @@ import {
   type DraftIssue,
   type GenerationProgress,
 } from "@/api/drafting";
-import { ATTACH_ACCEPT } from "@/api/context";
+import { attachAccept } from "@/api/context";
 import { useAttachments, MAX_ATTACHMENTS } from "@/features/assistant/useAttachments";
 import { AttachmentChips } from "@/features/assistant/AttachmentChips";
 import { insertDraftFormatted } from "@/office/richInsert";
@@ -458,7 +458,7 @@ export function DraftView() {
         <label className={`attach__add${refs.atCap ? " attach__add--disabled" : ""}`}>
           <input
             type="file"
-            accept={ATTACH_ACCEPT}
+            accept={attachAccept()}
             multiple
             disabled={refs.atCap}
             className="attach__input"
